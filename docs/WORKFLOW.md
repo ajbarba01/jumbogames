@@ -33,6 +33,10 @@ and gates still apply. The test is "does this need design to get right?", not "i
 - **Human-sized batches** — one logical unit of work per commit, not per-file dribbles.
 - **Stage files by name** (never `git add -A`) — avoids accidental secret/artifact inclusion.
 - **Commit only after verification.** Never `--no-verify`.
+- **Never push without the maintainer's explicit go-ahead.** Pushing is the first irreversible,
+  outward-facing step: it triggers CI and a Vercel preview deploy. Show the commits and let the
+  maintainer verify, then push. Enforced for agents by an `ask` rule on `git push` in
+  `.claude/settings.json`.
 - **PRs:** fill the template honestly (screenshots for UI, API/DB sections when applicable); delete
   the branch after merge (graded).
 
@@ -52,6 +56,8 @@ and gates still apply. The test is "does this need design to get right?", not "i
   the repo. `.env.example` documents every variable without values.
 - CI/Playwright targets the **dedicated test Supabase project** ([DESIGN.md](DESIGN.md) decision 4)
   with dedicated test users — never production data.
+- Never edit a migration after it has been applied — it changes the checksum and drifts the database.
+  Create a new migration instead.
 
 ## Escalation
 

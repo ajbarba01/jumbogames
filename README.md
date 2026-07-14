@@ -28,8 +28,7 @@ git clone git@github.com:ajbarba01/jumbo-minigames.git
 cd jumbo-minigames
 npm install
 cp .env.example .env.local   # then fill in your values
-npx prisma generate          # generates the client into src/generated/
-npx prisma migrate dev       # apply schema to your database
+npm run db:migrate           # apply schema to the test database
 ```
 
 Every variable is documented in [.env.example](.env.example). Secrets live only in `.env.local`
@@ -45,6 +44,7 @@ Every variable is documented in [.env.example](.env.example). Secrets live only 
 | `npm run typecheck`   | `tsc --strict`, no emit                     |
 | `npm run lint`        | ESLint                                      |
 | `npm run format`      | Prettier (write) — `format:check` to verify |
+| `npm run test:unit`   | Vitest unit tests                           |
 | `npm run test:e2e`    | Playwright E2E suite                        |
 | `npm run test:e2e:ui` | Playwright in interactive UI mode           |
 

@@ -49,7 +49,9 @@ full-screen. A host may also join a team and play; hosting is a role on the tour
 `owner > admin > player`.
 
 - **Owner** — bootstrapped via `OWNER_EMAILS` env allowlist at signup; has a permissions page to
-  promote/demote **admins**.
+  promote/demote **admins**. The allowlist only grants owner, never revokes it; removing an email
+  from `OWNER_EMAILS` does not demote its existing owner row. Demoting an owner requires a direct
+  database update.
 - **Admin** — hosts tournaments, manages the trivia question bank, projects matches.
 - **Player** — signs up (email + password, confirmation off), joins with a game code, plays.
 

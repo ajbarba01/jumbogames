@@ -1,0 +1,9 @@
+Description & Scope
+Team-based tournament of short minigames. Teams of arbitrary sizes compete in 1v1 best-of-3 matches of minigames drawn randomly from a pool. The confirmed minigames are: typing race, trivia tug of war, battleship, and a word game. All of the minigames are co-operative, and more are planned but I wanted to keep the scope minimal for now. All teams will play until the end resulting in each team ranked to make Jumbocode point award easier. All scoring is normalized per-player, so a 3-person team competes fairly against a 6-person team. An admin will create the tournament, players sign up, join their team with a short code, and play. Admins can spectate any of these matches to put up on the projector.
+
+Technical Choices
+Next.js, TypeScript, Tailwind, Vercel: Meets required frontend stack, and Next.js API routes should work better than a separate service as each backend operation in this game is a stateless request, so there’s no need for Express/FastAPI server.
+
+Supabase (Postgres + Auth + Realtime), with Prisma for schema: Covers persistence, authentication, and live sync. Supabase Auth directly satisfies the security criteria. Prisma over Drizzle because I feel it's the more readable schema format, and I want to cater this project towards beginner devs for when I am leading a team. 
+
+Testing & workflow: Playwright E2E (auth + CRUD flows) running in GitHub Actions against dedicated test users and a database branch; PR/issue templates and proper branch development per guidelines.

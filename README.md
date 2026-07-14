@@ -11,8 +11,8 @@ per-player so team sizes don't matter. Admins run the tournament and can spectat
 Next.js (App Router) · TypeScript · Tailwind CSS · Supabase (Postgres + Auth + Realtime) · Prisma ·
 Playwright · Vercel
 
-New to the repo? Start with [AGENTS.md](AGENTS.md) — it routes to the docs that own each topic
-(design, engineering principles, code style, workflow, roadmap).
+Start with [AGENTS.md](AGENTS.md) — it routes to the docs that own each topic (design, engineering
+principles, code style, workflow, roadmap).
 
 ## Getting started
 

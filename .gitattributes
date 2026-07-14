@@ -1,0 +1,5 @@
+# Normalize all text files to LF in the repo and working tree; stops
+# CRLF phantom modifications on Windows.
+* text=auto eol=lf
+*.png binary
+*.ico binary

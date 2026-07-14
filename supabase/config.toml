@@ -1,0 +1,16 @@
+# Declarative Supabase auth configuration, applied with
+# `supabase config push --project-ref <ref>`. Email confirmation is off by
+# design: players sign up with a code at a hacknight and play immediately, and
+# the Playwright signup E2E cannot complete an email round-trip.
+
+project_id = "jumbo-minigames"
+
+[auth]
+enabled = true
+site_url = "https://jumbo-minigames.vercel.app"
+additional_redirect_urls = ["https://jumbo-minigames.vercel.app/**"]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false

@@ -4,7 +4,7 @@ A team-based tournament of short co-operative minigames for JumboCode hacknights
 short code and face off in 1v1 best-of-3 matches drawn from a minigame pool; scoring is normalized
 per-player so team sizes don't matter. Admins run the tournament and can spectate any live match.
 
-**Live app:** _(deploy pending — Vercel URL goes here)_
+**Live app:** https://jumbo-minigames.vercel.app
 
 ## Stack
 
@@ -28,7 +28,7 @@ git clone git@github.com:ajbarba01/jumbo-minigames.git
 cd jumbo-minigames
 npm install
 cp .env.example .env.local   # then fill in your values
-npx prisma generate
+npx prisma generate          # generates the client into src/generated/
 npx prisma migrate dev       # apply schema to your database
 ```
 

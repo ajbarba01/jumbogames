@@ -1,0 +1,13 @@
+// Prisma schema for jumbo-minigames. Data models land with milestone 1
+// (see docs/ROADMAP.md); this file wires the Supabase Postgres connection:
+// pooled URL for queries, direct URL for migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}

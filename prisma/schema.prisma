@@ -1,0 +1,12 @@
+// Prisma schema for jumbo-minigames. Data models land with milestone 1
+// (see docs/ROADMAP.md). Connection URLs live in prisma.config.ts (CLI)
+// and the driver adapter (runtime).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

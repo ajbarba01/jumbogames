@@ -15,10 +15,10 @@
   --font-hand: var(--font-gaegu);
 }
 
-/* Register scale: the app renders ~1.45× the browser default — calibrated by
- * the maintainer against browser zoom on the showcase (projector legibility,
- * docs/UI.md). Kit type tokens and Tailwind spacing are both rem-based, so
- * everything scales together exactly like zoom did. */
+/* Register scale: the app renders ~1.45× the browser default for projector
+ * legibility (docs/UI.md), tuned against browser zoom on the showcase. Kit type
+ * tokens and Tailwind spacing are both rem-based, so everything scales together
+ * exactly like zoom. */
 html {
   font-size: 145%;
 }

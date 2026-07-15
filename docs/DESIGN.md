@@ -8,18 +8,24 @@
 ## The game
 
 A team-based tournament of short **co-operative** minigames for JumboCode hacknights. Teams of any
-size compete in 1v1 best-of-3 matches; **scoring is normalized per-player**, so a 3-person team
-competes fairly against a 6-person team. Admins run the tournament and project any live match.
+size play a **round-robin** of short 1v1 matches; **scoring is normalized per-player**, so a 3-person
+team competes fairly against a 6-person team. Admins run the tournament and project any live match.
 
-## Tournament format: classification bracket
+## Tournament format: round-robin
 
-- **Everyone plays every round.** N teams play ⌈log₂N⌉ rounds. Losers drop into parallel placement
-  brackets (winners' side plays for 1st–4th, losers' side for 5th–8th, and so on), so the final
-  standing of **every** team is decided structurally by its bracket path — no cross-match counting.
-- Non-power-of-2 team counts pad round 1 with **byes** (a bye is an auto-win; assignment random).
-- **A match always plays all 3 minigames**, drawn distinct from the pool. Minigame winner = higher
-  normalized team score. Match winner = most minigames won. Cumulative normalized score is
-  stats/flavor only — ranking never depends on it.
+Full rationale and the pure-engine contract live in the
+[round-robin spec](superpowers/specs/2026-07-15-round-robin-tournament-format-design.md).
+
+- **Everyone plays everyone once.** Pairings follow a fixed rotation (circle method) computed at start;
+  the whole schedule is known up front because pairings don't depend on results. N-1 rounds for even N,
+  N rounds for odd N.
+- **Odd team counts** give each team exactly one **bye** across the schedule (worth a match's minigames);
+  even counts need none.
+- **A match is K minigames**, K = `minigamesPerMatch` (per-tournament config, 1–4, default 1), drawn
+  distinct from the pool. A minigame is won by the higher **normalized team score**; the winner scores
+  one point. There is **no match winner** — points are counted per minigame.
+- **Ranking = total minigames won**, tiebroken by **cumulative normalized score**. Final standings are
+  the ranking after the last round — no separate placement phase.
 - Teams whose match finishes early **spectate** any still-running match until the round closes.
 
 ## Player flow
@@ -29,13 +35,13 @@ competes fairly against a 6-person team. Admins run the tournament and project a
 3. Lobby: create a team (becoming its **leader**) or tap an existing team to join it.
 4. Leaders ready up. When all are ready the host's Start unlocks; on start, the game code stops
    admitting players and teams freeze.
-5. Round board (bracket tree): shows this round's matchups, live status, and standings.
-6. Match: the 1v1 overview opens with a **slot-machine reveal** of the 3 chosen minigames, shown as
-   three previews in a row. Entering a minigame **zooms into its preview**; the minigame plays; a
-   scoring screen follows; zoom out returns to the overview with match status (games won so far).
-7. After game 3 the match completes and players return to the round board, where they can spectate
-   any live match — the same surface the host projects.
-8. All matches close → next round pairings → repeat → final standings.
+5. Round board: the ranked **standings** table (the hero) plus this round's live matchups.
+6. Match: the 1v1 overview reveals the match's K minigames as previews in a row. Entering a minigame
+   **zooms into its preview**; the minigame plays; a scoring screen follows; zoom out returns to the
+   overview with the minigames won so far.
+7. After the last minigame the match completes and players return to the round board, where they can
+   spectate any live match — the same surface the host projects.
+8. All matches close → next round → repeat → final standings.
 
 ## Host flow
 
@@ -82,7 +88,7 @@ before build (see [ROADMAP.md](ROADMAP.md)); the shapes below are the agreed bas
 | **Prisma**                                | Readable schema format — this repo doubles as a reference for beginner devs on my JumboCode team.                             |
 | **Zod**                                   | Runtime validation of every request body at the route boundary (graded: backend input validation).                            |
 | **Playwright + GitHub Actions**           | Required E2E testing (auth + CRUD flows) on every push/PR.                                                                    |
-| **`motion` (ex-framer-motion)**           | Game-layer animation: shared-element zoom into minigames (`layoutId`), slot machine, bracket transitions. Reuse over rebuild. |
+| **`motion` (ex-framer-motion)**           | Game-layer animation: shared-element zoom into minigames (`layoutId`), slot machine, round transitions. Reuse over rebuild.   |
 
 ## UI system: ported console-kit
 
@@ -111,12 +117,16 @@ arrive already solved; a theme is a token-scale swap by design.
 5. **Build the tournament shell + ONE minigame end-to-end before starting the next game.** Minigames
    are swappable content behind a uniform match container. Order: trivia → typing race → word game →
    battleship. Submittable at every point after the first game lands.
-6. **Classification bracket over Swiss/round-robin/elimination.** Everyone plays all ⌈log₂N⌉ rounds,
-   the final ranking is exact and structural, and the centerpiece screen is a real bracket tree.
+6. **Round-robin over bracket/Swiss/elimination.** Every team plays every other once, so final ranking
+   reflects aggregate performance against the whole field rather than pairing luck or first-loss
+   position. The cost is a round count that scales with N; accepted for the fairness. Supersedes the
+   earlier bracket and Swiss drafts — see the
+   [round-robin spec](superpowers/specs/2026-07-15-round-robin-tournament-format-design.md).
 7. **One game code, self-organizing teams.** Team creator is leader; leaders ready up; the host
    starts (with override) and the tournament locks.
-8. **Always play all 3 minigames per match.** Uniform pacing, no dead preview slot, everyone plays
-   everything.
+8. **Match = K configurable minigames, scored per minigame.** `minigamesPerMatch` (1–4, default 1) sets
+   how many distinct pool games a match plays; ranking counts minigames won, so a match needs no winner
+   and even K may split. Tiebreak is cumulative normalized score.
 9. **Port console-kit rather than adopt shadcn or hand-roll.** The kit is proven, retheme-by-design,
    and already encodes the interaction quality bar; see UI system above.
 10. **The UI kit is an npm workspace package (`packages/ui`, `@jumbo/ui`).** Portability is a design
@@ -147,4 +157,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-14_
+_Last reviewed: 2026-07-15_

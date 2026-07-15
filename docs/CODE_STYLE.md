@@ -41,6 +41,18 @@ exception; beyond it, add a comment only when the WHY is genuinely non-obvious f
   // Supavisor transaction mode drops prepared statements; keep queries single-shot.
   ```
 
+- **State decisions impersonally.** A comment records what the code does and
+  why, never who decided it. No appeals to authorship or authority, no
+  editorial emphasis:
+
+  ```ts
+  // BAD: attributes the decision, editorializes
+  // Square corners everywhere — the maintainer call is zero radius, no exceptions.
+
+  // GOOD: states the decision and its reason
+  // Square corners everywhere; the radius tokens stay as the axis for a softer theme.
+  ```
+
 - No emojis in code, no commented-out code, no filler ("this is important", "note that", "simply").
 - Never reference a plan phase, ticket ID, or internal codename in a comment (it rots).
 - TSDoc (`/** … */`) on exported functions and shared types; `@param`/`@returns` only when they add
@@ -79,4 +91,4 @@ Docs, README, PR descriptions, commit subjects, issue text, error messages, UI c
 
 ---
 
-_Last reviewed: 2026-07-14_
+_Last reviewed: 2026-07-15_

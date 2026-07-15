@@ -13,8 +13,8 @@ Game logic — scoring, per-player normalization, match state transitions, answe
 resolution — is **pure functions** over typed inputs: no DB reads, no network, no clock reads inside
 them. Route handlers do IO at the edge (auth, fetch state, persist result) and pass data in.
 
-- **Why:** pure logic is unit-testable without mocks and is where the real bugs live. A best-of-3
-  match state machine you can test in isolation is one you can trust live at hacknight.
+- **Why:** pure logic is unit-testable without mocks and is where the real bugs live. A round-robin
+  schedule and standings engine you can test in isolation is one you can trust live at hacknight.
 
 ## 2. Typed boundaries; validate external data at the edge
 
@@ -74,4 +74,4 @@ Next.js route conventions — before writing parallel machinery.
 
 ---
 
-_Last reviewed: 2026-07-14_
+_Last reviewed: 2026-07-15_

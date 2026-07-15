@@ -2,10 +2,10 @@
  * 12-step scale, the accent identity, the status vocabulary, diff tints,
  * shadows, sticker structure, and the scrim. See docs/UI.md.
  *
- * Direction (maintainer session, 2026-07-14): inverted neo-brutalism for a
- * game projected in a dark room — warm near-black ground, cream ink, sticker
- * chrome (thick edge borders + hard offset shadows that depress on press),
- * loud yellow/pink accents, hand-drawn doodles on the background layer only.
+ * Direction: inverted neo-brutalism for a game projected in a dark room — warm
+ * near-black ground, cream ink, sticker chrome (thick edge borders + hard
+ * offset shadows that depress on press), loud yellow/pink accents, hand-drawn
+ * doodles on the background layer only.
  *
  * Pruned: a third tangerine accent (#ff7847) from the candidate mock — too
  * close to `warn` for the indicator law to survive it. Accents are yellow +

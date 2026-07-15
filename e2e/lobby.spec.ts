@@ -66,9 +66,12 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await expect(startButton).toBeEnabled();
   await startButton.click();
 
-  // Both surfaces reflect the started tournament.
-  await expect(host.getByText("Tournament started")).toBeVisible();
-  await expect(player.getByText("Tournament started")).toBeVisible();
+  // Both surfaces swap to the round board once the tournament starts.
+  await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
+  await expect(host.getByText("Round 1")).toBeVisible();
+  await expect(
+    player.getByRole("heading", { name: "Standings" }),
+  ).toBeVisible();
 
   await hostContext.close();
   await playerContext.close();

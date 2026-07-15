@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button, Card, TextField } from "@jumbo/ui";
 import { subscribeToTournament } from "@/lib/realtime/subscribe";
 import type { LobbyDTO, LobbyTeamDTO } from "@/lib/tournament/lobby";
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function LobbyView({ initialState, viewerId, isHost }: Props) {
+  const router = useRouter();
   const [state, setState] = useState(initialState);
   const [teamName, setTeamName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,11 @@ export function LobbyView({ initialState, viewerId, isHost }: Props) {
     });
     return unsubscribe;
   }, [initialState.id, refetch]);
+
+  useEffect(() => {
+    // Once the host starts, the page's server render swaps to the round board.
+    if (state.phase !== "lobby") router.refresh();
+  }, [state.phase, router]);
 
   async function act(request: () => Promise<Response>) {
     setBusy(true);
@@ -63,29 +70,6 @@ export function LobbyView({ initialState, viewerId, isHost }: Props) {
     state.teams.length > 0 && state.teams.every((team) => team.ready);
   const canStart = state.teams.length >= 2 && allReady;
   const canOverride = state.teams.length >= 2;
-
-  if (state.phase !== "lobby") {
-    return (
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 p-8">
-        <Card className="flex flex-col gap-3 p-6 text-center">
-          <h1 className="font-display text-2xl uppercase text-s12">
-            {state.name}
-          </h1>
-          <p className="text-body text-ok">Tournament started</p>
-          <p className="text-sec text-s9">
-            {state.roundCount ?? 0} rounds scheduled. The round board arrives
-            next.
-          </p>
-          <Link
-            href="/"
-            className="slip text-meta font-bold uppercase tracking-widest text-s7 hover:text-s10"
-          >
-            Back to home
-          </Link>
-        </Card>
-      </main>
-    );
-  }
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-8">

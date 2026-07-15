@@ -5,7 +5,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# jumbo-minigames
+# jumbogames
 
 A **team-based tournament of short co-operative minigames** for JumboCode hacknights. Teams join with a
 short code and compete in 1v1 best-of-3 matches of minigames drawn from a pool; scoring is normalized

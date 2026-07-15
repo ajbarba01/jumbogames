@@ -1,4 +1,4 @@
-// Prisma schema for jumbo-minigames. Data models land with milestone 1
+// Prisma schema for jumbogames. Data models land with milestone 1
 // (see docs/ROADMAP.md). Connection URLs live in prisma.config.ts (CLI)
 // and the driver adapter (runtime).
 

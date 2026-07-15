@@ -11,6 +11,9 @@ import {
   BrandMark,
   type BrandMarkSpec,
   Card,
+  CodeInput,
+  ConfirmDialog,
+  CopyCode,
   cx,
   DialogSearchHead,
   SettingRow,
@@ -118,6 +121,9 @@ function ActionsSection() {
       <Specimen label="Spinner — spinning">
         <Spinner label="Loading specimen" />
       </Specimen>
+      <Specimen label="CopyCode — click to copy (check + 'Copied' on success)">
+        <CopyCode value="HACK42" />
+      </Specimen>
     </Section>
   );
 }
@@ -132,9 +138,34 @@ function InputsSection() {
   const [toggleA, setToggleA] = useState(false);
   const [toggleB, setToggleB] = useState(true);
   const [effort, setEffort] = useState<Effort>("high");
+  const [code, setCode] = useState("");
 
   return (
     <Section title="Inputs">
+      <Specimen label="CodeInput — segmented code entry (ghost placeholder; type, backspace, paste)">
+        <CodeInput
+          aria-label="Game code"
+          value={code}
+          onChange={setCode}
+          placeholder="JUMBOS"
+        />
+      </Specimen>
+      <Specimen label="CodeInput — invalid">
+        <CodeInput
+          aria-label="Game code invalid"
+          value="HACK42"
+          onChange={() => {}}
+          invalid
+        />
+      </Specimen>
+      <Specimen label="CodeInput — disabled">
+        <CodeInput
+          aria-label="Game code disabled"
+          value="HACK42"
+          onChange={() => {}}
+          disabled
+        />
+      </Specimen>
       <Specimen label="TextField — default">
         <TextField placeholder="Team code" aria-label="textfield default" />
       </Specimen>
@@ -234,6 +265,7 @@ function FloatCardSpecimen({
 function OverlaySection() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <Section title="Overlay">
@@ -295,6 +327,17 @@ function OverlaySection() {
             Escape or the scrim dismisses this card.
           </div>
         </ModalShell>
+      </Specimen>
+      <Specimen label="ConfirmDialog — gates a consequential action (copy carries weight, not color)">
+        <Button onClick={() => setConfirmOpen(true)}>End tournament</Button>
+        <ConfirmDialog
+          open={confirmOpen}
+          title="End tournament?"
+          description="Standings freeze and the board shows the final result for everyone."
+          confirmLabel="End tournament"
+          onConfirm={() => setConfirmOpen(false)}
+          onClose={() => setConfirmOpen(false)}
+        />
       </Specimen>
       <FloatCardSpecimen side="top" label="FloatCard — placement top" />
       <FloatCardSpecimen side="bottom" label="FloatCard — placement bottom" />
@@ -508,14 +551,6 @@ function TypeTokensSection() {
             mono = code literals and team codes — never chrome
           </span>
         </div>
-      </Specimen>
-      <Specimen label="Team-code treatment — the mockup's HACK42 (sans, bold, tracked caps)">
-        <TextField
-          aria-label="Team code treatment"
-          placeholder="HACK42"
-          maxLength={6}
-          className="w-44 text-body font-bold tracking-[0.18em] uppercase"
-        />
       </Specimen>
       <div className="flex w-full flex-col gap-2.5">
         <div className="flex items-baseline gap-4">

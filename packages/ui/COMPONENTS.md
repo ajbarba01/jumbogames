@@ -15,6 +15,17 @@ The six-variant action vocabulary — primary/quiet/outline/block/ghost/text pic
 - **Accessibility:** Native <button> semantics (Enter/Space activate); type defaults to button; icon-only callers must pass aria-label; loading is not applicable in this vocabulary — callers disable instead.
 - **Related:** Spinner
 
+### CopyCode
+
+Displays a short code in accent mono and copies it to the clipboard on click.
+
+- **Use it when:** Showing a game/join code the host reads aloud and wants to share. Any short literal a viewer will want to copy rather than retype.
+- **Don't use it when:** The value is editable (use CodeInput or TextField). Copying long or structured content where a code chip misreads (use a labelled field).
+- **Anatomy:** A button whose face is the code itself (mono, accent) plus a copy glyph that flips to a check with an sr-only status on success.
+- **Variants & states:** default · hover (glyph brightens) · copied (check + 'Copied' status, ~1.5s) · unavailable (clipboard blocked: no confirmation)
+- **Accessibility:** A labelled button ('Copy code {value}'); success is announced through a role=status live region, not color alone.
+- **Related:** CodeInput, Button
+
 ### MenuItem
 
 The option row: bold ink on paper divided by edge lines; selection is a tint plus a trailing check, one vocabulary in every menu.
@@ -75,6 +86,17 @@ The loading circle — quiet s-scale ring for content that is genuinely not ther
 - **Related:** Button
 
 ## Inputs
+
+### CodeInput
+
+Segmented entry for a short fixed-length code, one cell per character.
+
+- **Use it when:** Joining by a game/team code read off a projector. Any known-length alphanumeric code where per-character cells aid legibility.
+- **Don't use it when:** Free-length or free-text entry (use TextField). The value is one of a known set (use Select). A very long code where segmentation stops helping — prefer a single field.
+- **Anatomy:** A labelled group of single-character inputs; typing advances, backspace steps back, paste distributes, and focus jumps to the first empty cell so entry stays gapless. Each cell owns the browser's caret and selection. An optional hidden aggregate carries the value for form posts.
+- **Variants & states:** default · empty (per-cell ghost placeholder) · hover (cell sticker lift) · focus (global accent ring) · disabled (s3 face, no hover) · invalid (crit border on cells) · complete (fires onComplete)
+- **Accessibility:** role=group with an accessible name; each cell is a labelled textbox with its own caret and selection; mono voice is the register's sanctioned code treatment; invalid must be mirrored by text the caller renders, not color alone.
+- **Related:** TextField, Select
 
 ### Select
 
@@ -156,6 +178,17 @@ The dialog TOC rail: one row per section, jump on click, quiet active tint.
 - **Related:** DialogSearchHead, SettingRow
 
 ## Overlays
+
+### ConfirmDialog
+
+A titled modal that gates a consequential action behind an explicit confirm.
+
+- **Use it when:** An action is destructive or hard to reverse (end a tournament, remove a team). A single stray click should not trigger the outcome.
+- **Don't use it when:** The action is cheap and reversible (just do it, offer undo instead). A rich, multi-field flow is needed (compose ModalShell directly).
+- **Anatomy:** ModalShell wrapping a display title, an optional description line, and a cancel/confirm button pair; cancel is first so the focus trap lands there.
+- **Variants & states:** default · busy (both actions disabled while the request runs) · closed (renders nothing)
+- **Accessibility:** Inherits ModalShell's labelled dialog, focus trap, and Escape/scrim dismissal (which cancel); weight is in the copy, not color, per the status-vocabulary law.
+- **Related:** ModalShell, Button
 
 ### MenuCard
 

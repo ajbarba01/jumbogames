@@ -1,6 +1,7 @@
 /** Registers every kit component's intent; feeds COMPONENTS.md and the
  *  completeness test (docs/UI.md). */
 import { buttonIntent } from "./actions/Button.intent";
+import { copyCodeIntent } from "./actions/CopyCode.intent";
 import { brandMarkIntent } from "./brand/BrandMark.intent";
 import { cardIntent } from "./surface/Card.intent";
 import type { ComponentIntent } from "./lib/intent";
@@ -14,6 +15,7 @@ import {
   menuCardIntent,
   menuItemIntent,
 } from "./overlay/MenuCard.intent";
+import { confirmDialogIntent } from "./overlay/ConfirmDialog.intent";
 import { modalShellIntent } from "./overlay/ModalShell.intent";
 import { popoverCardIntent } from "./overlay/PopoverCard.intent";
 import { tooltipIntent } from "./overlay/Tooltip.intent";
@@ -24,6 +26,7 @@ import {
 } from "./frame/SettingsFrame.intent";
 import { kbdIntent } from "./keys/Kbd.intent";
 import { shortcutsOverlayIntent } from "./keys/ShortcutsOverlay.intent";
+import { codeInputIntent } from "./inputs/CodeInput.intent";
 import { selectIntent } from "./inputs/Select.intent";
 import { stepSliderIntent } from "./inputs/StepSlider.intent";
 import { textFieldIntent } from "./inputs/TextField.intent";
@@ -39,6 +42,7 @@ export const allIntents: ComponentIntent[] = [
   useClickAwayIntent,
   zoomIntent,
   buttonIntent,
+  copyCodeIntent,
   menuCardIntent,
   menuItemIntent,
   capsLabelIntent,
@@ -47,8 +51,10 @@ export const allIntents: ComponentIntent[] = [
   selectIntent,
   toggleIntent,
   textFieldIntent,
+  codeInputIntent,
   stepSliderIntent,
   modalShellIntent,
+  confirmDialogIntent,
   kbdIntent,
   shortcutsOverlayIntent,
   dialogSearchHeadIntent,

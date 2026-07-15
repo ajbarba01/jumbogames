@@ -41,9 +41,6 @@ export function HostForm() {
 
   return (
     <Card className="flex flex-col gap-4 p-6">
-      <h2 className="font-display text-xl uppercase text-s12">
-        Host a tournament
-      </h2>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
         <TextField
           name="name"

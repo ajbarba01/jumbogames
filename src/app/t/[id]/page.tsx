@@ -26,6 +26,7 @@ export default async function TournamentPage(props: {
       <LobbyView
         initialState={toLobbyDTO(state)}
         viewerId={auth.profile.id}
+        viewerEmail={auth.profile.email}
         isHost={state.hostId === auth.profile.id}
       />
     );
@@ -35,7 +36,7 @@ export default async function TournamentPage(props: {
   if (!board) notFound();
   return (
     <BoardRefresher tournamentId={id}>
-      <RoundBoard board={board} />
+      <RoundBoard board={board} isHost={state.hostId === auth.profile.id} />
     </BoardRefresher>
   );
 }

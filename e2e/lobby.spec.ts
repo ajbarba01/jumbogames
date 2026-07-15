@@ -36,6 +36,8 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await promoteToAdmin(hostEmail);
   await host.reload();
 
+  await host.getByRole("button", { name: "Create tournament" }).click();
+  await host.waitForURL(/\/host$/);
   await host.getByPlaceholder("Tournament name").fill("E2E Cup");
   await host.getByRole("button", { name: "Create and host" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
@@ -49,13 +51,25 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await expect(host.getByText("Alpha")).toBeVisible();
   await host.getByRole("button", { name: "Ready up" }).click();
 
-  // Player: sign up, join by code, create and ready team Bravo.
+  // Player: sign up, join by code, create and ready team Bravo. The code field
+  // is segmented — focus the first cell and type; focus advances per character.
   await signUp(player, playerEmail);
-  await player.getByPlaceholder("Game code").fill(code as string);
+  await player
+    .getByRole("group", { name: "Game code" })
+    .getByRole("textbox")
+    .first()
+    .click();
+  await player.keyboard.type(code as string);
   await player.getByRole("button", { name: "Join" }).click();
   await player.waitForURL(/\/t\/[^/]+$/);
 
   await expect(player.getByText("Alpha")).toBeVisible();
+
+  // The teamless player shows up in the host's "not on a team yet" card,
+  // driven by lobby presence, and leaves it once they form a team.
+  await expect(host.getByText("Not on a team yet")).toBeVisible();
+  await expect(host.getByText(playerEmail)).toBeVisible();
+
   await player.getByPlaceholder("Team name").fill("Bravo");
   await player.getByRole("button", { name: "Create team" }).click();
   await player.getByRole("button", { name: "Ready up" }).click();
@@ -72,6 +86,22 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await expect(
     player.getByRole("heading", { name: "Standings" }),
   ).toBeVisible();
+
+  // Home offers a rejoin while the tournament is live; it routes back to it.
+  await host.goto("/");
+  const rejoin = host.getByRole("button", { name: "Rejoin" });
+  await expect(rejoin).toBeVisible();
+  await rejoin.click();
+  await host.waitForURL(/\/t\/[^/]+$/);
+
+  // Host ends the tournament behind the confirm; both boards flip to ended.
+  await host.getByRole("button", { name: "End tournament" }).click();
+  await host
+    .getByRole("dialog", { name: "End tournament?" })
+    .getByRole("button", { name: "End tournament" })
+    .click();
+  await expect(host.getByText("Ended · final standings")).toBeVisible();
+  await expect(player.getByText("Ended · final standings")).toBeVisible();
 
   await hostContext.close();
   await playerContext.close();

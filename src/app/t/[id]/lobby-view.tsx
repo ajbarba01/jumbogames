@@ -1,18 +1,22 @@
 /**
  * Live tournament lobby. Renders teams, membership, and host controls from a
  * server-provided snapshot, then subscribes to the tournament's Realtime
- * channel and refetches canonical state on every broadcast. All mutations go
- * through the route handlers; this view never writes state directly. Once the
- * tournament leaves the lobby it shows the started placeholder (the round board
- * arrives in a later milestone).
+ * channel and refetches canonical state on every broadcast. A separate presence
+ * channel lists participants who are here but not yet on a team. All mutations
+ * go through the route handlers; this view never writes state directly. Once the
+ * tournament leaves the lobby the page swaps to the round board.
  */
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Card, TextField } from "@jumbo/ui";
+import { Button, Card, ConfirmDialog, CopyCode, TextField } from "@jumbo/ui";
 import { subscribeToTournament } from "@/lib/realtime/subscribe";
+import {
+  subscribeToLobbyPresence,
+  type LobbyPresence,
+} from "@/lib/realtime/presence";
 import type { LobbyDTO, LobbyTeamDTO } from "@/lib/tournament/lobby";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -20,12 +24,19 @@ const JSON_HEADERS = { "Content-Type": "application/json" };
 type Props = {
   initialState: LobbyDTO;
   viewerId: string;
+  viewerEmail: string;
   isHost: boolean;
 };
 
-export function LobbyView({ initialState, viewerId, isHost }: Props) {
+export function LobbyView({
+  initialState,
+  viewerId,
+  viewerEmail,
+  isHost,
+}: Props) {
   const router = useRouter();
   const [state, setState] = useState(initialState);
+  const [present, setPresent] = useState<LobbyPresence[]>([]);
   const [teamName, setTeamName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,6 +55,15 @@ export function LobbyView({ initialState, viewerId, isHost }: Props) {
     });
     return unsubscribe;
   }, [initialState.id, refetch]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToLobbyPresence(
+      initialState.id,
+      { profileId: viewerId, email: viewerEmail },
+      setPresent,
+    );
+    return unsubscribe;
+  }, [initialState.id, viewerId, viewerEmail]);
 
   useEffect(() => {
     // Once the host starts, the page's server render swaps to the round board.
@@ -71,6 +91,21 @@ export function LobbyView({ initialState, viewerId, isHost }: Props) {
   const canStart = state.teams.length >= 2 && allReady;
   const canOverride = state.teams.length >= 2;
 
+  // Everyone currently in the lobby who isn't the host and hasn't picked a team
+  // yet — drawn from ephemeral presence, so it reflects who is here right now.
+  const teamMemberIds = new Set(
+    state.teams.flatMap((team) =>
+      team.members.map((member) => member.profileId),
+    ),
+  );
+  const unassigned = present
+    .filter(
+      (person) =>
+        person.profileId !== state.hostId &&
+        !teamMemberIds.has(person.profileId),
+    )
+    .sort((a, b) => a.email.localeCompare(b.email));
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-8">
       <header className="flex flex-col gap-2">
@@ -88,12 +123,11 @@ export function LobbyView({ initialState, viewerId, isHost }: Props) {
             <span className="text-caps uppercase tracking-widest text-s7">
               Game code
             </span>
-            <span
+            <CopyCode
+              value={state.code}
+              aria-label="Copy game code"
               data-testid="game-code"
-              className="font-mono text-2xl tracking-[0.2em] text-accent"
-            >
-              {state.code}
-            </span>
+            />
           </div>
         </div>
       </header>
@@ -155,6 +189,26 @@ export function LobbyView({ initialState, viewerId, isHost }: Props) {
           ))
         )}
       </section>
+
+      {unassigned.length > 0 ? (
+        <Card className="flex flex-col gap-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-lg uppercase text-s12">
+              Not on a team yet
+            </h2>
+            <span className="text-caps uppercase tracking-widest text-s7">
+              {unassigned.length} waiting
+            </span>
+          </div>
+          <ul className="flex flex-col gap-1">
+            {unassigned.map((person) => (
+              <li key={person.profileId} className="text-sec text-s10">
+                {person.email}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       {myTeam === undefined ? (
         <Card className="flex flex-col gap-3 p-6">
@@ -267,6 +321,7 @@ function TeamCard({
   onRemove: () => void;
 }) {
   const isLeader = team.leaderId === viewerId;
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   return (
     <Card className="flex flex-col gap-3 p-5">
@@ -324,11 +379,28 @@ function TeamCard({
           </>
         ) : null}
         {isHost ? (
-          <Button variant="ghost" disabled={busy} onClick={onRemove}>
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={() => setConfirmRemove(true)}
+          >
             Remove
           </Button>
         ) : null}
       </div>
+
+      <ConfirmDialog
+        open={confirmRemove}
+        title="Remove team?"
+        description="This can't be undone."
+        confirmLabel="Remove team"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmRemove(false);
+          onRemove();
+        }}
+        onClose={() => setConfirmRemove(false)}
+      />
     </Card>
   );
 }

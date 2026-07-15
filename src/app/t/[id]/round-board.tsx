@@ -7,6 +7,7 @@
  */
 import { Card } from "@jumbo/ui";
 import type { BoardDTO, BoardTeamRef } from "@/lib/tournament/board";
+import { BoardHostControls } from "./board-host-controls";
 
 function TeamName({ team }: { team: BoardTeamRef }) {
   return (
@@ -31,16 +32,35 @@ function Movement({ movement }: { movement: number }) {
   return <span className="text-s6">—</span>;
 }
 
-export function RoundBoard({ board }: { board: BoardDTO }) {
+export function RoundBoard({
+  board,
+  isHost,
+}: {
+  board: BoardDTO;
+  isHost: boolean;
+}) {
+  const ended = board.phase === "complete";
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 p-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-display text-4xl uppercase text-s12">
-          {board.name}
-        </h1>
-        <span className="text-caps uppercase tracking-widest text-s7">
-          {board.roundCount ?? board.rounds.length} rounds · round-robin
-        </span>
+        <div className="flex flex-col gap-1">
+          <h1 className="font-display text-4xl uppercase text-s12">
+            {board.name}
+          </h1>
+          {ended ? (
+            <span className="text-caps uppercase tracking-widest text-ok">
+              Ended · final standings
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-caps uppercase tracking-widest text-s7">
+            {board.roundCount ?? board.rounds.length} rounds · round-robin
+          </span>
+          {isHost && !ended ? (
+            <BoardHostControls tournamentId={board.id} />
+          ) : null}
+        </div>
       </header>
 
       <section className="flex flex-col gap-3">

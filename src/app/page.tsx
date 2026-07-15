@@ -1,21 +1,25 @@
 /**
- * Home: the authenticated landing. Everyone gets a join-by-code entry; admins
- * and owners also get a host control. Shows the signed-in identity and an
- * owner-only link to permissions. Logged-out visitors are sent to login.
+ * Home: the authenticated landing. One hero card takes a game code and joins;
+ * admins and owners also get a route into hosting. A small identity card shows
+ * the signed-in account, log out, and an owner-only permissions link.
+ * Logged-out visitors are sent to login.
  */
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@jumbo/ui";
 import { getOrCreateProfile } from "@/lib/auth/profile";
+import { findCurrentTournament } from "@/lib/tournament/current";
 import { LogoutButton } from "./logout-button";
 import { JoinForm } from "./join-form";
-import { HostForm } from "./host-form";
+import { CreateTournamentButton } from "./create-tournament-button";
+import { RejoinButton } from "./rejoin-button";
 
 export default async function Home() {
   const profile = await getOrCreateProfile();
   if (!profile) redirect("/login");
 
   const canHost = profile.role === "admin" || profile.role === "owner";
+  const current = await findCurrentTournament(profile.id);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 p-8">
@@ -26,8 +30,23 @@ export default async function Home() {
         <p className="text-sec text-s9">Team tournament of co-op minigames.</p>
       </div>
 
-      <JoinForm />
-      {canHost ? <HostForm /> : null}
+      <Card className="flex flex-col gap-4 p-6">
+        <h2 className="font-display text-xl uppercase text-s12">Join a game</h2>
+        <JoinForm />
+        {current ? (
+          <div className="flex items-center justify-between gap-3 border-t-2 border-s6 pt-4">
+            <span className="min-w-0 truncate text-sec text-s9">
+              You&rsquo;re in {current.name}.
+            </span>
+            <RejoinButton tournamentId={current.id} />
+          </div>
+        ) : canHost ? (
+          <div className="flex items-center gap-3 border-t-2 border-s6 pt-4">
+            <span className="text-sec text-s9">Running the tournament?</span>
+            <CreateTournamentButton />
+          </div>
+        ) : null}
+      </Card>
 
       <Card className="flex flex-col gap-4 p-6">
         <div className="flex items-baseline justify-between gap-3">

@@ -1,18 +1,38 @@
 /**
- * Root layout: global fonts, metadata, and the app-wide HTML shell that
- * every page renders inside.
+ * Root layout: global fonts (the Toasted Arcade voices, self-hosted via
+ * next/font), metadata, the hand-drawn doodle background, and the app-wide
+ * HTML shell every page renders inside.
  */
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Archivo_Black,
+  Gaegu,
+  Space_Grotesk,
+  Space_Mono,
+} from "next/font/google";
 import "./globals.css";
+import { Doodles } from "./doodles";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  weight: ["400", "700"],
+  subsets: ["latin"],
+});
+
+const archivoBlack = Archivo_Black({
+  variable: "--font-archivo-black",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const gaegu = Gaegu({
+  variable: "--font-gaegu",
+  weight: "700",
   subsets: ["latin"],
 });
 
@@ -30,9 +50,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${spaceMono.variable} ${archivoBlack.variable} ${gaegu.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Doodles />
+        {children}
+      </body>
     </html>
   );
 }

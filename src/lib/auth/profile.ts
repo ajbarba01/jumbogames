@@ -50,6 +50,15 @@ export async function requireOwner(): Promise<AuthResult> {
   return result;
 }
 
+// Passes for admin and owner (owner > admin > player). Gates hosting and other
+// tournament-management actions.
+export async function requireAdmin(): Promise<AuthResult> {
+  const result = await requireUser();
+  if (!result.ok) return result;
+  if (result.profile.role === Role.player) return { ok: false, status: 403 };
+  return result;
+}
+
 // Single source for the permissions listing query, shared by the owner page
 // and its REST equivalent so the two surfaces never drift.
 export function listProfiles() {

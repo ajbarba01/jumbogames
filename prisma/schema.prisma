@@ -1,5 +1,4 @@
-// Prisma schema for jumbogames. Data models land with milestone 1
-// (see docs/ROADMAP.md). Connection URLs live in prisma.config.ts (CLI)
+// Prisma schema for jumbogames. Connection URLs live in prisma.config.ts (CLI)
 // and the driver adapter (runtime).
 
 generator client {
@@ -17,6 +16,12 @@ enum Role {
   owner
 }
 
+enum TournamentPhase {
+  lobby
+  active
+  complete
+}
+
 /// Application mirror of a Supabase auth user, keyed by the same id. Created
 /// lazily on first authenticated request. No FK to auth.users (different schema).
 model Profile {
@@ -26,5 +31,101 @@ model Profile {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  hostedTournaments Tournament[] @relation("TournamentHost")
+  ledTeams          Team[]       @relation("TeamLeader")
+  memberships       TeamMember[]
+
   @@map("profiles")
+}
+
+/// A tournament instance. `code` is the join code players type. `roundCount` is
+/// derived from the frozen team count at start; the phase gates joining and
+/// starting (lobby accepts joins, active is running, complete is final).
+model Tournament {
+  id                String          @id @default(uuid())
+  code              String          @unique
+  name              String
+  phase             TournamentPhase @default(lobby)
+  minigamesPerMatch Int             @default(1) @map("minigames_per_match")
+  roundCount        Int?            @map("round_count")
+  hostId            String          @map("host_id")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  startedAt         DateTime?       @map("started_at")
+  completedAt       DateTime?       @map("completed_at")
+
+  host    Profile      @relation("TournamentHost", fields: [hostId], references: [id])
+  teams   Team[]
+  members TeamMember[]
+  rounds  Round[]
+
+  @@map("tournaments")
+}
+
+/// A team within a tournament. The creator is the leader. `colorIndex` maps to
+/// the kit's fixed team palette and is unique within the tournament; `readyAt`
+/// is set when the leader marks the team ready in the lobby.
+model Team {
+  id           String    @id @default(uuid())
+  tournamentId String    @map("tournament_id")
+  name         String
+  leaderId     String    @map("leader_id")
+  colorIndex   Int       @map("color_index")
+  readyAt      DateTime? @map("ready_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  tournament  Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  leader      Profile      @relation("TeamLeader", fields: [leaderId], references: [id])
+  members     TeamMember[]
+  homeMatches Match[]      @relation("MatchTeamA")
+  awayMatches Match[]      @relation("MatchTeamB")
+
+  @@unique([tournamentId, name])
+  @@unique([tournamentId, colorIndex])
+  @@map("teams")
+}
+
+/// Membership of a player on a team. A player belongs to at most one team per
+/// tournament, enforced by the composite unique on tournament + profile.
+model TeamMember {
+  id           String   @id @default(uuid())
+  tournamentId String   @map("tournament_id")
+  teamId       String   @map("team_id")
+  profileId    String   @map("profile_id")
+  joinedAt     DateTime @default(now()) @map("joined_at")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, profileId])
+  @@map("team_members")
+}
+
+/// A round of the schedule. Rounds are created in full at start, since
+/// round-robin pairings do not depend on results.
+model Round {
+  id           String @id @default(uuid())
+  tournamentId String @map("tournament_id")
+  ordinal      Int
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matches    Match[]
+
+  @@unique([tournamentId, ordinal])
+  @@map("rounds")
+}
+
+/// A pairing within a round. A null `teamBId` marks a bye for team A. Minigame
+/// results attach in a later milestone; a match here is the persisted pairing.
+model Match {
+  id      String  @id @default(uuid())
+  roundId String  @map("round_id")
+  teamAId String  @map("team_a_id")
+  teamBId String? @map("team_b_id")
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  teamA Team  @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
+  teamB Team? @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
+
+  @@map("matches")
 }

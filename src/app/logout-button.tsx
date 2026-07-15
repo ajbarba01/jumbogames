@@ -5,6 +5,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Button } from "@jumbo/ui";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -16,8 +17,8 @@ export function LogoutButton() {
   }
 
   return (
-    <button onClick={onClick} className="rounded border px-3 py-1 text-sm">
+    <Button variant="outline" onClick={onClick}>
       Log out
-    </button>
+    </Button>
   );
 }

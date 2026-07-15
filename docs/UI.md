@@ -29,6 +29,12 @@
   the register shift; when game surfaces need indicators they are designed
   as new members against this vocabulary. Markers are **icons, never
   words** — a selected row gets a check, not a label.
+- **Team palette.** Up to 15 tournament identities (`--color-team-1…15`),
+  assigned in fixed order and never cycled. Team color is decorative identity,
+  always shown beside the team name — it is never part of the status vocabulary
+  and must never be read as state. 15 fully colorblind-safe colors is beyond the
+  proven ceiling, so the name pairing is load-bearing; the palette is graded for
+  maximum normal-vision distinctness with colorblind separation as a tiebreak.
 - **Sentence case.** Every piece of UI copy — headings, labels, buttons,
   captions — is sentence case. Never lowercase-stylized, never Title Case.
   (CapsLabel's uppercase is a CSS transform over sentence-case source.)

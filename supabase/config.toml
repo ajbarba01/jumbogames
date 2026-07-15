@@ -3,12 +3,12 @@
 # design: players sign up with a code at a hacknight and play immediately, and
 # the Playwright signup E2E cannot complete an email round-trip.
 
-project_id = "jumbo-minigames"
+project_id = "jumbogames"
 
 [auth]
 enabled = true
-site_url = "https://jumbo-minigames.vercel.app"
-additional_redirect_urls = ["https://jumbo-minigames.vercel.app/**"]
+site_url = "https://jumbogames.vercel.app"
+additional_redirect_urls = ["https://jumbogames.vercel.app/**"]
 enable_signup = true
 
 [auth.email]

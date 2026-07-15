@@ -106,7 +106,7 @@ arrive already solved; a theme is a token-scale swap by design.
    and bypasses RLS, so RLS cannot be the enforcement layer.
 3. **Owner via env allowlist + in-app admin promotion.** No manual DB pokes, no bootstrap
    chicken-and-egg.
-4. **Dedicated test Supabase project** (`jumbo-minigames-test`) as the Playwright/CI target — real
+4. **Dedicated test Supabase project** (`jumbogames-test`) as the Playwright/CI target — real
    Supabase branching is paid; a separate project satisfies "database branch for testing" in spirit.
 5. **Build the tournament shell + ONE minigame end-to-end before starting the next game.** Minigames
    are swappable content behind a uniform match container. Order: trivia → typing race → word game →

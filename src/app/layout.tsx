@@ -37,7 +37,7 @@ const gaegu = Gaegu({
 });
 
 export const metadata: Metadata = {
-  title: "Jumbo Minigames",
+  title: "Jumbogames",
   description:
     "Team-based tournament of co-operative minigames for JumboCode hacknights",
 };

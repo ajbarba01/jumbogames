@@ -1,10 +1,10 @@
-# Jumbo Minigames
+# Jumbogames
 
 A team-based tournament of short co-operative minigames for JumboCode hacknights. Teams join with a
 short code and face off in 1v1 best-of-3 matches drawn from a minigame pool; scoring is normalized
 per-player so team sizes don't matter. Admins run the tournament and can spectate any live match.
 
-**Live app:** https://jumbo-minigames.vercel.app
+**Live app:** https://jumbogames.vercel.app
 
 ## Stack
 
@@ -24,8 +24,8 @@ principles, code style, workflow, roadmap).
 ### Setup
 
 ```bash
-git clone git@github.com:ajbarba01/jumbo-minigames.git
-cd jumbo-minigames
+git clone git@github.com:ajbarba01/jumbogames.git
+cd jumbogames
 npm install
 cp .env.example .env.local   # then fill in your values
 npm run db:migrate           # apply schema to the test database

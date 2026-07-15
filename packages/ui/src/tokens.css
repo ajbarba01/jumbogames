@@ -1,0 +1,192 @@
+/* @jumbo/ui — design tokens.
+ *
+ * Substrate: the "Toasted Arcade" warm 12-step scale (see src/themes/) —
+ * a theme is a step-for-step swap of that whole file; sand-dark stays in the
+ * tree as the quiet reference theme.
+ *
+ * Motion: "Thunk" — fast, chunky, lands with one small settle; transforms
+ * ride the overshoot curve, color/opacity ride a clean out-curve (overshoot
+ * extrapolates channel values). The API keeps the historical `slip` naming
+ * (classes, SLIP_* constants) as the kit's motion vocabulary; the profile
+ * behind it is Thunk. CSS transitions own interruptible state; keyframes
+ * only for mount/unmount.
+ */
+
+@import "./themes/toasted-arcade.css";
+
+@theme {
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  /* Display carries game headlines; hand carries the doodle register's rare
+   * annotations. Portable fallbacks — the app maps real faces over these. */
+  --font-display: var(--font-sans);
+  --font-hand: "Comic Sans MS", cursive;
+
+  /* Boxy radii (sticker register): square corners everywhere — the maintainer
+   * call is zero radius, no exceptions. The four tokens stay as the axis so a
+   * softer theme can restore them without touching components. */
+  --radius-r1: 0px;
+  --radius-r2: 0px;
+  --radius-r3: 0px;
+  --radius-r4: 0px;
+
+  /* Thunk curves: `slip` for color/opacity (no overshoot), `thunk` for
+   * transforms/position (one small settle past the target). */
+  --ease-slip: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-thunk: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* The type scale (the showcase "type scale" section is the spec). Sizes only —
+   * weight/color are per-role, not per-size. Rem-based so the whole kit rides
+   * the app's root size — the register runs the root at ~145% (projector
+   * legibility, maintainer-calibrated), and rem type + rem spacing scale
+   * together exactly like browser zoom. */
+  --text-body: 0.9375rem;
+  --text-sec: 0.84375rem;
+  --text-code: 0.78125rem;
+  --text-meta: 0.71875rem;
+  --text-caps: 0.65625rem;
+  --text-icon: 1.125rem;
+}
+
+:root {
+  /* Thunk durations. swift: press/toggle/exit · base: hover/color ·
+   * move: position/size · enter: mount (fade + ≤8px rise). */
+  --dur-swift: 100ms;
+  --dur-base: 180ms;
+  --dur-move: 240ms;
+  --dur-enter: 220ms;
+
+  /* Semantic z scale. Deviation from docs/UI.md's enumeration order, flagged:
+   * portaled dropdowns must paint above modals (a Select inside the settings
+   * dialog portals to <body>), so dropdown ranks above modal here. */
+  --z-sticky: 100;
+  --z-modal-backdrop: 200;
+  --z-modal: 300;
+  --z-dropdown: 400;
+  /* A context menu is a SUB-LAYER: it acts on text inside whatever is open, so it
+   * must paint above any menu/popover it was invoked over. */
+  --z-context-menu: 450;
+  --z-toast: 500;
+  --z-tooltip: 600;
+  /* Sub-scale: in-flow chrome that must beat sibling content but stay under
+   * every floating surface (resize seams straddling a column border). */
+  --z-seam: 20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-swift: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-move: 0.01ms;
+    --dur-enter: 0.01ms;
+  }
+}
+
+@layer components {
+  /* Thunk transition presets — the ONLY transition vocabulary. Color rides
+   * the clean out-curve; anything that moves rides the settle. */
+  .slip {
+    transition:
+      color var(--dur-base) var(--ease-slip),
+      background-color var(--dur-base) var(--ease-slip),
+      border-color var(--dur-base) var(--ease-slip),
+      opacity var(--dur-base) var(--ease-slip);
+  }
+  .slip-press {
+    transition: transform var(--dur-swift) ease-out;
+  }
+  .slip-move {
+    transition:
+      transform var(--dur-move) var(--ease-thunk),
+      left var(--dur-move) var(--ease-thunk),
+      width var(--dur-move) var(--ease-thunk);
+  }
+
+  /* Sticker chrome — the register's physical grammar and the ONE outline
+   * vocabulary for raised surfaces: thick edge border + hard offset shadow.
+   * `.sticker` is chrome only (menus, tooltips, modals — surfaces don't
+   * react to hover); `.sticker-hover` adds the lift; `.sticker-press` adds
+   * the drop-onto-shadow. Board surfaces (dark grounds holding arbitrary
+   * content) override the border color with `border-s11`. Structure (border
+   * width, travel) is theme-owned so a quiet theme degrades this to a plain
+   * bordered control. Raw values are banned in components; this preset is
+   * where the vocabulary lives. */
+  .sticker {
+    border: var(--sticker-border) solid var(--color-edge);
+    box-shadow: var(--shadow-sticker);
+    transition:
+      transform var(--dur-base) var(--ease-thunk),
+      box-shadow var(--dur-base) var(--ease-thunk);
+  }
+  .sticker-hover:hover {
+    transform: translate(var(--sticker-lift), var(--sticker-lift));
+    box-shadow: var(--shadow-sticker-hover);
+  }
+  /* Press travel is opt-in so text inputs can wear the chrome without the
+   * field moving under a drag-selection. `.sticker-pressed` is the HELD
+   * face — an open trigger stays down until its popup closes. */
+  .sticker-press:active,
+  .sticker-pressed,
+  .sticker-pressed:hover {
+    transform: translate(var(--sticker-press), var(--sticker-press));
+    box-shadow: 0 0 0 var(--color-edge);
+  }
+
+  /* Low-contrast grid fill — set dressing for a raised surface (Card). Lines
+   * sit one scale step off the ground so the texture reads without competing
+   * with content; the color is theme-owned. Reusable: any surface can wear it,
+   * for now only Card does. */
+  .surface-grid {
+    background-image:
+      linear-gradient(to right, var(--color-s3) 0 2px, transparent 2px),
+      linear-gradient(to bottom, var(--color-s3) 0 2px, transparent 2px);
+    background-size: 2rem 2rem;
+  }
+
+  /* Mount entrance: fade + 6px rise at enter duration. Keyframes are sanctioned
+   * for mount/unmount only. fill-mode backwards (not both) so no computed
+   * transform lingers after the animation — a filled transform makes the
+   * element a containing block and hijacks position:fixed descendants. */
+  .slip-enter {
+    animation: slip-enter var(--dur-enter) var(--ease-thunk) backwards;
+  }
+  @keyframes slip-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Spinner reveal: hidden for the first 120ms of a load so transitions that
+   * finish inside a couple of frames never flash a loading square. */
+  .spinner-reveal {
+    opacity: 0;
+    animation: spinner-reveal var(--dur-base) var(--ease-slip) 120ms forwards;
+  }
+  @keyframes spinner-reveal {
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Stepped rotation — the register's loading motion: a square ticking
+   * through 8 frames, stop-motion rather than a smooth spin. Reduced motion
+   * collapses to the pulse the caller pairs it with. */
+  .spin-step {
+    animation: spin-step 0.9s steps(8) infinite;
+  }
+  @keyframes spin-step {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spin-step {
+      animation: none;
+    }
+  }
+}

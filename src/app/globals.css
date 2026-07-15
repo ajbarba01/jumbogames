@@ -1,26 +1,46 @@
+/* App-global styles: kit token imports, the app→kit font mapping, the body
+ * ground, and the focus-visible ring law. Pages style nothing themselves —
+ * they compose kit pieces (docs/UI.md). */
 @import "tailwindcss";
+@import "@jumbo/ui/tokens.css";
+@source "../../packages/ui/src";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Map the kit's font axes onto the next/font self-hosted faces loaded in
+ * layout.tsx. The kit ships portable fallbacks; the app supplies the real
+ * Toasted Arcade voices. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-space-mono);
+  --font-display: var(--font-archivo-black);
+  --font-hand: var(--font-gaegu);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Register scale: the app renders ~1.45× the browser default — calibrated by
+ * the maintainer against browser zoom on the showcase (projector legibility,
+ * docs/UI.md). Kit type tokens and Tailwind spacing are both rem-based, so
+ * everything scales together exactly like zoom did. */
+html {
+  font-size: 145%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-s1);
+  color: var(--color-s11);
+  font-family: var(--font-sans);
+}
+
+/* Focus law (docs/UI.md): keyboard focus draws a THICK ACCENT ring outside
+ * the element, offset off its border — loud on purpose (the mockup
+ * treatment). Inputs wear the same ring as everything else; pointer focus
+ * shows nothing. Borderless inline fields (a dialog's search head, the
+ * shortcuts filter) opt out via .focus-quiet — a ring around an edgeless
+ * field floats in space; the caret is their cue. Unlayered on purpose: it
+ * must beat the ring rule, which utilities cannot. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.focus-quiet:focus-visible {
+  outline: none;
 }

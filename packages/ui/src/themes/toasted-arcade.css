@@ -1,0 +1,97 @@
+/* @jumbo/ui — the "Toasted Arcade" theme. A THEME IS THIS WHOLE FILE: the
+ * 12-step scale, the accent identity, the status vocabulary, diff tints,
+ * shadows, sticker structure, and the scrim. See docs/UI.md.
+ *
+ * Direction (maintainer session, 2026-07-14): inverted neo-brutalism for a
+ * game projected in a dark room — warm near-black ground, cream ink, sticker
+ * chrome (thick edge borders + hard offset shadows that depress on press),
+ * loud yellow/pink accents, hand-drawn doodles on the background layer only.
+ *
+ * Pruned: a third tangerine accent (#ff7847) from the candidate mock — too
+ * close to `warn` for the indicator law to survive it. Accents are yellow +
+ * pink; amber stays unambiguously "needs-you". */
+
+@theme {
+  /* Warm 12-step scale. Grounds (1–6) sit a step warmer and lighter than
+   * sand-dark so the cream ink and edge shadows both read; text band (7–12)
+   * runs to cream, not white. */
+  --color-s1: #1e1a15;
+  --color-s2: #27221c;
+  --color-s3: #302a22;
+  --color-s4: #3a332a;
+  --color-s5: #453d31;
+  --color-s6: #54493b;
+  --color-s7: #6e6252;
+  --color-s8: #877965;
+  --color-s9: #9c8d77;
+  --color-s10: #b3a794;
+  --color-s11: #ddd2bd;
+  --color-s12: #f6efe3;
+
+  /* Accent identity — the loud layer. Accent carries primary actions and
+   * selection; accent-2 seconds it (secondary CTAs, celebratory chrome).
+   * Neither may mark state: that stays the status set's job. */
+  --color-accent: #ffc900;
+  --color-accent-2: #ff90e8;
+
+  /* Sticker edge — the near-black that borders and shadows every sticker
+   * component. Darker than s1 so stickers read as laid ON the ground. */
+  --color-edge: #141110;
+
+  /* State colors — the indicator law's vocabulary. Blue = running; green =
+   * done/clean; amber = needs-you (pushed orange, away from the yellow
+   * accent, so a yellow button never reads as a warning); red = critical. */
+  --color-run: #6aa9ff;
+  --color-ok: #3ecf6e;
+  --color-warn: #ffa733;
+  --color-crit: #ff5757;
+
+  /* Diff tints (tinted text, not filled rows) — warmed to sit on this scale. */
+  --color-diff-add: #97bc86;
+  --color-diff-del: #d69287;
+
+  /* Series palette — IDENTITY inside a chart, assigned in fixed order, never
+   * cycled, deliberately disjoint from the status set. Inherited from
+   * sand-dark: both grounds sit at near-identical lightness, so the OKLCH
+   * band / CVD-separation / 3:1 validation carries over approximately.
+   * Re-validate as a set before the first real chart ships on this theme. */
+  --color-series-1: #9070dd;
+  --color-series-2: #2aa294;
+  --color-series-3: #b8842e;
+
+  /* Syntax palette — inherited from sand-dark under the same
+   * near-equal-ground-lightness argument as the series set; every value was
+   * graded 4.5:1 on s1–s3 there. Re-validate if code ever renders large on
+   * this theme. */
+  --color-syn-key: #c4907e;
+  --color-syn-str: #a3b284;
+  --color-syn-num: #cfa763;
+  --color-syn-type: #8ca9d3;
+  --color-syn-fn: #d2bd85;
+  --color-syn-punct: #9c8d77;
+  --color-syn-comment: #9c8d77;
+
+  /* Modal scrim — warm black, a touch heavier than sand-dark so loud accents
+   * behind a modal stop competing. */
+  --color-scrim: rgba(15, 12, 10, 0.55);
+
+  /* Elevation shadows — HARD offsets in the edge color, no blur: floating
+   * surfaces are stickers hovering off the board, not glass over it. */
+  --shadow-float: 6px 6px 0 #141110;
+  --shadow-modal: 12px 12px 0 #141110;
+  --shadow-composer: 6px 6px 0 #141110;
+
+  /* Sticker component shadows (rest / hover-lift). Press drops the element
+   * onto its shadow — the .sticker preset in tokens.css owns the mechanics. */
+  --shadow-sticker: 4px 4px 0 #141110;
+  --shadow-sticker-hover: 6px 6px 0 #141110;
+}
+
+:root {
+  /* Sticker structure — how far the chrome physically moves. The .sticker
+   * preset consumes these; a quiet theme zeroes them and the grammar
+   * degrades to a plain bordered control. */
+  --sticker-border: 3px;
+  --sticker-lift: -2px;
+  --sticker-press: 4px;
+}

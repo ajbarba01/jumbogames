@@ -14,7 +14,7 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | 0   | Repo scaffolding — Next.js app, docs, templates, Playwright CI, deploy                                                                            | done    |
 | 1   | Auth + roles — Supabase auth, profiles, owner allowlist, owner permissions page; auth E2E spec                                                    | done    |
-| 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                           | pending |
+| 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                           | done    |
 | 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; classification bracket engine (pure, tested) + round board UI          | pending |
 | 4   | Match container — slot-machine reveal, 3-preview overview, zoom in/out, scoring screen, match state machine (pure) + Realtime channels + spectate | pending |
 | 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                           | pending |

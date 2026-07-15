@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@jumbo/ui";
 import type { RoleChange } from "@/lib/schemas/auth";
 
 type Props = { id: string; role: RoleChange["role"] };
@@ -33,14 +34,10 @@ export function RoleToggle({ id, role }: Props) {
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
-        onClick={onClick}
-        disabled={pending}
-        className="rounded border px-2 py-1 text-sm disabled:opacity-50"
-      >
+      <Button variant="quiet" onClick={onClick} disabled={pending}>
         Make {next}
-      </button>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      </Button>
+      {error ? <p className="text-sec text-crit">{error}</p> : null}
     </div>
   );
 }

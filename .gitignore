@@ -50,3 +50,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 supabase/.temp/
+
+# Agent planning artifacts (specs, plans) — local only
+docs/superpowers/

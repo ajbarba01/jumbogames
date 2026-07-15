@@ -13,6 +13,7 @@ test("non-owner is refused by the admin users endpoint", async ({ page }) => {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
   await page.getByPlaceholder("Password (8+ characters)").fill(password);
+  await page.getByPlaceholder("Confirm password").fill(password);
   await page.getByRole("button", { name: "Sign up" }).click();
 
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();

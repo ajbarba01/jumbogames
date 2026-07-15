@@ -13,12 +13,13 @@ test("signup, logout, and login", async ({ page }) => {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
   await page.getByPlaceholder("Password (8+ characters)").fill(password);
+  await page.getByPlaceholder("Confirm password").fill(password);
   await page.getByRole("button", { name: "Sign up" }).click();
 
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
 
   await page.getByRole("button", { name: "Log out" }).click();
-  await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
 
   await page.goto("/login");
   await page.getByPlaceholder("Email").fill(email);
@@ -35,6 +36,7 @@ test("visiting /login while authenticated redirects home", async ({ page }) => {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
   await page.getByPlaceholder("Password (8+ characters)").fill(password);
+  await page.getByPlaceholder("Confirm password").fill(password);
   await page.getByRole("button", { name: "Sign up" }).click();
 
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();

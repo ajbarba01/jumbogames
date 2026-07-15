@@ -136,7 +136,7 @@
 - Projector legibility: the round board and spectate surfaces are read from
   meters away — type steps up, status vocabulary unchanged.
 - Reduced motion is first-class: every motion-layer animation (zoom,
-  slot-machine, bracket) collapses to instant via MotionConfig
+  slot-machine, round transitions) collapses to instant via MotionConfig
   reducedMotion="user"; CSS durations collapse via the tokens.
 - Game-layer animation uses the motion library with SLIP_EASE/SLIP_DUR from
   the kit — the Thunk profile crosses the CSS/JS seam by constant, not by
@@ -144,4 +144,4 @@
 
 ---
 
-_Last reviewed: 2026-07-14_
+_Last reviewed: 2026-07-15_

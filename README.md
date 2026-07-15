@@ -1,7 +1,7 @@
 # Jumbogames
 
 A team-based tournament of short co-operative minigames for JumboCode hacknights. Teams join with a
-short code and face off in 1v1 best-of-3 matches drawn from a minigame pool; scoring is normalized
+short code and play a round-robin of short matches drawn from a minigame pool; scoring is normalized
 per-player so team sizes don't matter. Admins run the tournament and can spectate any live match.
 
 **Live app:** https://jumbogames.vercel.app

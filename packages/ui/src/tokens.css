@@ -22,9 +22,9 @@
   --font-display: var(--font-sans);
   --font-hand: "Comic Sans MS", cursive;
 
-  /* Boxy radii (sticker register): square corners everywhere — the maintainer
-   * call is zero radius, no exceptions. The four tokens stay as the axis so a
-   * softer theme can restore them without touching components. */
+  /* Boxy radii (sticker register): square corners everywhere, zero radius. The
+   * four tokens stay as the axis so a softer theme can restore rounding without
+   * touching components. */
   --radius-r1: 0px;
   --radius-r2: 0px;
   --radius-r3: 0px;
@@ -37,9 +37,9 @@
 
   /* The type scale (the showcase "type scale" section is the spec). Sizes only —
    * weight/color are per-role, not per-size. Rem-based so the whole kit rides
-   * the app's root size — the register runs the root at ~145% (projector
-   * legibility, maintainer-calibrated), and rem type + rem spacing scale
-   * together exactly like browser zoom. */
+   * the app's root size — the register runs the root at ~145% for projector
+   * legibility, and rem type + rem spacing scale together exactly like browser
+   * zoom. */
   --text-body: 0.9375rem;
   --text-sec: 0.84375rem;
   --text-code: 0.78125rem;

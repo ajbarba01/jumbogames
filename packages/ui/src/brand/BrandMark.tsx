@@ -39,7 +39,7 @@ export interface BrandMarkProps {
 
 /** The provider's own mark, in the provider's own colour — the one place the UI spends
  *  colour on inactive chrome. A logo IS the identity on a credentials surface; reading it should
- *  cost no thought. Providers we ship no official mark for degrade to a monogram tile, so a new
+ *  cost no thought. A provider with no official mark degrades to a monogram tile, so a new
  *  provider stays a registry row and zero new UI. */
 export function BrandMark({
   spec,
@@ -64,7 +64,7 @@ export function BrandMark({
           "flex items-center justify-center rounded-r1 font-bold text-s1",
         )}
         // The tile's ground is the brand colour; the glyph sits on it in the darkest step, so it
-        // reads on any hue we are handed. Font size tracks the tile.
+        // reads on any brand hue. Font size tracks the tile.
         style={{
           ...box,
           background: spec.color,

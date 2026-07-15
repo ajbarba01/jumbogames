@@ -3,6 +3,7 @@
  * the app never deep-imports package internals.
  */
 export { Button, type ButtonProps, type ButtonVariant } from "./actions/Button";
+export { CopyCode, type CopyCodeProps } from "./actions/CopyCode";
 export {
   BrandMark,
   type BrandMarkProps,
@@ -20,6 +21,7 @@ export {
   useExclusivePopover,
   hasOpenLayers,
 } from "./overlay/layers";
+export { CodeInput, type CodeInputProps } from "./inputs/CodeInput";
 export { Select, type SelectProps } from "./inputs/Select";
 export { StepSlider, type StepSliderProps } from "./inputs/StepSlider";
 export { TextField, type TextFieldProps } from "./inputs/TextField";
@@ -37,6 +39,10 @@ export {
   type FloatCardProps,
   type FloatPlacement,
 } from "./overlay/FloatCard";
+export {
+  ConfirmDialog,
+  type ConfirmDialogProps,
+} from "./overlay/ConfirmDialog";
 export { ModalShell, type ModalShellProps } from "./overlay/ModalShell";
 export { PopoverCard, type PopoverCardProps } from "./overlay/PopoverCard";
 export {

@@ -122,6 +122,20 @@ arrive already solved; a theme is a token-scale swap by design.
 10. **The UI kit is an npm workspace package (`packages/ui`, `@jumbo/ui`).** Portability is a design
     constraint: the kit lifts into a future repo by copying one directory. The app consumes
     TypeScript source via `transpilePackages`; a theme remains one CSS file.
+11. **Palette re-graded to Direction B ("bolder toasted").** The 12-step scale now sits on an even
+    OKLCH lightness ramp at a locked hue of 68°, with deeper, warmer grounds than the original
+    port — fixing an uneven ramp, hue drift, and two failing WCAG contrast steps. Status hues
+    (`run`, `warn`, `ok`, `crit`) were retuned to remove halation on near-black while keeping their
+    meanings and the yellow/pink accent identity. A purpose-built 15-team categorical palette
+    (`--color-team-1`…`--color-team-15`) was added with a fixed assignment order (never cycled),
+    since team-identity color didn't exist before and colorblind-safe qualitative palettes top out
+    well below 15 — team color is decorative identity paired with the team name, never part of the
+    status vocabulary. The `sand-dark` theme was removed, collapsing the kit to one shipped theme
+    (Toasted Arcade) as the single source of truth. Every value is guarded by
+    `packages/ui/src/themes/palette.test.ts`, which re-derives the OKLCH/WCAG/ΔE checks through the
+    pure `packages/ui/src/themes/color-math.ts` so the grading can't rot. See
+    [the palette professionalization spec](superpowers/specs/2026-07-14-palette-professionalization-design.md)
+    for the full rationale and rejected alternates.
 
 ## Deferred design (grill before building each)
 

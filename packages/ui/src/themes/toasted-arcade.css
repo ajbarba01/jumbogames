@@ -12,21 +12,21 @@
  * pink; amber stays unambiguously "needs-you". */
 
 @theme {
-  /* Warm 12-step scale. Grounds (1–6) sit a step warmer and lighter than
-   * sand-dark so the cream ink and edge shadows both read; text band (7–12)
-   * runs to cream, not white. */
-  --color-s1: #1e1a15;
-  --color-s2: #27221c;
-  --color-s3: #302a22;
-  --color-s4: #3a332a;
-  --color-s5: #453d31;
-  --color-s6: #54493b;
-  --color-s7: #6e6252;
-  --color-s8: #877965;
-  --color-s9: #9c8d77;
-  --color-s10: #b3a794;
-  --color-s11: #ddd2bd;
-  --color-s12: #f6efe3;
+  /* Warm 12-step scale. Even OKLCH ramp (hue 68°) from near-black ground
+   * through mid-tone sticker edges to cream ink. Grounds (1–6) step tight;
+   * text band (7–12) steps wider for legibility hierarchy. */
+  --color-s1: #18110b;
+  --color-s2: #241c13;
+  --color-s3: #31271c;
+  --color-s4: #3e3225;
+  --color-s5: #4c3e2e;
+  --color-s6: #5a4a38;
+  --color-s7: #83715e;
+  --color-s8: #9b8975;
+  --color-s9: #b2a08d;
+  --color-s10: #c8b7a7;
+  --color-s11: #e3d3c3;
+  --color-s12: #f9f0e7;
 
   /* Accent identity — the loud layer. Accent carries primary actions and
    * selection; accent-2 seconds it (secondary CTAs, celebratory chrome).
@@ -36,33 +36,58 @@
 
   /* Sticker edge — the near-black that borders and shadows every sticker
    * component. Darker than s1 so stickers read as laid ON the ground. */
-  --color-edge: #141110;
+  --color-edge: #0b0501;
 
   /* State colors — the indicator law's vocabulary. Blue = running; green =
    * done/clean; amber = needs-you (pushed orange, away from the yellow
-   * accent, so a yellow button never reads as a warning); red = critical. */
-  --color-run: #6aa9ff;
-  --color-ok: #3ecf6e;
-  --color-warn: #ffa733;
-  --color-crit: #ff5757;
+   * accent, so a yellow button never reads as a warning); red = critical.
+   * Chroma tuned to remove halation (glowing halo on near-black) while staying
+   * perceptually loud and legible. */
+  --color-run: #6ea1e2;
+  --color-ok: #69c27e;
+  --color-warn: #eea753;
+  --color-crit: #df6862;
+
+  /* Team palette — up to 15 tournament identities, assigned in this fixed
+   * order T1…T15 and never cycled. Optimized max-min in OKLCH: normal-vision
+   * distinctness first (worst-case ΔE 0.128), colorblind separation as
+   * tiebreak; the first 8 are the most-distinct subset. NOT status — team color
+   * is decorative identity, always shown beside the team name, never read as
+   * state. See docs/UI.md and the palette test. */
+  --color-team-1: #ff544b;
+  --color-team-2: #64ef00;
+  --color-team-3: #5a6bff;
+  --color-team-4: #99d2ff;
+  --color-team-5: #009f6c;
+  --color-team-6: #e400dd;
+  --color-team-7: #d8a100;
+  --color-team-8: #ffa9af;
+  --color-team-9: #bb91ff;
+  --color-team-10: #00d5b0;
+  --color-team-11: #00aaf1;
+  --color-team-12: #967f00;
+  --color-team-13: #ff2194;
+  --color-team-14: #a74bff;
+  --color-team-15: #60b800;
 
   /* Diff tints (tinted text, not filled rows) — warmed to sit on this scale. */
   --color-diff-add: #97bc86;
   --color-diff-del: #d69287;
 
   /* Series palette — IDENTITY inside a chart, assigned in fixed order, never
-   * cycled, deliberately disjoint from the status set. Inherited from
-   * sand-dark: both grounds sit at near-identical lightness, so the OKLCH
-   * band / CVD-separation / 3:1 validation carries over approximately.
-   * Re-validate as a set before the first real chart ships on this theme. */
+   * cycled, deliberately disjoint from the status set above. The OKLCH
+   * lightness band, chroma floor, and CVD separation were tuned against a
+   * near-black ground at this same lightness, so the validation holds
+   * approximately on this scale's s1. Re-validate as a set before the first
+   * real chart ships on this theme. */
   --color-series-1: #9070dd;
   --color-series-2: #2aa294;
   --color-series-3: #b8842e;
 
-  /* Syntax palette — inherited from sand-dark under the same
-   * near-equal-ground-lightness argument as the series set; every value was
-   * graded 4.5:1 on s1–s3 there. Re-validate if code ever renders large on
-   * this theme. */
+  /* Syntax palette — code on this ground. Same near-equal-ground-lightness
+   * argument as the series set above: every value was graded 4.5:1 against a
+   * near-black s1–s3 band at this same lightness. Re-validate if code ever
+   * renders large on this theme. */
   --color-syn-key: #c4907e;
   --color-syn-str: #a3b284;
   --color-syn-num: #cfa763;
@@ -71,20 +96,21 @@
   --color-syn-punct: #9c8d77;
   --color-syn-comment: #9c8d77;
 
-  /* Modal scrim — warm black, a touch heavier than sand-dark so loud accents
-   * behind a modal stop competing. */
-  --color-scrim: rgba(15, 12, 10, 0.55);
+  /* Modal scrim — a warm near-black scrim so loud accents behind a modal
+   * stop competing. Tuned with status hues to keep them legible and remove
+   * halation. */
+  --color-scrim: rgba(7, 3, 0, 0.58);
 
   /* Elevation shadows — HARD offsets in the edge color, no blur: floating
    * surfaces are stickers hovering off the board, not glass over it. */
-  --shadow-float: 6px 6px 0 #141110;
-  --shadow-modal: 12px 12px 0 #141110;
-  --shadow-composer: 6px 6px 0 #141110;
+  --shadow-float: 6px 6px 0 #0b0501;
+  --shadow-modal: 12px 12px 0 #0b0501;
+  --shadow-composer: 6px 6px 0 #0b0501;
 
   /* Sticker component shadows (rest / hover-lift). Press drops the element
    * onto its shadow — the .sticker preset in tokens.css owns the mechanics. */
-  --shadow-sticker: 4px 4px 0 #141110;
-  --shadow-sticker-hover: 6px 6px 0 #141110;
+  --shadow-sticker: 4px 4px 0 #0b0501;
+  --shadow-sticker-hover: 6px 6px 0 #0b0501;
 }
 
 :root {

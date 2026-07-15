@@ -1,27 +1,33 @@
 /**
- * Home: the authenticated landing for milestone 1 — shows the signed-in
- * identity, an owner-only link to the permissions page, and a logout button.
- * Logged-out visitors are sent to the login flow. The full tournament home
- * lands in later milestones.
+ * Home: the authenticated landing. Everyone gets a join-by-code entry; admins
+ * and owners also get a host control. Shows the signed-in identity and an
+ * owner-only link to permissions. Logged-out visitors are sent to login.
  */
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@jumbo/ui";
 import { getOrCreateProfile } from "@/lib/auth/profile";
 import { LogoutButton } from "./logout-button";
+import { JoinForm } from "./join-form";
+import { HostForm } from "./host-form";
 
 export default async function Home() {
   const profile = await getOrCreateProfile();
   if (!profile) redirect("/login");
 
+  const canHost = profile.role === "admin" || profile.role === "owner";
+
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 p-8">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 p-8">
       <div className="flex flex-col items-center gap-1.5 text-center">
         <p className="font-display text-3xl uppercase text-s12">
           Jumbo <span className="text-accent">minigames</span>
         </p>
         <p className="text-sec text-s9">Team tournament of co-op minigames.</p>
       </div>
+
+      <JoinForm />
+      {canHost ? <HostForm /> : null}
 
       <Card className="flex flex-col gap-4 p-6">
         <div className="flex items-baseline justify-between gap-3">

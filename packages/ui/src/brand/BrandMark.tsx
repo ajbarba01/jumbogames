@@ -21,7 +21,7 @@ export interface BrandMarkSpec {
   viewBox?: string;
   /** The mark itself. Absent ⇒ the monogram tile is drawn instead. */
   paths?: BrandPath[];
-  /** The logo was drawn for LIGHT backgrounds (its fill is near-black). On the sand-dark ground
+  /** The logo was drawn for LIGHT backgrounds (its fill is near-black). On the app's dark ground
    *  it is drawn in ink instead — which is what these vendors' own dark lockups do. */
   invert?: boolean;
   /** 1–2 characters. Used when no official mark is bundled for this provider. */

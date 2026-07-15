@@ -1,8 +1,8 @@
 /* @jumbo/ui — design tokens.
  *
  * Substrate: the "Toasted Arcade" warm 12-step scale (see src/themes/) —
- * a theme is a step-for-step swap of that whole file; sand-dark stays in the
- * tree as the quiet reference theme.
+ * a theme is a step-for-step swap of that whole file — Toasted Arcade is the
+ * single shipped theme.
  *
  * Motion: "Thunk" — fast, chunky, lands with one small settle; transforms
  * ride the overshoot curve, color/opacity ride a clean out-curve (overshoot

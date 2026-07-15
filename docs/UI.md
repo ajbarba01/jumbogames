@@ -17,7 +17,7 @@
   grammar at lower volume — fewer accents, denser type. In-flow content owns
   the darkest ground (s1); chrome — nav, headers, the admin UI — sits on
   s2. See the theming law below for what changes when the scale is replaced;
-  `sand-dark` remains the quiet reference theme.
+  Toasted Arcade is the single shipped theme.
 - **Hand-drawn stays in the background.** Doodle accents — squiggles,
   asterisks, scribbles, the hand font — live on the background layer or as
   annotations beside content, never on interactive components: controls stay

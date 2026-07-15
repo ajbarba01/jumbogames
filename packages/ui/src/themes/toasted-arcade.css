@@ -75,18 +75,19 @@
   --color-diff-del: #d69287;
 
   /* Series palette — IDENTITY inside a chart, assigned in fixed order, never
-   * cycled, deliberately disjoint from the status set. Inherited from
-   * sand-dark: both grounds sit at near-identical lightness, so the OKLCH
-   * band / CVD-separation / 3:1 validation carries over approximately.
-   * Re-validate as a set before the first real chart ships on this theme. */
+   * cycled, deliberately disjoint from the status set above. The OKLCH
+   * lightness band, chroma floor, and CVD separation were tuned against a
+   * near-black ground at this same lightness, so the validation holds
+   * approximately on this scale's s1. Re-validate as a set before the first
+   * real chart ships on this theme. */
   --color-series-1: #9070dd;
   --color-series-2: #2aa294;
   --color-series-3: #b8842e;
 
-  /* Syntax palette — inherited from sand-dark under the same
-   * near-equal-ground-lightness argument as the series set; every value was
-   * graded 4.5:1 on s1–s3 there. Re-validate if code ever renders large on
-   * this theme. */
+  /* Syntax palette — code on this ground. Same near-equal-ground-lightness
+   * argument as the series set above: every value was graded 4.5:1 against a
+   * near-black s1–s3 band at this same lightness. Re-validate if code ever
+   * renders large on this theme. */
   --color-syn-key: #c4907e;
   --color-syn-str: #a3b284;
   --color-syn-num: #cfa763;
@@ -95,9 +96,9 @@
   --color-syn-punct: #9c8d77;
   --color-syn-comment: #9c8d77;
 
-  /* Modal scrim — warm black, a touch heavier than sand-dark so loud accents
-   * behind a modal stop competing. Tuned with status hues to keep them legible
-   * and remove halation. */
+  /* Modal scrim — a warm near-black scrim so loud accents behind a modal
+   * stop competing. Tuned with status hues to keep them legible and remove
+   * halation. */
   --color-scrim: rgba(7, 3, 0, 0.58);
 
   /* Elevation shadows — HARD offsets in the edge color, no blur: floating

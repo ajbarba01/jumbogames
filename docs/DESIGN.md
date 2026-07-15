@@ -92,8 +92,8 @@ scale, cream ink, yellow/pink accents, sticker chrome (thick edge borders + hard
 and a hand-drawn doodle background layer. The kit's design laws (elevation grounds, status
 vocabulary, focus ring, escape-stack dismissal, every-state-ships, no raw values) live in
 `docs/UI.md`; the Electron `chrome/` directory was dropped, and the console-era status members
-(StatusDot, Meter) were cut with the register shift. A theme is one CSS file — `sand-dark` stays as
-the quiet reference. Rationale: dialogs, toasts, tooltips, menus, and focus/dismissal behavior
+(StatusDot, Meter) were cut with the register shift. A theme is one CSS file — Toasted Arcade is the
+single shipped theme. Rationale: dialogs, toasts, tooltips, menus, and focus/dismissal behavior
 arrive already solved; a theme is a token-scale swap by design.
 
 ## Decisions (durable WHYs)

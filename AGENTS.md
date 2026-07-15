@@ -27,6 +27,7 @@ Built for the JumboCode Tech Lead onboarding project — the graded criteria in
 | [docs/ROADMAP.md](docs/ROADMAP.md)           | **Build order + status** — what's done, what's next, the cut line      | orienting / picking the next task    |
 | [docs/ENGINEERING.md](docs/ENGINEERING.md)   | Architecture & code-quality principles                                 | writing/refactoring non-trivial code |
 | [docs/CODE_STYLE.md](docs/CODE_STYLE.md)     | Formatting, naming, comments (incl. required header comments)          | writing any code                     |
+| [docs/UI.md](docs/UI.md)                     | Design laws + kit authoring rules (the `@jumbo/ui` register)           | any UI work                          |
 | [docs/WORKFLOW.md](docs/WORKFLOW.md)         | Dev loop, branches, PRs, quality gates                                 | starting work / committing           |
 
 ## Operating rules (always on)

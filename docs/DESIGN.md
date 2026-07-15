@@ -86,12 +86,15 @@ before build (see [ROADMAP.md](ROADMAP.md)); the shapes below are the agreed bas
 
 ## UI system: ported console-kit
 
-The UI is a port of the coa **console-kit** (React 19 + Base UI + `tokens.css`) with a **full
-retheme** — new color scales, motion profile, spacing, and primitives skin. The kit's design laws
-(elevation grounds, indicator law, focus ring, escape-stack dismissal, every-state-ships, no raw
-values) carry over via a ported `docs/UI.md`; the Electron-specific `chrome/` directory is dropped.
-Process: port the kit → gather references → mockups → retheme. Rationale: dialogs, toasts, tooltips,
-menus, and focus/dismissal behavior arrive already solved; a theme is a token-scale swap by design.
+The UI is the coa **console-kit** ported into `packages/ui` (`@jumbo/ui`, React 19 + Base UI +
+Tailwind v4 tokens) under a **full retheme** — the **Toasted Arcade** register: a warm near-black
+scale, cream ink, yellow/pink accents, sticker chrome (thick edge borders + hard offset shadows),
+and a hand-drawn doodle background layer. The kit's design laws (elevation grounds, status
+vocabulary, focus ring, escape-stack dismissal, every-state-ships, no raw values) live in
+`docs/UI.md`; the Electron `chrome/` directory was dropped, and the console-era status members
+(StatusDot, Meter) were cut with the register shift. A theme is one CSS file — `sand-dark` stays as
+the quiet reference. Rationale: dialogs, toasts, tooltips, menus, and focus/dismissal behavior
+arrive already solved; a theme is a token-scale swap by design.
 
 ## Decisions (durable WHYs)
 
@@ -116,6 +119,9 @@ menus, and focus/dismissal behavior arrive already solved; a theme is a token-sc
    everything.
 9. **Port console-kit rather than adopt shadcn or hand-roll.** The kit is proven, retheme-by-design,
    and already encodes the interaction quality bar; see UI system above.
+10. **The UI kit is an npm workspace package (`packages/ui`, `@jumbo/ui`).** Portability is a design
+    constraint: the kit lifts into a future repo by copying one directory. The app consumes
+    TypeScript source via `transpilePackages`; a theme remains one CSS file.
 
 ## Deferred design (grill before building each)
 

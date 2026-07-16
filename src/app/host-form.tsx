@@ -6,13 +6,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, Card, Select, TextField } from "@jumbo/ui";
+import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 
 const MINIGAME_OPTIONS = ["1", "2", "3", "4"] as const;
 
 export function HostForm() {
-  const router = useRouter();
+  const { navigate } = useWipeNav();
   const [name, setName] = useState("");
   const [minigames, setMinigames] = useState("1");
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function HostForm() {
     const data = await res.json().catch(() => null);
     setPending(false);
     if (res.ok && data?.tournament?.id) {
-      router.push(`/t/${data.tournament.id}`);
+      navigate(`/t/${data.tournament.id}`);
     } else {
       setError(data?.error ?? "Could not create the tournament.");
     }

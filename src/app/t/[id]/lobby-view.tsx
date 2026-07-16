@@ -3,8 +3,9 @@
  * server-provided snapshot, then subscribes to the tournament's Realtime
  * channel and refetches canonical state on every broadcast. A separate presence
  * channel lists participants who are here but not yet on a team. All mutations
- * go through the route handlers; this view never writes state directly. Once the
- * tournament leaves the lobby the page swaps to the round board.
+ * go through the route handlers; this view never writes state directly. Once
+ * the tournament leaves the lobby, the phase-swap effect wipes the page's
+ * server render from lobby to round board for every client together.
  */
 "use client";
 
@@ -12,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Card, ConfirmDialog, CopyCode, TextField } from "@jumbo/ui";
+import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 import { subscribeToTournament } from "@/lib/realtime/subscribe";
 import {
   subscribeToLobbyPresence,
@@ -35,6 +37,7 @@ export function LobbyView({
   isHost,
 }: Props) {
   const router = useRouter();
+  const { cover } = useWipeNav();
   const [state, setState] = useState(initialState);
   const [present, setPresent] = useState<LobbyPresence[]>([]);
   const [teamName, setTeamName] = useState("");
@@ -66,9 +69,15 @@ export function LobbyView({
   }, [initialState.id, viewerId, viewerEmail]);
 
   useEffect(() => {
-    // Once the host starts, the page's server render swaps to the round board.
-    if (state.phase !== "lobby") router.refresh();
-  }, [state.phase, router]);
+    // Once the host starts, the page's server render swaps to the round
+    // board. `phase` only ever moves forward (lobby → active → complete), so
+    // this condition flips true exactly once per mount and LobbyView unmounts
+    // as part of the same covered refresh — there's no path back to false
+    // that could re-fire it. Every client hits this on the same Realtime
+    // broadcast, so the wipe plays for host and players alike: the beat is
+    // the whole tournament slamming into the round board together.
+    if (state.phase !== "lobby") cover(() => router.refresh());
+  }, [state.phase, cover, router]);
 
   async function act(request: () => Promise<Response>) {
     setBusy(true);

@@ -68,6 +68,7 @@
   --z-context-menu: 450;
   --z-toast: 500;
   --z-tooltip: 600;
+  --z-wipe: 700;
   /* Sub-scale: in-flow chrome that must beat sibling content but stay under
    * every floating surface (resize seams straddling a column border). */
   --z-seam: 20;

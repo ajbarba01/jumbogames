@@ -74,6 +74,17 @@ The kbd chip — one look for every shortcut the UI names.
 - **Accessibility:** Semantic <kbd> element; reads as the key name.
 - **Related:** ShortcutsOverlay, CapsLabel
 
+### SlamWipe
+
+The full-viewport accent panel that slaps in, holds, and slaps away — the app-wide route-transition and loading surface.
+
+- **Use it when:** An app-wide navigation is swapping the visible surface and needs a moment to cover the seam. A parent state machine is driving the wipe's cover/hold/uncover choreography (route transitions, forced full-screen loads).
+- **Don't use it when:** A local loading state inside an existing surface — reach for Spinner instead. Anything the component itself should time or route — SlamWipe is presentational only, it never owns a timer or a navigation.
+- **Anatomy:** A motion.div pinned fixed inset-0 on the --z-wipe layer, painted bg-accent-2, sliding between off-screen-left, covering, and off-screen-right on WIPE_EASE/WIPE_DUR; an optional uppercase destination label centered in it, and an optional Spinner cue pinned near the bottom for loads that outlast the cover.
+- **Variants & states:** phase="in" (sweeping from off-screen-left to covering), phase="covered" (resting, fully covering), phase="out" (sweeping from covering to off-screen-right), labeled (destination label shown) vs unlabeled, showCue (still-loading cue shown) vs quiet, reduced-motion (sweep collapses to an instant cut)
+- **Accessibility:** The destination label is plain visible text, not announced separately. The still-loading cue delegates its role=status/aria-label entirely to Spinner (labelled 'Still loading') rather than nesting a second status role, and it is not aria-hidden so assistive tech can still reach it.
+- **Related:** Spinner
+
 ### Spinner
 
 The loading circle — quiet s-scale ring for content that is genuinely not there yet.

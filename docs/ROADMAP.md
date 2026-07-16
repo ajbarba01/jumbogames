@@ -33,6 +33,12 @@ playable match page) are in. Phase 4 (board auto-pull + spectate entry, byes, fo
 mid-tournament join/kick) and phase 5 (Playwright E2E), plus the full M4 doc reconciliation, remain.
 The board's round-start button and enter-match link are temporary bridges phase 4 replaces.
 
+The slam-wipe transition + loading system (`SlamWipe` in the kit, `src/components/wipe/` in the app)
+shipped as foundational infrastructure ahead of Milestone 10's polish pass, so that milestone isn't
+double-counted for it. It covers all in-app (client) navigations, the primary case; the cold-load /
+first-paint cover is deferred — the provider is client-only, so a pre-hydration cover risks an SSR
+flash and needs its own pass.
+
 ## Known gaps (carry into the next branches)
 
 - **Tournament reads are not membership-gated** (graded — backend-enforced authorization). Any signed-in
@@ -42,6 +48,19 @@ The board's round-start button and enter-match link are temporary bridges phase 
   match rather than per-surface patches.
 - **`Profile` has no display name**, so emails are the de-facto player label everywhere. Adding
   `displayName` (schema + backfill + label swap) would let the UI stop showing addresses at all.
+- **The wipe has no force-reveal ceiling.** If `router.push` targets a route that stalls or errors,
+  `isPending` never falls, so `committed` never dispatches and the user stays covered indefinitely with
+  only the still-loading cue. Spec-conformant — the machine only raises `showCue` at `maxElapsed` and has
+  no timeout escape — but a real trap with no upper bound; give it one.
+- **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
+  `{children}` subtree; `ModalShell`, `PopoverCard`, `Select`, `Tooltip`, and `FloatCard` all portal to
+  `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
+  opaque panel, and the modal's own outside-hiding can silence the wipe's still-loading cue for screen
+  readers. Must be solved before any navigation inside a modal opts into the wipe.
+- **Round-to-round transitions and match entry don't wipe yet.** The lobby → round board start beat
+  covers the wipe's generalized `cover()`; the board's round-start button (`BoardRoundStart`) and
+  `EnterMatchLink` are still the temporary phase-3 bridges and neither opts into the wipe. Phase 4 owns
+  both.
 
 ---
 

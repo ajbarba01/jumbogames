@@ -36,6 +36,7 @@ import {
   ShortcutsOverlay,
 } from "@jumbo/ui";
 import { MotionDemos } from "./motion-demos";
+import { SlamWipeDemo } from "./slam-wipe-demo";
 import { ZoomDemo } from "./zoom-demo";
 
 function Section({
@@ -470,6 +471,9 @@ function MotionSection() {
     <Section title="Motion">
       <Specimen label="ZoomDemo — layoutId shared-element zoom (click a preview; escape/click-out returns it)">
         <ZoomDemo />
+      </Specimen>
+      <Specimen label="SlamWipe — live component, in → covered (still-loading cue) → out (escape force-dismisses)">
+        <SlamWipeDemo />
       </Specimen>
       <MotionDemos />
     </Section>

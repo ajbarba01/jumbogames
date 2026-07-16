@@ -54,3 +54,4 @@ supabase/.temp/
 # Agent planning artifacts (specs, plans) — local only
 docs/superpowers/
 .superpowers/
+/plans/

@@ -12,6 +12,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { Doodles } from "./doodles";
+import { WipeProvider } from "@/components/wipe/WipeProvider";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -54,7 +55,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Doodles />
-        {children}
+        <WipeProvider>{children}</WipeProvider>
       </body>
     </html>
   );

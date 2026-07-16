@@ -12,7 +12,8 @@ export {
 } from "./brand/BrandMark";
 export { Card, type CardProps } from "./surface/Card";
 export { cx } from "./cx";
-export { SLIP_DUR, SLIP_EASE } from "./motion";
+export { SLIP_DUR, SLIP_EASE, WIPE_DUR, WIPE_EASE } from "./motion";
+export { SlamWipe, type SlamWipeProps, type WipeVisualPhase } from "./SlamWipe";
 export { DialogSearchHead, SettingRow, TocRail } from "./frame/SettingsFrame";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export {

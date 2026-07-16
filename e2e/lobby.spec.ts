@@ -1,9 +1,10 @@
 /**
  * Lobby happy-path E2E: an admin hosts a tournament, a player joins by code,
  * both create and ready a team, and the host starts. Exercises the full M3
- * shell flow through real auth and Realtime against the test Supabase project.
- * The host is a fresh signup promoted to admin — a precondition the UI cannot
- * set for itself.
+ * shell flow through real auth and Realtime against the test Supabase project,
+ * including the lobby → round board start beat firing the slam wipe on both
+ * clients. The host is a fresh signup promoted to admin — a precondition the
+ * UI cannot set for itself.
  */
 import { test, expect, type Page } from "@playwright/test";
 import { promoteToAdmin } from "./support/db";
@@ -41,6 +42,11 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await host.getByPlaceholder("Tournament name").fill("E2E Cup");
   await host.getByRole("button", { name: "Create and host" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
+  // Create-and-host now fires the slam wipe (a game-beat crossing into the
+  // tournament surface): the destination subtree is `inert` — and `.fill()`
+  // silently no-ops against an inert field rather than waiting it out the way
+  // `.click()` does — so wait for the panel to fully detach before typing.
+  await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
   const code = (await host.getByTestId("game-code").textContent())?.trim();
   expect(code).toBeTruthy();
@@ -62,6 +68,8 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await player.keyboard.type(code as string);
   await player.getByRole("button", { name: "Join" }).click();
   await player.waitForURL(/\/t\/[^/]+$/);
+  // Join also fires the slam wipe now — same inert/`.fill()` hazard as above.
+  await expect(player.getByTestId("slam-wipe")).toHaveCount(0);
 
   await expect(player.getByText("Alpha")).toBeVisible();
 
@@ -80,12 +88,25 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await expect(startButton).toBeEnabled();
   await startButton.click();
 
+  // The start beat is Realtime-driven (not a local navigation), so it fires
+  // the slam wipe on every client together — assert the panel actually plays
+  // on both, not just that the board eventually shows up unwiped.
+  await expect(host.getByTestId("slam-wipe")).toBeVisible();
+  await expect(player.getByTestId("slam-wipe")).toBeVisible();
+
   // Both surfaces swap to the round board once the tournament starts.
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
   await expect(host.getByText("Round 1", { exact: true })).toBeVisible();
   await expect(
     player.getByRole("heading", { name: "Standings" }),
   ).toBeVisible();
+
+  // The panel fully detaches on both clients afterward — never traps them
+  // under it. Same hazard as the create/join wipes above: the destination is
+  // `inert` while covered, so anything relying on interactivity must wait for
+  // this before proceeding.
+  await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
+  await expect(player.getByTestId("slam-wipe")).toHaveCount(0);
 
   // Home offers a rejoin while the tournament is live; it routes back to it.
   await host.goto("/");

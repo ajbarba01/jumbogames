@@ -12,3 +12,19 @@ export const SLIP_DUR = {
   move: 0.24,
   enter: 0.22,
 } as const;
+
+/**
+ * The slam-wipe moment (docs/UI.md): a covering panel that slaps across the
+ * viewport, holds while the next surface loads, then slaps away. `in`/`out` are
+ * the sweep durations; `minCovered` is the floor so a fast navigation still
+ * reads as a full wipe; `maxCovered` is the threshold past which a still-loading
+ * cue appears. Seconds. Expo curve so the panel snaps rather than eases.
+ */
+export const WIPE_EASE = [0.83, 0, 0.17, 1] as const;
+
+export const WIPE_DUR = {
+  in: 0.36,
+  out: 0.36,
+  minCovered: 0.3,
+  maxCovered: 3,
+} as const;

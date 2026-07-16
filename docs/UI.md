@@ -70,10 +70,16 @@
   `position: fixed` descendant mid-animation. Reduced motion collapses every
   duration to near-zero.
 - **Moments are choreographed; chrome is not.** Game beats own the big
-  motion vocabulary — the slam wipe between rounds, the verdict stamp, the
-  odometer score roll, the springy score pop, the rejection shake (which
-  doubles as the form-error affordance). Each fires once at its beat and
-  collapses under reduced motion; everyday chrome never borrows them.
+  motion vocabulary — the slam wipe between rounds (shipped as the
+  `SlamWipe` kit member), the verdict stamp, the odometer score roll, the
+  springy score pop, the rejection shake (which doubles as the form-error
+  affordance). The slam wipe also covers navigations that cross into or out
+  of a game surface and same-URL server-render swaps at a game beat (e.g.
+  lobby → round board on start), doubling as a loading cover where it
+  applies — deferrals tracked in [ROADMAP.md](ROADMAP.md) — but it still
+  fires only at a beat: everyday chrome (auth links, logout, admin nav)
+  never borrows it. Each moment fires once at its beat and collapses under
+  reduced motion.
   Confetti was considered and cut.
 - **Focus law.** Keyboard focus draws a thick accent ring OUTSIDE the
   element (offset off its border, the mockup treatment) — on this register
@@ -144,4 +150,4 @@
 
 ---
 
-_Last reviewed: 2026-07-15_
+_Last reviewed: 2026-07-16_

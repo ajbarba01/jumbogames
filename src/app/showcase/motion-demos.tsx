@@ -1,15 +1,25 @@
 /**
  * Showcase spec previews for the register's motion vocabulary (docs/UI.md):
  * the Thunk baseline every piece of chrome rides (via the SLIP constants),
- * plus the five moment choreographies — wipe, stamp, odometer, pop, shake —
- * that game surfaces will graduate into kit members. Curves and durations
- * beyond the SLIP constants are spec values recorded here until they land.
+ * plus the five moment choreographies — wipe, stamp, odometer, pop, shake.
+ * The wipe has graduated into the SlamWipe kit member, so its preview here
+ * derives its timing/curve from WIPE_DUR/WIPE_EASE rather than hard-coded
+ * values, so it can't drift from the shipped component (see the live
+ * specimen in slam-wipe-demo.tsx). The other four moments remain spec
+ * values recorded here until they land.
  */
 "use client";
 
 import { useState } from "react";
 import { MotionConfig, motion } from "motion/react";
-import { Button, SLIP_DUR, SLIP_EASE, cx } from "@jumbo/ui";
+import {
+  Button,
+  SLIP_DUR,
+  SLIP_EASE,
+  WIPE_DUR,
+  WIPE_EASE,
+  cx,
+} from "@jumbo/ui";
 
 /** One replayable demo: a bordered stage whose contents remount on replay. */
 function Stage({
@@ -81,7 +91,20 @@ function MoveDemo() {
 
 /** Moment: the slam wipe between rounds — a solid panel slaps across. */
 function WipeDemo() {
-  const frames = { duration: 0.85, times: [0, 0.42, 0.58, 1], delay: 0.3 };
+  // The kit's real cover timeline: sweep in, hold at the floor duration,
+  // sweep out — so `times` (normalized keyframe positions) can't drift from
+  // WIPE_DUR even as the constants change.
+  const wipeTotal = WIPE_DUR.in + WIPE_DUR.minCovered + WIPE_DUR.out;
+  const frames = {
+    duration: wipeTotal,
+    times: [
+      0,
+      WIPE_DUR.in / wipeTotal,
+      (WIPE_DUR.in + WIPE_DUR.minCovered) / wipeTotal,
+      1,
+    ],
+    delay: 0.3,
+  };
   return (
     <>
       <motion.span
@@ -102,7 +125,7 @@ function WipeDemo() {
       <motion.div
         initial={{ x: "-102%" }}
         animate={{ x: ["-102%", "0%", "0%", "102%"] }}
-        transition={{ ...frames, ease: [0.83, 0, 0.17, 1] }}
+        transition={{ ...frames, ease: WIPE_EASE }}
         className="absolute inset-0 bg-accent-2"
       />
     </>

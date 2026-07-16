@@ -6,6 +6,7 @@ import { brandMarkIntent } from "./brand/BrandMark.intent";
 import { cardIntent } from "./surface/Card.intent";
 import type { ComponentIntent } from "./lib/intent";
 import { spinnerIntent } from "./Spinner.intent";
+import { slamWipeIntent } from "./SlamWipe.intent";
 import {
   useClickAwayIntent,
   useDismissLayerIntent,
@@ -36,6 +37,7 @@ import { zoomIntent } from "./zoom.intent";
 /** Every kit member appends its intent here. Feeds COMPONENTS.md + the coverage test. */
 export const allIntents: ComponentIntent[] = [
   spinnerIntent,
+  slamWipeIntent,
   brandMarkIntent,
   cardIntent,
   useDismissLayerIntent,

@@ -6,14 +6,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button, CodeInput } from "@jumbo/ui";
+import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 
 // Mirrors JOIN_CODE_LENGTH; the server is the authority and re-validates.
 const CODE_LENGTH = 6;
 
 export function JoinForm() {
-  const router = useRouter();
+  const { navigate } = useWipeNav();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -30,7 +30,7 @@ export function JoinForm() {
     const data = await res.json().catch(() => null);
     setPending(false);
     if (res.ok && data?.tournamentId) {
-      router.push(`/t/${data.tournamentId}`);
+      navigate(`/t/${data.tournamentId}`);
     } else {
       setError(data?.error ?? "Could not join. Try again.");
     }

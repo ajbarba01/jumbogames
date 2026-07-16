@@ -32,7 +32,7 @@ export default async function TournamentPage(props: {
     );
   }
 
-  const board = await getBoardState(id);
+  const board = await getBoardState(id, auth.profile.id);
   if (!board) notFound();
   return (
     <BoardRefresher tournamentId={id}>

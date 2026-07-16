@@ -82,7 +82,7 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
 
   // Both surfaces swap to the round board once the tournament starts.
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
-  await expect(host.getByText("Round 1")).toBeVisible();
+  await expect(host.getByText("Round 1", { exact: true })).toBeVisible();
   await expect(
     player.getByRole("heading", { name: "Standings" }),
   ).toBeVisible();

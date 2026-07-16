@@ -16,29 +16,6 @@ Make a Hacknight game! This can be anything you think would be fun to play at ha
 - Remember the goal is to help yourself out – it is better to learn now what works for you as a TL rather than during the school year.
 - Have fun!
 
-## Timeline
-
-**AT ANY TIME:** Slack us with questions!!
-
-**Release date (6/28):**
-
-- Begin working on the project
-
-**Head of Engineering Design Approval (DUE: 7/8):**
-
-- Before you begin implementation, you must submit to the tech leads a 1-page document that describes your technical choices for the project and a quick description of your game
-- Be sure to include some reasoning as to why you chose the technologies you did
-- Email the completed design doc to the JumboCode Eboard email and ping both Ha and Will on Slack (2025-2026 JC slack)!
-
-**Check-In (Week of 7/12 or 7/19):**
-
-- We will send out check-in meeting invites. These will be quick 30 minute calls where we'll ask you how things are going. We'll check to make sure you have the requirements set up in your codebase (i.e., PR templates, README, etc).
-
-**Submission (DUE: 7/28):**
-
-- Share your github link with us! We will review the project and provide feedback.
-- Project 1 done!!!
-
 ## FAQs
 
 **Who should I contact with any questions?**

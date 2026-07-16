@@ -1,8 +1,8 @@
 # Roadmap
 
 > Authority for **build order and status**. Single source for "what's next" — update in the same commit
-> as the work it describes. Deadline: **submission 2026-07-28**; check-in week of 7/12 or 7/19 (repo
-> scaffolding must be visible).
+> as the work it describes. Pace the work by what the milestone needs, not by a clock — quality is
+> independent of scope ([AGENTS.md](../AGENTS.md)). Build the best version of each thing you touch.
 
 ## Build order
 

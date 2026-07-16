@@ -1,9 +1,12 @@
 /**
  * Reads a tournament's board state: teams (name + color), the persisted
- * round-robin schedule (rounds with their matches), and the current standings
- * derived through the pure engine. Until minigames are played there are no
- * results, so standings are all zero and every match is scheduled; the shape is
- * already what the live board and any rankings page consume.
+ * round-robin schedule (rounds with their matches, each match's live status,
+ * and each round's state), and the current standings derived through the pure
+ * engine. Also resolves the viewer's own live match id (if they're a player in
+ * one), so the board can route them straight into it. Until minigames are
+ * played there are no results, so standings are all zero and every match is
+ * scheduled; the shape is already what the live board and any rankings page
+ * consume.
  */
 import { prisma } from "@/lib/prisma";
 import type { TournamentPhase } from "@/generated/prisma/client";
@@ -26,10 +29,12 @@ export interface BoardMatch {
   id: string;
   teamA: BoardTeamRef;
   teamB: BoardTeamRef | null; // null => teamA has a bye this round
+  live: boolean; // a slot exists and the match is not fully done
 }
 
 export interface BoardRound {
   ordinal: number;
+  state: "pending" | "active" | "complete";
   matches: BoardMatch[];
 }
 
@@ -40,9 +45,13 @@ export interface BoardDTO {
   roundCount: number | null;
   standings: BoardStandingRow[];
   rounds: BoardRound[];
+  viewerMatchId: string | null; // the viewer's own live match, if they're in one
 }
 
-export async function getBoardState(id: string): Promise<BoardDTO | null> {
+export async function getBoardState(
+  id: string,
+  viewerId: string,
+): Promise<BoardDTO | null> {
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     select: {
@@ -58,8 +67,14 @@ export async function getBoardState(id: string): Promise<BoardDTO | null> {
         orderBy: { ordinal: "asc" },
         select: {
           ordinal: true,
+          state: true,
           matches: {
-            select: { id: true, teamAId: true, teamBId: true },
+            select: {
+              id: true,
+              teamAId: true,
+              teamBId: true,
+              slots: { select: { phase: true } },
+            },
           },
         },
       },
@@ -86,12 +101,38 @@ export async function getBoardState(id: string): Promise<BoardDTO | null> {
 
   const rounds: BoardRound[] = tournament.rounds.map((round) => ({
     ordinal: round.ordinal,
-    matches: round.matches.map((match) => ({
-      id: match.id,
-      teamA: teamById.get(match.teamAId) as BoardTeamRef,
-      teamB: match.teamBId ? (teamById.get(match.teamBId) ?? null) : null,
-    })),
+    state: round.state,
+    matches: round.matches.map((match) => {
+      const hasSlots = match.slots.length > 0;
+      const live = hasSlots && match.slots.some((s) => s.phase !== "done");
+      return {
+        id: match.id,
+        teamA: teamById.get(match.teamAId) as BoardTeamRef,
+        teamB: match.teamBId ? (teamById.get(match.teamBId) ?? null) : null,
+        live,
+      };
+    }),
   }));
+
+  // Resolve the viewer's own live match (if any) in a single extra query: find
+  // their team, then find the live match this round-robin schedule has them in.
+  const membership = await prisma.teamMember.findUnique({
+    where: {
+      tournamentId_profileId: { tournamentId: id, profileId: viewerId },
+    },
+    select: { teamId: true },
+  });
+  const viewerMatchId =
+    membership === null
+      ? null
+      : (rounds
+          .flatMap((r) => r.matches)
+          .find(
+            (m) =>
+              m.live &&
+              (m.teamA.id === membership.teamId ||
+                m.teamB?.id === membership.teamId),
+          )?.id ?? null);
 
   return {
     id: tournament.id,
@@ -100,5 +141,6 @@ export async function getBoardState(id: string): Promise<BoardDTO | null> {
     roundCount: tournament.roundCount,
     standings,
     rounds,
+    viewerMatchId,
   };
 }

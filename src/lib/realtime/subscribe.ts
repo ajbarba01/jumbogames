@@ -6,7 +6,12 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { tournamentChannel, TOURNAMENT_CHANGE_EVENT } from "./channels";
+import {
+  tournamentChannel,
+  TOURNAMENT_CHANGE_EVENT,
+  matchChannel,
+  MATCH_CHANGE_EVENT,
+} from "./channels";
 
 export function subscribeToTournament(
   tournamentId: string,
@@ -16,6 +21,21 @@ export function subscribeToTournament(
   const channel = supabase
     .channel(tournamentChannel(tournamentId))
     .on("broadcast", { event: TOURNAMENT_CHANGE_EVENT }, () => onChange())
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
+export function subscribeToMatch(
+  matchId: string,
+  onChange: () => void,
+): () => void {
+  const supabase = createClient();
+  const channel = supabase
+    .channel(matchChannel(matchId))
+    .on("broadcast", { event: MATCH_CHANGE_EVENT }, () => onChange())
     .subscribe();
 
   return () => {

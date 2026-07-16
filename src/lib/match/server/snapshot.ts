@@ -1,0 +1,138 @@
+/**
+ * Pure mapping between a match's persisted rows and the reducer's MatchState:
+ * timestamps ⇄ epoch ms, JSON ⇄ typed slot fields, current members in, slot
+ * state back out as Prisma update data. No IO — the load/mutate seam calls in.
+ */
+import type { MatchView, ViewerRole } from "@/lib/match/client";
+import type {
+  MatchState,
+  SlotPhase,
+  SlotState,
+  SlotWinner,
+} from "@/lib/match/types";
+import type { MinigameKind, RosterSnapshot } from "@/lib/minigames/types";
+
+export interface SlotRow {
+  ordinal: number;
+  kind: MinigameKind;
+  phase: SlotPhase;
+  ready: string[];
+  snapshot: unknown;
+  countdownEndsAt: Date | null;
+  deadline: Date | null;
+  scoringEndsAt: Date | null;
+  payload: unknown;
+  normA: number | null;
+  normB: number | null;
+  winner: SlotWinner | null;
+}
+
+export interface MatchTeamRows {
+  id: string;
+  name: string;
+  colorIndex: number;
+  memberIds: string[];
+}
+
+export interface MatchRows {
+  id: string;
+  round: { drawnGames: MinigameKind[] };
+  teamA: MatchTeamRows;
+  teamB: MatchTeamRows | null;
+  slots: SlotRow[];
+}
+
+export interface SlotUpdateData {
+  phase: SlotPhase;
+  ready: string[];
+  snapshot: RosterSnapshot | null;
+  countdownEndsAt: Date | null;
+  deadline: Date | null;
+  scoringEndsAt: Date | null;
+  payload: unknown;
+  normA: number | null;
+  normB: number | null;
+  winner: SlotWinner | null;
+}
+
+function toMs(date: Date | null): number | null {
+  return date === null ? null : date.getTime();
+}
+
+function toDate(ms: number | null): Date | null {
+  return ms === null ? null : new Date(ms);
+}
+
+export function rowsToMatchState(rows: MatchRows): MatchState {
+  if (rows.teamB === null) {
+    throw new Error(`Match ${rows.id} is a bye and has no playable state`);
+  }
+  const slots: SlotState[] = [...rows.slots]
+    .sort((a, b) => a.ordinal - b.ordinal)
+    .map((row) => ({
+      ordinal: row.ordinal,
+      kind: row.kind,
+      phase: row.phase,
+      ready: row.ready,
+      snapshot: (row.snapshot as RosterSnapshot | null) ?? null,
+      countdownEndsAt: toMs(row.countdownEndsAt),
+      deadline: toMs(row.deadline),
+      scoringEndsAt: toMs(row.scoringEndsAt),
+      payload: row.payload ?? null,
+      normA: row.normA,
+      normB: row.normB,
+      winner: row.winner,
+    }));
+
+  return {
+    matchId: rows.id,
+    seed: rows.id,
+    teamA: {
+      id: rows.teamA.id,
+      name: rows.teamA.name,
+      colorIndex: rows.teamA.colorIndex,
+      members: rows.teamA.memberIds,
+    },
+    teamB: {
+      id: rows.teamB.id,
+      name: rows.teamB.name,
+      colorIndex: rows.teamB.colorIndex,
+      members: rows.teamB.memberIds,
+    },
+    slots,
+  };
+}
+
+export function toMatchView(
+  state: MatchState,
+  opts: {
+    viewerId: string | null;
+    role: ViewerRole;
+    labels: Record<string, string>;
+  },
+): MatchView {
+  // The audience seam: the stub carries no hidden info, so the full state ships
+  // to every viewer. Games with secret state redact here before the snapshot
+  // leaves the server.
+  return {
+    match: state,
+    viewerId: opts.viewerId,
+    role: opts.role,
+    playerLabels: opts.labels,
+  };
+}
+
+export function slotUpdateData(slot: SlotState): SlotUpdateData {
+  return {
+    phase: slot.phase,
+    ready: slot.ready,
+    snapshot: slot.snapshot,
+    countdownEndsAt: toDate(slot.countdownEndsAt),
+    deadline: toDate(slot.deadline),
+    scoringEndsAt: toDate(slot.scoringEndsAt),
+    payload: slot.payload,
+    normA: slot.normA,
+    normB: slot.normB,
+    winner: slot.winner,
+  };
+}

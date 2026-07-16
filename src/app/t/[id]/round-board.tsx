@@ -8,6 +8,8 @@
 import { Card } from "@jumbo/ui";
 import type { BoardDTO, BoardTeamRef } from "@/lib/tournament/board";
 import { BoardHostControls } from "./board-host-controls";
+import { BoardRoundStart } from "./board-round-start";
+import { EnterMatchLink } from "./enter-match-link";
 
 function TeamName({ team }: { team: BoardTeamRef }) {
   return (
@@ -40,6 +42,9 @@ export function RoundBoard({
   isHost: boolean;
 }) {
   const ended = board.phase === "complete";
+  const earliestPendingOrdinal = board.rounds.find(
+    (round) => round.state === "pending",
+  )?.ordinal;
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 p-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -62,6 +67,10 @@ export function RoundBoard({
           ) : null}
         </div>
       </header>
+
+      {board.viewerMatchId ? (
+        <EnterMatchLink tournamentId={board.id} matchId={board.viewerMatchId} />
+      ) : null}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-caps uppercase tracking-widest text-s7">
@@ -112,6 +121,12 @@ export function RoundBoard({
               <span className="text-caps uppercase tracking-widest text-s7">
                 Round {round.ordinal}
               </span>
+              {isHost && round.ordinal === earliestPendingOrdinal ? (
+                <BoardRoundStart
+                  tournamentId={board.id}
+                  ordinal={round.ordinal}
+                />
+              ) : null}
               <ul className="flex flex-col gap-2">
                 {round.matches.map((match) => (
                   <li

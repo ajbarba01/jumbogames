@@ -146,6 +146,12 @@ arrive already solved; a theme is a token-scale swap by design.
     pure `packages/ui/src/themes/color-math.ts` so the grading can't rot. See
     [the palette professionalization spec](superpowers/specs/2026-07-14-palette-professionalization-design.md)
     for the full rationale and rejected alternates.
+12. **Match slots (M4).** A `Round` gains `state` (pending→active→complete) and an ordered
+    `drawnGames` array; the round's start persists the seeded draw. Each non-bye `Match` owns K
+    `MinigameSlot` rows (ordinal, kind, phase, ready set, both roster snapshots frozen at countdown,
+    deadline, per-team normalized scores + winner, and a JSON `payload` for the game's authoritative
+    working state). Match and round state derive from slots — no stored match phase. `Match.version`
+    is an optimistic-concurrency token for slot writes.
 
 ## Deferred design (grill before building each)
 

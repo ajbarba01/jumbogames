@@ -13,6 +13,7 @@ export interface LoadedMatch {
   roundId: string;
   labels: Record<string, string>;
   memberIds: Set<string>;
+  tournamentMemberIds: Set<string>;
   hostId: string;
 }
 
@@ -52,7 +53,13 @@ export async function loadMatchRows(
       round: {
         select: {
           drawnGames: true,
-          tournament: { select: { id: true, hostId: true } },
+          tournament: {
+            select: {
+              id: true,
+              hostId: true,
+              members: { select: { profileId: true } },
+            },
+          },
         },
       },
       teamA: {
@@ -112,6 +119,9 @@ export async function loadMatchRows(
     roundId: match.roundId,
     labels,
     memberIds,
+    tournamentMemberIds: new Set(
+      match.round.tournament.members.map((m) => m.profileId),
+    ),
     hostId: match.round.tournament.hostId,
   };
 }

@@ -41,11 +41,13 @@ flash and needs its own pass.
 
 ## Known gaps (carry into the next branches)
 
-- **Tournament reads are not membership-gated** (graded — backend-enforced authorization). Any signed-in
-  user holding a tournament or match id can read its lobby, board, or match view, including the roster's
-  emails. Pre-dates M4 (the lobby has always done this) and ids are UUIDv4, so nothing is enumerable —
-  but the check is simply absent. Fix as one shared viewer-membership gate across lobby, board, and
-  match rather than per-surface patches.
+- **Lobby-phase tournament reads are open to any signed-in user.** Board and every match view are now
+  membership-gated (host + roster + admin/owner; a non-member gets 404), but the **lobby** stays open
+  while the tournament is joinable — join-by-code persists no row, so the server cannot tell a
+  legitimate code-joiner from any other signed-in user until they pick a team. A signed-in id-holder
+  can therefore still read a lobby-phase roster's emails until it starts. Bounded (non-enumerable
+  UUIDv4 id; the lobby is the surface designed to be openly joinable). Closing it fully needs
+  persisted lobby participation — pairs with the `displayName` schema work below.
 - **`Profile` has no display name**, so emails are the de-facto player label everywhere. Adding
   `displayName` (schema + backfill + label swap) would let the UI stop showing addresses at all.
 - **The wipe has no force-reveal ceiling.** If `router.push` targets a route that stalls or errors,

@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/profile";
-import { getTournamentState, toLobbyDTO } from "@/lib/tournament/lobby";
+import { gateTournamentRead, toLobbyDTO } from "@/lib/tournament/lobby";
 
 export async function GET(
   _request: Request,
@@ -19,10 +19,13 @@ export async function GET(
   }
 
   const { id } = await ctx.params;
-  const state = await getTournamentState(id);
-  if (!state) {
+  const gated = await gateTournamentRead(id, {
+    viewerId: auth.profile.id,
+    viewerRole: auth.profile.role,
+  });
+  if (!gated) {
     return NextResponse.json({ error: "No such tournament" }, { status: 404 });
   }
 
-  return NextResponse.json({ tournament: toLobbyDTO(state) });
+  return NextResponse.json({ tournament: toLobbyDTO(gated.state) });
 }

@@ -18,3 +18,11 @@ export function lobbyPresenceChannel(tournamentId: string): string {
 // Broadcast after any server-side mutation to a tournament; subscribers treat
 // it as "refetch the canonical state" rather than trusting the payload.
 export const TOURNAMENT_CHANGE_EVENT = "change";
+
+/** The per-match channel players, spectators, and the projector join for one
+ *  match. A change event means "refetch the match snapshot", never trusted state. */
+export function matchChannel(matchId: string): string {
+  return `match:${matchId}`;
+}
+
+export const MATCH_CHANGE_EVENT = "change";

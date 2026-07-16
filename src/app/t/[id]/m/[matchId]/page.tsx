@@ -5,7 +5,7 @@
  */
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/profile";
-import { getMatchView } from "@/lib/match/server/read";
+import { gateMatchView } from "@/lib/match/server/read";
 import { MatchClientView } from "./match-client-view";
 
 export default async function MatchPage(props: {
@@ -15,13 +15,16 @@ export default async function MatchPage(props: {
   if (!auth.ok) redirect("/login");
 
   const { id, matchId } = await props.params;
-  const view = await getMatchView(matchId, auth.profile.id);
-  if (!view) notFound();
+  const gated = await gateMatchView(id, matchId, {
+    viewerId: auth.profile.id,
+    viewerRole: auth.profile.role,
+  });
+  if (!gated) notFound();
 
   return (
     <MatchClientView
       key={`${id}:${matchId}`}
-      initialView={view}
+      initialView={gated.view}
       tournamentId={id}
       matchId={matchId}
     />

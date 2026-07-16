@@ -5,7 +5,7 @@
  */
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/profile";
-import { getTournamentState, toLobbyDTO } from "@/lib/tournament/lobby";
+import { gateTournamentRead, toLobbyDTO } from "@/lib/tournament/lobby";
 import { getBoardState } from "@/lib/tournament/board";
 import { LobbyView } from "./lobby-view";
 import { RoundBoard } from "./round-board";
@@ -18,8 +18,13 @@ export default async function TournamentPage(props: {
   if (!auth.ok) redirect("/login");
 
   const { id } = await props.params;
-  const state = await getTournamentState(id);
-  if (!state) notFound();
+  const gated = await gateTournamentRead(id, {
+    viewerId: auth.profile.id,
+    viewerRole: auth.profile.role,
+  });
+  if (!gated) notFound();
+  const { state, relation } = gated;
+  const isHost = relation.as === "host";
 
   if (state.phase === "lobby") {
     return (
@@ -27,7 +32,7 @@ export default async function TournamentPage(props: {
         initialState={toLobbyDTO(state)}
         viewerId={auth.profile.id}
         viewerEmail={auth.profile.email}
-        isHost={state.hostId === auth.profile.id}
+        isHost={isHost}
       />
     );
   }
@@ -36,7 +41,7 @@ export default async function TournamentPage(props: {
   if (!board) notFound();
   return (
     <BoardRefresher tournamentId={id}>
-      <RoundBoard board={board} isHost={state.hostId === auth.profile.id} />
+      <RoundBoard board={board} isHost={isHost} />
     </BoardRefresher>
   );
 }

@@ -18,3 +18,27 @@ export async function promoteToAdmin(email: string): Promise<void> {
     await client.end();
   }
 }
+
+// The board never renders a match id in the DOM, and a non-member cannot see
+// one at all, so the authz spec reads it straight from the DB — the same
+// out-of-band precondition pattern as promoteToAdmin. Returns the first
+// non-bye match of a started tournament (team_b_id is not null).
+export async function firstMatchId(
+  tournamentId: string,
+): Promise<string | null> {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const result = await client.query(
+      `SELECT m.id FROM matches m
+         JOIN rounds r ON r.id = m.round_id
+        WHERE r.tournament_id = $1 AND m.team_b_id IS NOT NULL
+        ORDER BY r.ordinal ASC
+        LIMIT 1`,
+      [tournamentId],
+    );
+    return result.rows[0]?.id ?? null;
+  } finally {
+    await client.end();
+  }
+}

@@ -5,7 +5,7 @@
  */
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/profile";
-import { getMatchView } from "@/lib/match/server/read";
+import { gateMatchView } from "@/lib/match/server/read";
 
 export async function GET(
   _request: Request,
@@ -18,10 +18,13 @@ export async function GET(
       { status: auth.status },
     );
   }
-  const { matchId } = await ctx.params;
-  const view = await getMatchView(matchId, auth.profile.id);
-  if (!view) {
+  const { id, matchId } = await ctx.params;
+  const gated = await gateMatchView(id, matchId, {
+    viewerId: auth.profile.id,
+    viewerRole: auth.profile.role,
+  });
+  if (!gated) {
     return NextResponse.json({ error: "No such match" }, { status: 404 });
   }
-  return NextResponse.json(view);
+  return NextResponse.json(gated.view);
 }

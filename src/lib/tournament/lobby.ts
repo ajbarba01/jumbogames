@@ -4,7 +4,8 @@
  * the server-rendered lobby page both call this so the two never drift.
  */
 import { prisma } from "@/lib/prisma";
-import type { TournamentPhase } from "@/generated/prisma/client";
+import type { TournamentPhase, Role } from "@/generated/prisma/client";
+import { resolveViewer, type ViewerRelation } from "./viewer";
 
 export function getTournamentState(id: string) {
   return prisma.tournament.findUnique({
@@ -91,4 +92,37 @@ export function toLobbyDTO(state: TournamentState): LobbyDTO {
       })),
     })),
   };
+}
+
+export interface GatedTournament {
+  state: TournamentState;
+  relation: Extract<ViewerRelation, { allowed: true }>;
+}
+
+// IO seam: load a tournament and admit the viewer through resolveViewer in one
+// step. Returns null both when the tournament is missing and when the viewer is
+// refused, so callers cannot tell "no such tournament" from "not yours" — the
+// 404-everywhere decision made structural. Uses getTournamentState's existing
+// selection (hostId + team members), so it adds no query.
+export async function gateTournamentRead(
+  id: string,
+  viewer: { viewerId: string; viewerRole: Role },
+): Promise<GatedTournament | null> {
+  const state = await getTournamentState(id);
+  if (!state) return null;
+  const memberIds = state.teams.flatMap((team) =>
+    team.members.map((member) => member.profileId),
+  );
+  const relation = resolveViewer({
+    viewerId: viewer.viewerId,
+    viewerRole: viewer.viewerRole,
+    hostId: state.hostId,
+    memberIds,
+    // The lobby admits players by code, and join persists no row, so any
+    // signed-in user may read a lobby-phase tournament. Once it locks, only
+    // host/member/admin get in.
+    joinable: state.phase === "lobby",
+  });
+  if (!relation.allowed) return null;
+  return { state, relation };
 }

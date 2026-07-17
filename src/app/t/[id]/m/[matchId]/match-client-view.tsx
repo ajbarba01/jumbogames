@@ -30,6 +30,9 @@ export function MatchClientView({
 
   // Lazy-init runs once on mount, seeding from initialView; it never re-runs
   // on prop changes (remount via key handles that — see the header comment).
+  // The constructor is side-effect-free; start() begins IO here so a
+  // StrictMode/Fast-Refresh double-invoked initializer cannot leak a live
+  // client (see RealtimeMatchClient.start).
   const [client] = useState(
     () =>
       new RealtimeMatchClient(initialView, {
@@ -38,7 +41,10 @@ export function MatchClientView({
         serverNow,
       }),
   );
-  useEffect(() => () => client.destroy(), [client]);
+  useEffect(() => {
+    client.start();
+    return () => client.destroy();
+  }, [client]);
 
   return (
     <MatchContainer

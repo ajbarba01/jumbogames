@@ -2,7 +2,8 @@
  * MatchClient backed by the real routes and Realtime: seeds from the server
  * render, refetches the audience-filtered snapshot on every change ping, POSTs
  * the player's verbs, and runs a local ticker that nudges the advance route when
- * a persisted deadline passes. Drops in behind MatchClient — components unchanged.
+ * a persisted deadline passes. Construct it cheaply; call start() from an effect
+ * to begin IO and destroy() to stop. Drops in behind MatchClient.
  */
 "use client";
 
@@ -38,21 +39,31 @@ export class RealtimeMatchClient implements MatchClient {
   private readonly listeners = new Set<() => void>();
   private readonly base: string;
   private readonly matchId: string;
-  private readonly unsubscribe: () => void;
-  private readonly timer: ReturnType<typeof setInterval>;
-  private readonly heartbeat: ReturnType<typeof setInterval>;
+  private unsubscribe: (() => void) | null = null;
+  private timer: ReturnType<typeof setInterval> | null = null;
+  private heartbeat: ReturnType<typeof setInterval> | null = null;
 
   constructor(initialView: MatchView, opts: RealtimeMatchOpts) {
     this.view = initialView;
     this.offsetMs = opts.serverNow - Date.now();
     this.matchId = opts.matchId;
     this.base = `/api/tournaments/${opts.tournamentId}/matches/${opts.matchId}`;
+  }
+
+  // Begin IO: the Realtime subscription and the tick/heartbeat timers. Kept out
+  // of the constructor and driven from an effect, because React StrictMode and
+  // Fast Refresh double-invoke a useState initializer — a side-effectful
+  // constructor there leaks a second client whose subscription and timers run
+  // forever with nothing mounted to them. Idempotent; pairs with destroy().
+  start(): void {
+    if (this.unsubscribe) return;
     this.unsubscribe = subscribeToMatch(
-      opts.matchId,
+      this.matchId,
       () => void this.refetch(),
     );
     this.timer = setInterval(() => this.tick(), TICK_MS);
     this.heartbeat = setInterval(() => void this.refetch(), HEARTBEAT_MS);
+    void this.refetch();
   }
 
   getView(): MatchView {
@@ -81,9 +92,12 @@ export class RealtimeMatchClient implements MatchClient {
   }
 
   destroy(): void {
-    clearInterval(this.timer);
-    clearInterval(this.heartbeat);
-    this.unsubscribe();
+    if (this.timer) clearInterval(this.timer);
+    if (this.heartbeat) clearInterval(this.heartbeat);
+    if (this.unsubscribe) this.unsubscribe();
+    this.timer = null;
+    this.heartbeat = null;
+    this.unsubscribe = null;
     this.listeners.clear();
   }
 

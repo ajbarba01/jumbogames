@@ -42,6 +42,7 @@ export function PlayFrame({
 }): React.JSX.Element {
   const canLeave = slot.phase === "gate";
   useDismissLayer(canLeave, onLeave);
+  const offsetMs = client.serverOffsetMs();
   const Surface = MINIGAME_SURFACES[slot.kind];
   const canAct =
     view.role === "player" &&
@@ -74,7 +75,10 @@ export function PlayFrame({
           )}
           {slot.phase === "countdown" && (
             <Panel key="countdown">
-              <CountdownOverlay endsAt={slot.countdownEndsAt ?? 0} />
+              <CountdownOverlay
+                endsAt={slot.countdownEndsAt ?? 0}
+                offsetMs={offsetMs}
+              />
             </Panel>
           )}
           {slot.phase === "playing" && (
@@ -84,6 +88,7 @@ export function PlayFrame({
                 slot={slot}
                 canAct={canAct}
                 onAction={(action) => client.act(slot.ordinal, action)}
+                offsetMs={offsetMs}
               />
             </Panel>
           )}

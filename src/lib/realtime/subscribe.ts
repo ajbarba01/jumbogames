@@ -18,10 +18,18 @@ export function subscribeToTournament(
   onChange: () => void,
 ): () => void {
   const supabase = createClient();
+  const topic = tournamentChannel(tournamentId);
   const channel = supabase
-    .channel(tournamentChannel(tournamentId))
+    .channel(topic)
     .on("broadcast", { event: TOURNAMENT_CHANGE_EVENT }, () => onChange())
-    .subscribe();
+    .subscribe((status: string) => {
+      // SUBSCRIBED is the healthy path; CLOSED is our own teardown. Anything
+      // else (CHANNEL_ERROR, TIMED_OUT) means the client is not receiving
+      // pings and is silently relying on the heartbeat — surface it.
+      if (status !== "SUBSCRIBED" && status !== "CLOSED") {
+        console.warn("[realtime] channel status", topic, status);
+      }
+    });
 
   return () => {
     void supabase.removeChannel(channel);
@@ -33,10 +41,17 @@ export function subscribeToMatch(
   onChange: () => void,
 ): () => void {
   const supabase = createClient();
+  const topic = matchChannel(matchId);
   const channel = supabase
-    .channel(matchChannel(matchId))
+    .channel(topic)
     .on("broadcast", { event: MATCH_CHANGE_EVENT }, () => onChange())
-    .subscribe();
+    .subscribe((status: string) => {
+      // See subscribeToTournament: anything but SUBSCRIBED/CLOSED means pings
+      // are not arriving; the heartbeat covers correctness but log the gap.
+      if (status !== "SUBSCRIBED" && status !== "CLOSED") {
+        console.warn("[realtime] channel status", topic, status);
+      }
+    });
 
   return () => {
     void supabase.removeChannel(channel);

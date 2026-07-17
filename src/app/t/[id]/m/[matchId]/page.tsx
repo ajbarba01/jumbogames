@@ -21,10 +21,17 @@ export default async function MatchPage(props: {
   });
   if (!gated) notFound();
 
+  // Server components render once per request, so this is the request-time
+  // server clock the client seeds its offset from. The react-hooks purity rule
+  // targets client render; this server-side read is intentional.
+  // eslint-disable-next-line react-hooks/purity
+  const serverNow = Date.now();
+
   return (
     <MatchClientView
       key={`${id}:${matchId}`}
       initialView={gated.view}
+      serverNow={serverNow}
       tournamentId={id}
       matchId={matchId}
     />

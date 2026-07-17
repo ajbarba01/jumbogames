@@ -9,11 +9,14 @@ import { useNow } from "./use-now";
 
 export function CountdownOverlay({
   endsAt,
+  offsetMs,
 }: {
   endsAt: number;
+  offsetMs: number;
 }): React.JSX.Element {
   const now = useNow();
-  const remaining = Math.max(1, Math.ceil((endsAt - now) / 1000));
+  const serverNow = now + offsetMs;
+  const remaining = Math.max(1, Math.ceil((endsAt - serverNow) / 1000));
   return (
     <div className="flex flex-1 items-center justify-center">
       <AnimatePresence mode="popLayout">

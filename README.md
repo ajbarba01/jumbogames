@@ -34,6 +34,21 @@ npm run db:migrate           # apply schema to the test database
 Every variable is documented in [.env.example](.env.example). Secrets live only in `.env.local`
 (gitignored), Vercel env vars, and GitHub Actions secrets — never in the repo.
 
+## Deployment
+
+The app deploys to Vercel at https://jumbogames.vercel.app.
+
+- **Environment variables** (Vercel → Settings → Environment Variables, Production scope): the five
+  vars documented in [.env.example](.env.example) — `DATABASE_URL`, `DIRECT_URL`,
+  `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OWNER_EMAILS` — pointed at the
+  production Supabase project (not the test project CI uses). `NEXT_PUBLIC_*` values are inlined at
+  build time, so changing any of them requires a redeploy, not just a restart.
+- **Build command** (Vercel → Settings → Build & Development): `npx prisma migrate deploy && npm run build`,
+  so every deploy applies pending migrations to the production database before building. Migrations
+  are forward-only ([docs/WORKFLOW.md](docs/WORKFLOW.md)).
+- **Server errors:** the production error page shows a digest, not the message. Find the exception in
+  Vercel → the deployment → Logs (or Observability → Runtime Logs) by searching that digest.
+
 ## Commands
 
 | Command               | What it does                                |

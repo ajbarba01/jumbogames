@@ -58,6 +58,12 @@ flash and needs its own pass.
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
   opaque panel, and the modal's own outside-hiding can silence the wipe's still-loading cue for screen
   readers. Must be solved before any navigation inside a modal opts into the wipe.
+- **The empty production pool blocks E2E on anything downstream of a live match.** Playwright runs
+  against a production build, where `poolFor("production")` is empty, so a started round draws no
+  slots and no match is ever live. The match-entry link never renders (its wipe is therefore
+  untested), and a match page would derive as already complete — so the live-match `beforeunload`
+  guard cannot be observed there either. Both become testable once a non-`devOnly` minigame exists.
+  Until then the guard is only checkable by hand against a dev server.
 - **A round start's network wait is uncovered.** `BoardRoundStart` awaits the round-start POST before
   opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
   React drops post-await updates out of the transition, so `isPending` — the machine's `committed`

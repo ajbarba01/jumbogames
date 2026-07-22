@@ -2,7 +2,8 @@
  * Tests for the wipe state machine: the covering hold leaves only when the
  * destination has committed AND the min floor has passed (order-independent),
  * a fast commit during the in-sweep is remembered, the max cue only fires while
- * covered, and finishing the reveal resets to idle.
+ * covered, the force-reveal ceiling escapes an uncommitted hold, and finishing
+ * the reveal resets to idle.
  */
 import { describe, expect, it } from "vitest";
 import { initialWipeState, wipeReducer, type WipeState } from "./machine";
@@ -70,6 +71,45 @@ describe("wipeReducer", () => {
       { type: "maxElapsed" },
     ]);
     expect(covered.showCue).toBe(true);
+  });
+
+  it("forceElapsed reveals from covered even without a commit", () => {
+    const s = drive([
+      { type: "navStart", label: null },
+      { type: "wipeInDone" },
+      { type: "forceElapsed" },
+    ]);
+    expect(s.phase).toBe("revealing");
+    expect(s.committed).toBe(false);
+  });
+
+  it("forceElapsed is a no-op outside covered", () => {
+    const idle = wipeReducer(initialWipeState, { type: "forceElapsed" });
+    expect(idle).toEqual(initialWipeState);
+
+    const covering = drive([{ type: "navStart", label: null }]);
+    expect(wipeReducer(covering, { type: "forceElapsed" })).toEqual(covering);
+
+    const revealing = drive([
+      { type: "navStart", label: null },
+      { type: "wipeInDone" },
+      { type: "committed" },
+      { type: "minElapsed" },
+    ]);
+    expect(revealing.phase).toBe("revealing");
+    expect(wipeReducer(revealing, { type: "forceElapsed" })).toEqual(revealing);
+  });
+
+  it("a commit landing after a force-reveal cannot re-enter the hold", () => {
+    let s = drive([
+      { type: "navStart", label: null },
+      { type: "wipeInDone" },
+      { type: "forceElapsed" },
+      { type: "wipeOutDone" },
+    ]);
+    expect(s).toEqual(initialWipeState);
+    s = wipeReducer(s, { type: "committed" });
+    expect(s.phase).toBe("idle");
   });
 
   it("resets to idle when the reveal finishes", () => {

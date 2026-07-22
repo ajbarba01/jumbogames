@@ -1,7 +1,9 @@
 /**
  * Live tournament lobby. Renders teams, membership, and host controls from a
  * server-provided snapshot, then subscribes to the tournament's Realtime
- * channel and refetches canonical state on every broadcast. A separate presence
+ * channel and refetches canonical state on every broadcast — and again whenever
+ * the browser restores the page, whose seeded snapshot and local state would
+ * otherwise stay stale until the next broadcast. A separate presence
  * channel lists participants who are here but not yet on a team. All mutations
  * go through the route handlers; this view never writes state directly. Once
  * the tournament leaves the lobby, the phase-swap effect wipes the page's
@@ -14,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Card, ConfirmDialog, CopyCode, TextField } from "@jumbo/ui";
 import { useWipeNav } from "@/components/wipe/use-wipe-nav";
+import { useRefreshOnRestore } from "./use-refresh-on-restore";
 import { subscribeToTournament } from "@/lib/realtime/subscribe";
 import {
   subscribeToLobbyPresence,
@@ -58,6 +61,8 @@ export function LobbyView({
     });
     return unsubscribe;
   }, [initialState.id, refetch]);
+
+  useRefreshOnRestore(useCallback(() => void refetch(), [refetch]));
 
   useEffect(() => {
     const unsubscribe = subscribeToLobbyPresence(

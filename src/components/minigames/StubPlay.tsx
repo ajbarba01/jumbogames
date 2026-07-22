@@ -16,20 +16,23 @@ export function StubPlay({
   slot,
   canAct,
   onAction,
+  offsetMs,
 }: {
   view: MatchView;
   slot: SlotState;
   canAct: boolean;
   onAction: (action: unknown) => void;
+  offsetMs: number;
 }): React.JSX.Element {
   const now = useNow();
+  const serverNow = now + offsetMs;
   const payload = slot.payload as StubState;
   const snapshot = slot.snapshot ?? { teamA: [], teamB: [] };
   const meanA = normalizeTeamScore(payload.counts, snapshot.teamA);
   const meanB = normalizeTeamScore(payload.counts, snapshot.teamB);
   const remaining = Math.max(
     0,
-    Math.ceil(((slot.deadline ?? now) - now) / 1000),
+    Math.ceil(((slot.deadline ?? serverNow) - serverNow) / 1000),
   );
   const myCount =
     view.viewerId !== null ? (payload.counts[view.viewerId] ?? 0) : null;

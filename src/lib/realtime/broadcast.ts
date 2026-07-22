@@ -16,10 +16,12 @@ export async function broadcastTournamentChange(
   tournamentId: string,
 ): Promise<void> {
   const supabase = await createClient();
-  const channel = supabase.channel(tournamentChannel(tournamentId));
+  const channelName = tournamentChannel(tournamentId);
+  const channel = supabase.channel(channelName);
   try {
     await channel.httpSend(TOURNAMENT_CHANGE_EVENT, { tournamentId });
   } catch {
+    console.error("[realtime] broadcast failed", channelName);
     // Best-effort liveness. The database is the source of truth; a dropped ping
     // just means clients refresh on their next fetch. A persisted mutation must
     // never fail because the realtime hop did.
@@ -30,10 +32,12 @@ export async function broadcastTournamentChange(
 
 export async function broadcastMatchChange(matchId: string): Promise<void> {
   const supabase = await createClient();
-  const channel = supabase.channel(matchChannel(matchId));
+  const channelName = matchChannel(matchId);
+  const channel = supabase.channel(channelName);
   try {
     await channel.httpSend(MATCH_CHANGE_EVENT, { matchId });
   } catch {
+    console.error("[realtime] broadcast failed", channelName);
     // Best-effort liveness; the database is the source of truth. A dropped ping
     // just means clients refetch on their next interaction.
   } finally {

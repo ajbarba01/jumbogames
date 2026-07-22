@@ -78,6 +78,12 @@ export class FakeMatchClient implements MatchClient {
     return this.view;
   }
 
+  // The fake client drives its own reducer with Date.now(), so it is the
+  // server — there is no clock to correct against.
+  serverOffsetMs(): number {
+    return 0;
+  }
+
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

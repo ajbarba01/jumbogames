@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/profile";
 import { gateMatchView } from "@/lib/match/server/read";
+import type { MatchSnapshotPayload } from "@/lib/match/client";
 
 export async function GET(
   _request: Request,
@@ -26,5 +27,8 @@ export async function GET(
   if (!gated) {
     return NextResponse.json({ error: "No such match" }, { status: 404 });
   }
-  return NextResponse.json(gated.view);
+  return NextResponse.json({
+    view: gated.view,
+    serverNow: Date.now(),
+  } satisfies MatchSnapshotPayload);
 }

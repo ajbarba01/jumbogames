@@ -13,6 +13,9 @@ export interface MinigamePlayProps {
   slot: SlotState;
   canAct: boolean;
   onAction: (action: unknown) => void;
+  // Estimated serverClock - clientClock; add to Date.now() before comparing
+  // against a server timestamp such as slot.deadline.
+  offsetMs: number;
 }
 
 export const MINIGAME_SURFACES: Record<

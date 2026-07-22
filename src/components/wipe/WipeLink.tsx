@@ -2,8 +2,9 @@
  * A Next Link that routes its click through the slam wipe. Same children API
  * as Link, but `href` is narrowed to a plain string — Next's `UrlObject` form
  * is not supported. Stringifying a `UrlObject` produces `"[object Object]"`,
- * pushing a route that never commits and permanently traps the user under the
- * wipe (it has no force-reveal ceiling). An optional `wipeLabel` shows a
+ * pushing a route that never commits — the provider's force-reveal ceiling
+ * would eventually uncover a page that never navigated, so the narrowing keeps
+ * the broken push from being expressible at all. An optional `wipeLabel` shows a
  * destination label on the panel (e.g. a round name). Modifier-clicks and
  * non-primary buttons fall through to the browser so open-in-new-tab still
  * works.

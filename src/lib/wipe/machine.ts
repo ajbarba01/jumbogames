@@ -4,7 +4,9 @@
  * WipeProvider feeds it real signals (animation-complete, setTimeout, the
  * router transition's isPending) and renders the phase. Leaving the covered
  * hold requires BOTH the destination committed AND the min-covered floor, so a
- * fast navigation still reads as a full wipe and a slow one holds until ready.
+ * fast navigation still reads as a full wipe and a slow one holds until ready —
+ * except under `forceElapsed`, the ceiling that reveals regardless so a
+ * navigation that never commits cannot strand the user under the panel.
  */
 
 export type WipePhase = "idle" | "covering" | "covered" | "revealing";
@@ -23,6 +25,7 @@ export type WipeEvent =
   | { type: "committed" }
   | { type: "minElapsed" }
   | { type: "maxElapsed" }
+  | { type: "forceElapsed" }
   | { type: "wipeOutDone" };
 
 export const initialWipeState: WipeState = {
@@ -63,6 +66,12 @@ export function wipeReducer(state: WipeState, event: WipeEvent): WipeState {
     case "maxElapsed":
       if (state.phase !== "covered") return state;
       return { ...state, showCue: true };
+    // The ceiling: reveal without `committed`. A destination that stalls or
+    // errors never lands its commit, and every other exit from `covered`
+    // requires one, so without this the panel holds forever.
+    case "forceElapsed":
+      if (state.phase !== "covered") return state;
+      return { ...state, phase: "revealing" };
     case "wipeOutDone":
       if (state.phase !== "revealing") return state;
       return { ...initialWipeState };

@@ -8,7 +8,9 @@
  * then reveals. The covered action is any transition-wrappable call — a
  * router push (navigate()) or a same-URL router.refresh() (cover()) both
  * supply the transition whose pending→settled edge is the machine's
- * "committed" signal. Exposes cover() and navigate() through WipeNavCtx.
+ * "committed" signal. A destination that never commits is caught by the
+ * FORCE_REVEAL_MS ceiling, which reveals anyway. Exposes cover() and
+ * navigate() through WipeNavCtx.
  *
  * While the panel hides the page (covering through covered, but not the reveal),
  * the {children} subtree — and only that subtree — is marked `inert`, dropping
@@ -36,6 +38,11 @@ import { WipeNavCtx } from "./context";
 import { initialWipeState, wipeReducer } from "@/lib/wipe/machine";
 
 const toMs = (seconds: number) => seconds * 1000;
+
+// Upper bound on how long a stalled navigation may hold the screen. A
+// destination that never commits leaves no other way out of the covered hold,
+// so the panel reveals on its own rather than trapping the user behind it.
+const FORCE_REVEAL_MS = 15_000;
 
 export function WipeProvider({
   children,
@@ -105,6 +112,7 @@ export function WipeProvider({
         () => dispatch({ type: "maxElapsed" }),
         toMs(WIPE_DUR.maxCovered),
       ),
+      setTimeout(() => dispatch({ type: "forceElapsed" }), FORCE_REVEAL_MS),
     ];
   }, [reduceMotion]);
 

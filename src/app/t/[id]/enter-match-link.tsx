@@ -1,10 +1,11 @@
 /**
- * Temporary phase-3 bridge: a link that takes a member into their live match.
- * The kit's Button has no `asChild`, so this renders a Next Link styled with
- * the same primary-button face instead of wrapping a Button around it. Phase 4
- * replaces this with round-start auto-pull and board spectate entry.
+ * Temporary bridge: a link that takes a member into their live match, covered
+ * by the slam wipe. The kit's Button has no `asChild`, so this renders a
+ * WipeLink styled with the same primary-button face instead of wrapping a
+ * Button around it. Board auto-pull and spectate entry replace this later and
+ * should carry the wipe treatment over.
  */
-import Link from "next/link";
+import { WipeLink } from "@/components/wipe/WipeLink";
 
 export function EnterMatchLink({
   tournamentId,
@@ -14,11 +15,12 @@ export function EnterMatchLink({
   matchId: string;
 }): React.JSX.Element {
   return (
-    <Link
+    <WipeLink
       href={`/t/${tournamentId}/m/${matchId}`}
+      wipeLabel="Your match"
       className="slip sticker sticker-hover sticker-press cursor-pointer rounded-r2 bg-accent px-4 py-1.5 text-sec font-bold text-edge"
     >
       Enter your match
-    </Link>
+    </WipeLink>
   );
 }

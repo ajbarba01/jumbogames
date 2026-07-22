@@ -31,7 +31,10 @@ gathering and mockups happen inside it, not as a separate phase.
 Milestone 4 lands in phases: 1–3 (core + mockup, then the server backend — schema, realtime, routes,
 playable match page) are in. Phase 4 (board auto-pull + spectate entry, byes, force-yield,
 mid-tournament join/kick) and phase 5 (Playwright E2E), plus the full M4 doc reconciliation, remain.
-The board's round-start button and enter-match link are temporary bridges phase 4 replaces.
+The board's round-start button and enter-match link are temporary bridges phase 4 replaces; both now
+play the wipe, which their replacements should carry over. Browser back/forward is made safe rather
+than blocked: the lobby and board resync on history restore (Next reuses a page's RSC payload on
+back/forward), and the match page self-heals on its heartbeat. A live match guards tab close/reload.
 
 The slam-wipe transition + loading system (`SlamWipe` in the kit, `src/components/wipe/` in the app)
 shipped as foundational infrastructure ahead of Milestone 10's polish pass, so that milestone isn't
@@ -50,20 +53,17 @@ flash and needs its own pass.
   persisted lobby participation — pairs with the `displayName` schema work below.
 - **`Profile` has no display name**, so emails are the de-facto player label everywhere. Adding
   `displayName` (schema + backfill + label swap) would let the UI stop showing addresses at all.
-- **The wipe has no force-reveal ceiling.** If `router.push` targets a route that stalls or errors,
-  `isPending` never falls, so `committed` never dispatches and the user stays covered indefinitely with
-  only the still-loading cue. Spec-conformant — the machine only raises `showCue` at `maxElapsed` and has
-  no timeout escape — but a real trap with no upper bound; give it one.
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
   `{children}` subtree; `ModalShell`, `PopoverCard`, `Select`, `Tooltip`, and `FloatCard` all portal to
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
   opaque panel, and the modal's own outside-hiding can silence the wipe's still-loading cue for screen
   readers. Must be solved before any navigation inside a modal opts into the wipe.
-- **Round-to-round transitions and match entry don't wipe yet.** The lobby → round board start beat
-  covers the wipe's generalized `cover()`; the board's round-start button (`BoardRoundStart`) and
-  `EnterMatchLink` are still the temporary phase-3 bridges and neither opts into the wipe. Phase 4 owns
-  both.
+- **A round start's network wait is uncovered.** `BoardRoundStart` awaits the round-start POST before
+  opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
+  React drops post-await updates out of the transition, so `isPending` — the machine's `committed`
+  signal — falls before the refresh lands and the panel reveals early. Covering the wait needs a
+  pending signal the machine can read that isn't the transition edge.
 
 ---
 
-_Last reviewed: 2026-07-16_
+_Last reviewed: 2026-07-22_

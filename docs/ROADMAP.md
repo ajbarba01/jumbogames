@@ -19,14 +19,20 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done    |
 | 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | pending |
 | 6   | Final standings + per-player normalization utilities                                                                                               | pending |
-| 7   | Minigame 2: typing race                                                                                                                            | pending |
-| 8   | Minigame 3: word game (territory capture)                                                                                                          | pending |
-| 9   | Minigame 4: battleship                                                                                                                             | pending |
-| 10  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending |
+| 7   | Open hosting — player-creatable games, config (max teams, minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                            | pending |
+| 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | pending |
+| 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | pending |
+| 10  | Minigame 2: typing race                                                                                                                            | pending |
+| 11  | Minigame 3: word game (territory capture)                                                                                                          | pending |
+| 12  | Minigame 4: battleship                                                                                                                             | pending |
+| 13  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending |
 
-Everything graded is complete after 6; 7–10 are the full vision. Milestone 2 sits early because every
-later surface builds on the kit; its scope is capped at "kit ports + one theme lands" — reference
-gathering and mockups happen inside it, not as a separate phase.
+Everything graded is complete after 6; 7–13 are the full vision. The games-first milestones (7–9) sit
+before the remaining minigames because minigames are swappable content behind a container the
+refactor doesn't touch, while 7–9 change the container's doors — and hacknight resilience (anyone can
+spin up a 2-team game as a fallback) needs the doors more than a third minigame. Milestone 2 sits
+early because every later surface builds on the kit; its scope is capped at "kit ports + one theme
+lands" — reference gathering and mockups happen inside it, not as a separate phase.
 
 Milestone 4 is done: phases 1–3 (core + mockup, then the server backend — schema, realtime, routes,
 playable match page), phase 4 (board auto-pull, spectate entry, byes, force-yield), and phase 5
@@ -46,15 +52,11 @@ flash and needs its own pass.
 
 ## Known gaps (carry into the next branches)
 
-- **Lobby-phase tournament reads are open to any signed-in user.** Board and every match view are now
-  membership-gated (host + roster + admin/owner; a non-member gets 404), but the **lobby** stays open
-  while the tournament is joinable — join-by-code persists no row, so the server cannot tell a
-  legitimate code-joiner from any other signed-in user until they pick a team. A signed-in id-holder
-  can therefore still read a lobby-phase roster's emails until it starts. Bounded (non-enumerable
-  UUIDv4 id; the lobby is the surface designed to be openly joinable). Closing it fully needs
-  persisted lobby participation — pairs with the `displayName` schema work below.
-- **`Profile` has no display name**, so emails are the de-facto player label everywhere. Adding
-  `displayName` (schema + backfill + label swap) would let the UI stop showing addresses at all.
+- **Game reads still show emails to any signed-in user.** The games-first design (DESIGN decision 16)
+  makes open reads _intentional_ — spectate by link, play by code — so the old "lobby reads are open"
+  gap stops being a gap to close and becomes a leak to fix: the leaked data is emails, and Milestone 8's
+  `displayName` (schema + backfill + label swap) kills it. Until M8 lands, board/match views stay
+  membership-gated as built; the gate relaxation ships with M8, not before.
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
   `{children}` subtree; `ModalShell`, `PopoverCard`, `Select`, `Tooltip`, and `FloatCard` all portal to
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
@@ -75,4 +77,4 @@ flash and needs its own pass.
 
 ---
 
-_Last reviewed: 2026-07-22_
+_Last reviewed: 2026-07-23_

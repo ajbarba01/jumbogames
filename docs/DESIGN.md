@@ -7,18 +7,25 @@
 
 ## The game
 
-A team-based tournament of short **co-operative** minigames for JumboCode hacknights. Teams of any
-size play a **round-robin** of short 1v1 matches; **scoring is normalized per-player**, so a 3-person
-team competes fairly against a 6-person team. Admins run the tournament and project any live match.
+Team-based **games** of short **co-operative** minigames for JumboCode hacknights. Anyone can create
+a game — pick the minigames, share one code — and teams of any size play a **round-robin** of short
+1v1 matches; **scoring is normalized per-player**, so a 3-person team competes fairly against a
+6-person team. A game with more teams _is_ a tournament: same engine, more rounds, a projected
+standings board. Anyone signed in can spectate any game via its link; playing requires the code.
 
-## Tournament format: round-robin
+**Vocabulary:** the code entity is `Tournament` (schema, routes, types — kept to avoid churn); the
+product word is **game**. UI copy says "tournament" only when describing an actual multi-team game
+(decision 15).
+
+## Game format: round-robin
 
 Full rationale and the pure-engine contract live in the
 [round-robin spec](superpowers/specs/2026-07-15-round-robin-tournament-format-design.md).
 
 - **Everyone plays everyone once.** Pairings follow a fixed rotation (circle method) computed at start;
   the whole schedule is known up front because pairings don't depend on results. N-1 rounds for even N,
-  N rounds for odd N.
+  N rounds for odd N. The 2-team case degenerates correctly — one round, one match — which is what
+  makes a pickup game and a tournament the same entity (decision 14).
 - **Odd team counts** give each team exactly one **bye** across the schedule (worth a match's minigames);
   even counts need none. A bye's credit lands on **minigames won only, never the normalized tiebreak** —
   a team that sat out has not earned a score to break ties with — and is applied when the bye's round
@@ -34,25 +41,33 @@ Full rationale and the pure-engine contract live in the
 
 ## Player flow
 
-1. Land → login/signup (redirect if already authenticated).
-2. Join screen: enter the game code (players never host).
-3. Lobby: create a team (becoming its **leader**) or tap an existing team to join it.
-4. Leaders ready up. When all are ready the host's Start unlocks; on start, the game code stops
-   admitting players and teams freeze.
-5. Round board: the ranked **standings** table (the hero) plus this round's live matchups.
+1. Land → login/signup (redirect if already authenticated). Home's hero is the code entry; **Create
+   a game** sits beneath it as the secondary action.
+2. Join: enter the game code.
+3. Team picker: create a team (becoming its **leader**) or tap an existing team to join it. The
+   picker is the game's permanent join screen — after start it stays open to un-teamed code-holders,
+   showing each team's lock state (a team in a live match opens after its round).
+4. Leaders ready up. When all are ready the creator's Start unlocks; on start, team **names and
+   colors freeze** — membership stays fluid under the lock rule (decision 17).
+5. In-game, players live in two tabs: **Board** (the shared standings + matchups surface, the same
+   one projected) and **My team** (the team room: roster, leave, leader kick, next-match context).
+   Un-teamed viewers get **Board** and **Join a team**.
 6. Match: the 1v1 overview reveals the match's K minigames as previews in a row. Entering a minigame
    **zooms into its preview**; the minigame plays; a scoring screen follows; zoom out returns to the
    overview with the minigames won so far.
-7. After the last minigame the match completes and players return to the round board, where they can
-   spectate any live match — the same surface the host projects.
-8. All matches close → next round → repeat → final standings.
+7. After the last minigame the match completes and players return to the board, where they can
+   spectate any live match. All matches close → next round → repeat → final standings, stamped on
+   the board (a 2-team game's standings are its result — there is no separate results screen).
 
-## Host flow
+## Creating a game
 
-Admins and the owner see a **Host** button: create a tournament → lobby view with the game code (for
-the projector) → Start when all leaders are ready (with an override to start anyway or remove a dead
-team) → the round board doubles as the projector surface; clicking any live match spectates it
-full-screen. A host may also join a team and play; hosting is a role on the tournament, not a seat.
+Any signed-in player can create a game: name it, pick the **minigame pool** (non-empty subset), set
+**K** (`minigamesPerMatch`, 1–4, K ≤ pool size) and **max teams** (2–15, the team-palette ceiling) →
+land in the game with its code (for the projector or the table). The creator holds the game's host
+powers — Start when all leaders are ready (with an override to start anyway or remove a dead team) —
+and may also join a team and play; hosting is a role on the game, not a seat. Spectators need no
+code: any signed-in user can open a game's board by link and spectate any live match full-screen;
+joining a team is what requires the code (link = read, code = write).
 
 ## Roles
 
@@ -62,8 +77,9 @@ full-screen. A host may also join a team and play; hosting is a role on the tour
   promote/demote **admins**. The allowlist only grants owner, never revokes it; removing an email
   from `OWNER_EMAILS` does not demote its existing owner row. Demoting an owner requires a direct
   database update.
-- **Admin** — hosts tournaments, manages the trivia question bank, projects matches.
-- **Player** — signs up (email + password, confirmation off), joins with a game code, plays.
+- **Admin** — manages content: the trivia question bank (and future minigame content).
+- **Player** — signs up (email + password, confirmation off), joins with a game code, plays — and
+  can create games (decision 14). Per-game host powers belong to the game's creator, not to a role.
 
 ## The minigames
 
@@ -126,8 +142,9 @@ arrive already solved; a theme is a token-scale swap by design.
    position. The cost is a round count that scales with N; accepted for the fairness. Supersedes the
    earlier bracket and Swiss drafts — see the
    [round-robin spec](superpowers/specs/2026-07-15-round-robin-tournament-format-design.md).
-7. **One game code, self-organizing teams.** Team creator is leader; leaders ready up; the host
-   starts (with override) and the tournament locks.
+7. **One game code, self-organizing teams.** Team creator is leader; leaders ready up; the creator
+   starts (with override). Start freezes team names/colors; membership stays fluid under decision 17,
+   and the team picker remains the join surface for un-teamed code-holders after start.
 8. **Match = K configurable minigames, scored per minigame.** `minigamesPerMatch` (1–4, default 1) sets
    how many distinct pool games a match plays; ranking counts minigames won, so a match needs no winner
    and even K may split. Tiebreak is cumulative normalized score.
@@ -161,6 +178,29 @@ arrive already solved; a theme is a token-scale swap by design.
     or nowhere. Someone with neither — a host not playing, an admin, anyone watching a match they aren't
     rostered on — is never moved, so opening a match to spectate is never undone by another team's round
     starting.
+14. **Games-first, no format enum: a tournament is a game with more teams.** Anyone signed in creates
+    a game, configuring `maxTeams` (2–15), the minigame pool (non-empty subset), and K (K ≤ pool
+    size); a pickup game is `maxTeams: 2`. Differences are **config values, never branches** — the
+    engine (rounds, matches, slots, scoring) has zero format awareness, and every game runs the same
+    start → board → start-round flow. A true data-model inversion (Game as root, Tournament as
+    wrapper) was evaluated and rejected: its real cost is `Team` scoping (polymorphic parents or
+    durable global teams), and it adds no capability doors-on-the-existing-engine don't. Tripwire:
+    if format-shaped conditionals ever creep into the engine, revisit. This also supersedes
+    admin-only hosting; admins keep content management (see Roles). Full rationale in the
+    [games-first spec](superpowers/specs/2026-07-23-games-first-refactor-design.md) (local artifact).
+15. **Vocabulary mapping: code `Tournament` = product "game".** The schema, routes, and types keep
+    `Tournament` to avoid rename churn; all UI copy says "game", using "tournament" only for actual
+    multi-team games. Recorded so the drift is a deliberate translation, not an accident; a future
+    code rename stays open.
+16. **Spectate by link, play by code.** Board and match-spectate reads are open to any signed-in
+    user (no membership required); mutations that join a game — picking a team — require the game
+    code, validated server-side in the join request. Link = read, code = write. Anonymous (no-auth)
+    spectating is a deliberate post-MVP loosening, gated on `displayName` fully replacing emails.
+17. **Roster fluidity under the lock rule.** Join, leave, and leader-kick are allowed only while the
+    team has no live match (lobby phase or between rounds); slot roster snapshots already make the
+    boundary safe. Leader leaving auto-transfers leadership to the earliest-joined member; an empty
+    team stays in the schedule and forfeits. Team size stays score-neutral by per-player
+    normalization; kick is the answer to sandbagging.
 
 ## Deferred design (grill before building each)
 
@@ -169,7 +209,9 @@ arrive already solved; a theme is a token-scale swap by design.
 - The exact per-player normalization formula per game.
 - Reconnect UX polish (server-authoritative state makes resume-on-rejoin near-free; the polish is
   client-side).
+- Post-MVP follow-ups named by the games-first design: bring-my-team (clone a formed team into a new
+  game), anonymous spectating, a leader join-approval toggle, invite links.
 
 ---
 
-_Last reviewed: 2026-07-22_
+_Last reviewed: 2026-07-23_

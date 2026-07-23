@@ -1,9 +1,10 @@
 /**
- * Tests for the per-round draw: deterministic under a seed, distinct while
- * the pool lasts, cycling when K exceeds the pool.
+ * Tests for the seeded per-round minigame draw and its pre-commit guard:
+ * deterministic under a seed, distinct while the pool lasts, cycling when K
+ * exceeds the pool, and `checkRoundDraw` rejecting a draw that can't fill K.
  */
 import { describe, expect, it } from "vitest";
-import { drawRoundGames } from "./round-draw";
+import { checkRoundDraw, drawRoundGames } from "./round-draw";
 import type { MinigameKind } from "@/lib/minigames/types";
 
 // Widened pool for draw semantics; only "stub" exists as a real kind today.
@@ -26,5 +27,33 @@ describe("drawRoundGames", () => {
 
   it("returns [] for an empty pool", () => {
     expect(drawRoundGames([], 2, "r1")).toEqual([]);
+  });
+});
+
+describe("checkRoundDraw", () => {
+  it("accepts a full draw", () => {
+    const drawn = drawRoundGames(pool, 2, "r1");
+    expect(checkRoundDraw(drawn, 2)).toEqual({ ok: true });
+  });
+
+  it("rejects an empty draw when at least one minigame is required", () => {
+    expect(checkRoundDraw([], 1)).toEqual({
+      ok: false,
+      reason: "No minigames are available to play in this environment",
+    });
+  });
+
+  it("rejects k = 0", () => {
+    expect(checkRoundDraw([], 0)).toEqual({
+      ok: false,
+      reason: "This tournament plays no minigames per match",
+    });
+  });
+
+  it("rejects a draw shorter than k", () => {
+    expect(checkRoundDraw(pool, 2)).toEqual({
+      ok: false,
+      reason: "No minigames are available to play in this environment",
+    });
   });
 });

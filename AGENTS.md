@@ -7,9 +7,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # jumbogames
 
-A **team-based tournament of short co-operative minigames** for JumboCode hacknights. Teams join with a
-short code and play a **round-robin** of short matches drawn from a minigame pool; scoring is normalized
-per-player so team sizes don't matter. Admins run the tournament and can spectate matches live.
+**Team-based games of short co-operative minigames** for JumboCode hacknights. Anyone creates a game,
+teams join with one short code, and a **round-robin** of short matches plays out from the game's
+minigame pool; scoring is normalized per-player so team sizes don't matter. A game with more teams is
+a tournament — same engine, projected standings — and any signed-in user can spectate by link.
 
 Built for the JumboCode Tech Lead onboarding project — the graded criteria in
 [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) are **non-negotiable requirements**, not suggestions.
@@ -65,4 +66,4 @@ Prisma · Zod · Playwright · GitHub Actions · Vercel.
 
 ---
 
-_Last reviewed: 2026-07-15_
+_Last reviewed: 2026-07-23_

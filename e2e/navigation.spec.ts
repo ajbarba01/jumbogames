@@ -7,10 +7,8 @@
  * round-start beat plays the slam wipe, so the board swap happens behind the
  * panel rather than in the open.
  *
- * Match entry's wipe is deliberately not covered here: the suite runs against
- * a production build, where the minigame pool is empty, so a started round
- * draws no slots, no match is live, and the entry link never renders. It
- * becomes testable once a non-devOnly minigame exists (see ROADMAP).
+ * Match entry's own wipe is covered separately, in round-start.spec.ts, now
+ * that the E2E server's minigame pool is non-empty (see playwright.config.ts).
  */
 import { test, expect, type Page } from "@playwright/test";
 import { promoteToAdmin } from "./support/db";
@@ -147,10 +145,14 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   await expect(host.getByTestId("slam-wipe")).toBeVisible();
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
-  // The swap actually happened under the panel: the control is gone because
-  // round 1 is no longer the earliest pending round.
-  await expect(startRound).toHaveCount(0);
-  await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
+  // Team Alpha is the host's own team, and this two-team tournament pairs it
+  // against Bravo — so once the board reflects the started round, auto-pull
+  // carries the host straight off the board and into that match instead of
+  // leaving the started board in view.
+  await expect(host).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
+  await expect(
+    host.getByRole("button", { name: /Button Masher/ }),
+  ).toBeVisible();
 
   await hostContext.close();
   await playerContext.close();

@@ -39,9 +39,10 @@ export default async function TournamentPage(props: {
 
   const board = await getBoardState(id, auth.profile.id);
   if (!board) notFound();
+  const canSpectate = relation.as === "host" || relation.as === "admin";
   return (
     <BoardRefresher tournamentId={id}>
-      <RoundBoard board={board} isHost={isHost} />
+      <RoundBoard board={board} isHost={isHost} canSpectate={canSpectate} />
     </BoardRefresher>
   );
 }

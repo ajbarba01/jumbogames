@@ -1,12 +1,15 @@
 /**
  * Projector round board: the standings table as the hero, with the round-robin
- * schedule beneath it. Read off a screen from meters away, so type steps up and
- * state reads at a glance. Presentational and server-rendered; it takes a board
- * snapshot and renders it. Movement arrows and live match status fill in as
- * results arrive in later milestones.
+ * schedule beneath it. Staff can spectate any live match; a rostered viewer sees
+ * a link into their own live match or a card for their own bye, and auto-pull
+ * carries them into a newly started match without a click. Read off a screen
+ * from meters away, so type steps up and state reads at a glance. Presentational
+ * and server-rendered; it takes a board snapshot and renders it.
  */
-import { Card } from "@jumbo/ui";
+import { Card, CapsLabel } from "@jumbo/ui";
 import type { BoardDTO, BoardTeamRef } from "@/lib/tournament/board";
+import { WipeLink } from "@/components/wipe/WipeLink";
+import { BoardAutoPull } from "./board-auto-pull";
 import { BoardHostControls } from "./board-host-controls";
 import { BoardRoundStart } from "./board-round-start";
 import { EnterMatchLink } from "./enter-match-link";
@@ -37,9 +40,11 @@ function Movement({ movement }: { movement: number }) {
 export function RoundBoard({
   board,
   isHost,
+  canSpectate,
 }: {
   board: BoardDTO;
   isHost: boolean;
+  canSpectate: boolean;
 }) {
   const ended = board.phase === "complete";
   const earliestPendingOrdinal = board.rounds.find(
@@ -62,14 +67,35 @@ export function RoundBoard({
           <span className="text-caps uppercase tracking-widest text-s7">
             {board.roundCount ?? board.rounds.length} rounds · round-robin
           </span>
-          {isHost && !ended ? (
+          {/* ConfirmDialog portals to document.body via ModalShell, outside the
+              wipe's inert wrapper, so a live overlay here would stay clickable
+              underneath an auto-pull wipe. Withholding host controls while the
+              viewer has their own match is what keeps that from happening; the
+              wipe still doesn't inert portaled overlays in general, so any
+              future portaled surface on this page needs the same treatment. */}
+          {isHost && !ended && !board.viewerMatchId ? (
             <BoardHostControls tournamentId={board.id} />
           ) : null}
         </div>
       </header>
 
+      <BoardAutoPull
+        tournamentId={board.id}
+        viewerMatchId={board.viewerMatchId}
+      />
+
       {board.viewerMatchId ? (
         <EnterMatchLink tournamentId={board.id} matchId={board.viewerMatchId} />
+      ) : null}
+
+      {board.viewerBye ? (
+        <Card className="flex flex-col gap-1 p-4">
+          <CapsLabel>Round {board.viewerBye.ordinal}</CapsLabel>
+          <span className="text-lg font-bold text-s12">
+            Bye round · worth {board.viewerBye.minigames} minigames once the
+            round ends
+          </span>
+        </Card>
       ) : null}
 
       <section className="flex flex-col gap-3">
@@ -121,7 +147,7 @@ export function RoundBoard({
               <span className="text-caps uppercase tracking-widest text-s7">
                 Round {round.ordinal}
               </span>
-              {isHost && round.ordinal === earliestPendingOrdinal ? (
+              {isHost && !ended && round.ordinal === earliestPendingOrdinal ? (
                 <BoardRoundStart
                   tournamentId={board.id}
                   ordinal={round.ordinal}
@@ -144,6 +170,15 @@ export function RoundBoard({
                         bye
                       </span>
                     )}
+                    {canSpectate && match.live ? (
+                      <WipeLink
+                        href={`/t/${board.id}/m/${match.id}`}
+                        wipeLabel="Spectate"
+                        className="slip ml-auto cursor-pointer text-sec font-bold text-accent"
+                      >
+                        Spectate
+                      </WipeLink>
+                    ) : null}
                   </li>
                 ))}
               </ul>

@@ -1,9 +1,9 @@
 /**
- * Temporary bridge: a link that takes a member into their live match, covered
- * by the slam wipe. The kit's Button has no `asChild`, so this renders a
- * WipeLink styled with the same primary-button face instead of wrapping a
- * Button around it. Board auto-pull and spectate entry replace this later and
- * should carry the wipe treatment over.
+ * Manual counterpart to board auto-pull: a link that takes a member back into
+ * their live match, covered by the slam wipe, for anyone who navigated away
+ * mid-match. The kit's Button has no `asChild`, so this renders a WipeLink
+ * styled with the same primary-button face instead of wrapping a Button
+ * around it.
  */
 import { WipeLink } from "@/components/wipe/WipeLink";
 

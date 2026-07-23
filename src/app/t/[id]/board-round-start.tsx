@@ -1,8 +1,10 @@
 /**
- * Temporary bridge: a host button that starts the earliest pending round via
- * the round-start route, then swaps the board into the started state under the
- * slam wipe. The MC round-start control and auto-pull replace this later and
- * should carry the wipe treatment over.
+ * Host's round-start control: starts the earliest pending round via the
+ * round-start route, then swaps the board into the started state under the
+ * slam wipe. The resulting broadcast is what board auto-pull reacts to on
+ * every other viewer's board. On failure — e.g. an empty minigame pool — the
+ * route's error string is surfaced next to the button instead of leaving the
+ * host to guess why nothing happened.
  */
 "use client";
 
@@ -21,30 +23,43 @@ export function BoardRoundStart({
   const router = useRouter();
   const { cover } = useWipeNav();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   return (
-    <Button
-      disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        try {
-          const res = await fetch(
-            `/api/tournaments/${tournamentId}/rounds/${ordinal}/start`,
-            { method: "POST" },
-          );
-          // The refresh is dispatched synchronously inside cover() so it lands
-          // in the wipe's transition: React only holds isPending — the
-          // machine's "committed" signal — for updates scheduled before the
-          // action returns, so awaiting the fetch inside cover() would drop
-          // the refresh out of the transition and reveal the panel early.
-          // The network wait is therefore uncovered; only the swap is covered.
-          if (res.ok)
-            cover(() => router.refresh(), { label: `Round ${ordinal}` });
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      Start round {ordinal}
-    </Button>
+    <div className="flex flex-col gap-2">
+      <Button
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            const res = await fetch(
+              `/api/tournaments/${tournamentId}/rounds/${ordinal}/start`,
+              { method: "POST" },
+            );
+            // The refresh is dispatched synchronously inside cover() so it lands
+            // in the wipe's transition: React only holds isPending — the
+            // machine's "committed" signal — for updates scheduled before the
+            // action returns, so awaiting the fetch inside cover() would drop
+            // the refresh out of the transition and reveal the panel early.
+            // The network wait is therefore uncovered; only the swap is covered.
+            if (res.ok) {
+              cover(() => router.refresh(), { label: `Round ${ordinal}` });
+              return;
+            }
+            const data = await res.json().catch(() => null);
+            setError(data?.error ?? "Something went wrong.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        Start round {ordinal}
+      </Button>
+      {error ? (
+        <p className="text-sec text-crit" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

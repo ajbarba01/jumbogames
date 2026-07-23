@@ -33,6 +33,11 @@ for (const key of [
   if (value) webServerEnv[key] = value;
 }
 
+// The spawned server runs a production build, whose minigame pool is empty
+// (stub is devOnly). Opt it into the test pool so a started round draws real
+// slots; this flag only widens the pool and carries no credentials.
+webServerEnv.JUMBO_TEST_MINIGAME_POOL = "1";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,

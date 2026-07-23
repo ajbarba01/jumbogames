@@ -39,3 +39,24 @@ export function drawRoundGames(
   }
   return Array.from({ length: k }, (_, i) => shuffled[i % shuffled.length]!);
 }
+
+export type DrawCheck = { ok: true } | { ok: false; reason: string };
+
+// A round start must never commit a draw that yields no playable slots: the
+// round would flip to active with zero slots, no match would ever be live,
+// and the UI offers no way back (restart 409s on state). Checked before any
+// mutation so the round stays pending and the host can retry.
+export function checkRoundDraw(drawn: MinigameKind[], k: number): DrawCheck {
+  if (k < 1)
+    return {
+      ok: false,
+      reason: "This tournament plays no minigames per match",
+    };
+  if (drawn.length < k) {
+    return {
+      ok: false,
+      reason: "No minigames are available to play in this environment",
+    };
+  }
+  return { ok: true };
+}

@@ -10,31 +10,33 @@ The cut line rule ([DESIGN.md](DESIGN.md) decision 5): shell + one minigame end-
 second game. Submittable at every checkpoint. Each minigame gets a short design session before its
 build (per-game specifics are listed under Deferred design in DESIGN.md).
 
-| #   | Milestone                                                                                                                                          | Status          |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| 0   | Repo scaffolding — Next.js app, docs, templates, Playwright CI, deploy                                                                             | done            |
-| 1   | Auth + roles — Supabase auth, profiles, owner allowlist, owner permissions page; auth E2E spec                                                     | done            |
-| 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                            | done            |
-| 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done            |
-| 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | phases 1–3 done |
-| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | pending         |
-| 6   | Final standings + per-player normalization utilities                                                                                               | pending         |
-| 7   | Minigame 2: typing race                                                                                                                            | pending         |
-| 8   | Minigame 3: word game (territory capture)                                                                                                          | pending         |
-| 9   | Minigame 4: battleship                                                                                                                             | pending         |
-| 10  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending         |
+| #   | Milestone                                                                                                                                          | Status  |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 0   | Repo scaffolding — Next.js app, docs, templates, Playwright CI, deploy                                                                             | done    |
+| 1   | Auth + roles — Supabase auth, profiles, owner allowlist, owner permissions page; auth E2E spec                                                     | done    |
+| 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                            | done    |
+| 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done    |
+| 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done    |
+| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | pending |
+| 6   | Final standings + per-player normalization utilities                                                                                               | pending |
+| 7   | Minigame 2: typing race                                                                                                                            | pending |
+| 8   | Minigame 3: word game (territory capture)                                                                                                          | pending |
+| 9   | Minigame 4: battleship                                                                                                                             | pending |
+| 10  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending |
 
 Everything graded is complete after 6; 7–10 are the full vision. Milestone 2 sits early because every
 later surface builds on the kit; its scope is capped at "kit ports + one theme lands" — reference
 gathering and mockups happen inside it, not as a separate phase.
 
-Milestone 4 lands in phases: 1–3 (core + mockup, then the server backend — schema, realtime, routes,
-playable match page) are in. Phase 4 (board auto-pull + spectate entry, byes, force-yield,
-mid-tournament join/kick) and phase 5 (Playwright E2E), plus the full M4 doc reconciliation, remain.
-The board's round-start button and enter-match link are temporary bridges phase 4 replaces; both now
-play the wipe, which their replacements should carry over. Browser back/forward is made safe rather
-than blocked: the lobby and board resync on history restore (Next reuses a page's RSC payload on
-back/forward), and the match page self-heals on its heartbeat. A live match guards tab close/reload.
+Milestone 4 is done: phases 1–3 (core + mockup, then the server backend — schema, realtime, routes,
+playable match page), phase 4 (board auto-pull, spectate entry, byes, force-yield), and phase 5
+(Playwright E2E) have all landed. Mid-tournament join and kick, originally scoped into phase 4, are
+deferred post-MVP — neither is required by REQUIREMENTS.md, and phase 4 shipped a static roster per
+match against the tournament's first playable minigame. The board's round-start button and
+enter-match link are not temporary: phase 4 keeps both, and both play the wipe like everything phase 4
+added. Browser back/forward is made safe rather than blocked: the lobby and board resync on history
+restore (Next reuses a page's RSC payload on back/forward), and the match page self-heals on its
+heartbeat. A live match guards tab close/reload.
 
 The slam-wipe transition + loading system (`SlamWipe` in the kit, `src/components/wipe/` in the app)
 shipped as foundational infrastructure ahead of Milestone 10's polish pass, so that milestone isn't
@@ -58,12 +60,13 @@ flash and needs its own pass.
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
   opaque panel, and the modal's own outside-hiding can silence the wipe's still-loading cue for screen
   readers. Must be solved before any navigation inside a modal opts into the wipe.
-- **The empty production pool blocks E2E on anything downstream of a live match.** Playwright runs
-  against a production build, where `poolFor("production")` is empty, so a started round draws no
-  slots and no match is ever live. The match-entry link never renders (its wipe is therefore
-  untested), and a match page would derive as already complete — so the live-match `beforeunload`
-  guard cannot be observed there either. Both become testable once a non-`devOnly` minigame exists.
-  Until then the guard is only checkable by hand against a dev server.
+- **Production still has no playable minigame until M5.** `poolFor("production")` stays empty until a
+  non-`devOnly` minigame lands. E2E no longer shares that limitation: `JUMBO_TEST_MINIGAME_POOL`, set
+  only in `playwright.config.ts`, opts the spawned E2E server into the `stub` game, so round start,
+  board auto-pull, spectate entry, byes, and the live-match `beforeunload` guard are all observable
+  (see `e2e/round-start.spec.ts`). In production, `checkRoundDraw` now fails a round start closed
+  (409, no mutation, the round stays `pending`) rather than committing a round with zero slots — the
+  empty pool can no longer corrupt a round, only block starting one until M5 ships.
 - **A round start's network wait is uncovered.** `BoardRoundStart` awaits the round-start POST before
   opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
   React drops post-await updates out of the transition, so `isPending` — the machine's `committed`

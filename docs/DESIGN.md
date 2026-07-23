@@ -20,7 +20,11 @@ Full rationale and the pure-engine contract live in the
   the whole schedule is known up front because pairings don't depend on results. N-1 rounds for even N,
   N rounds for odd N.
 - **Odd team counts** give each team exactly one **bye** across the schedule (worth a match's minigames);
-  even counts need none.
+  even counts need none. A bye's credit lands on **minigames won only, never the normalized tiebreak** —
+  a team that sat out has not earned a score to break ties with — and is applied when the bye's round
+  completes, not when it starts. Accepted limitation: ending the tournament while a bye's round is
+  still active drops that bye's credit, since standings only count byes from rounds recorded
+  `complete`.
 - **A match is K minigames**, K = `minigamesPerMatch` (per-tournament config, 1–4, default 1), drawn
   distinct from the pool. A minigame is won by the higher **normalized team score**; the winner scores
   one point. There is **no match winner** — points are counted per minigame.
@@ -152,6 +156,11 @@ arrive already solved; a theme is a token-scale swap by design.
     deadline, per-team normalized scores + winner, and a JSON `payload` for the game's authoritative
     working state). Match and round state derive from slots — no stored match phase. `Match.version`
     is an optimistic-concurrency token for slot writes.
+13. **Placement is resolved entirely server-side, never inferred by the client.** A viewer is navigated
+    only to the placement the server computes for them: their own live match, the board on an active bye,
+    or nowhere. Someone with neither — a host not playing, an admin, anyone watching a match they aren't
+    rostered on — is never moved, so opening a match to spectate is never undone by another team's round
+    starting.
 
 ## Deferred design (grill before building each)
 
@@ -163,4 +172,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-15_
+_Last reviewed: 2026-07-22_

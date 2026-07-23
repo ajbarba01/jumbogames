@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { MINIGAMES } from "@/lib/minigames/registry";
 import { applyMatchEvent, createMatch, type MatchDeps } from "./lifecycle";
 import { derivePhase } from "./derive";
-import type { MinigameKind } from "@/lib/minigames/types";
+import type { MinigameKind, MinigameServer } from "@/lib/minigames/types";
 import type { MatchState } from "./types";
 
 const T0 = 1_000_000;
@@ -270,5 +270,103 @@ describe("finalize and advancement", () => {
       deps(one.now + 5000),
     );
     expect(derivePhase(finished).kind).toBe("complete");
+  });
+});
+
+// Contract hooks added for content games (trivia onward): server-stamped now
+// in apply, an outcome override at finalize, and init context from the deps.
+describe("contract hooks", () => {
+  function withFake(
+    overrides: Partial<MinigameServer>,
+  ): Record<MinigameKind, MinigameServer> {
+    const fake: MinigameServer = {
+      ...MINIGAMES.stub,
+      ...overrides,
+    } as MinigameServer;
+    return { ...MINIGAMES, stub: fake };
+  }
+
+  function playingWith(
+    games: Record<MinigameKind, MinigameServer>,
+    initContext?: MatchDeps["initContext"],
+  ): { m: MatchState; now: number } {
+    let m = readyAllWith(fresh(), T0, games, initContext);
+    const now = T0 + 3000;
+    m = applyMatchEvent(
+      m,
+      { type: "countdownElapsed", ordinal: 0 },
+      { now, games, initContext },
+    );
+    return { m, now };
+  }
+
+  function readyAllWith(
+    state: MatchState,
+    now: number,
+    games: Record<MinigameKind, MinigameServer>,
+    initContext?: MatchDeps["initContext"],
+  ): MatchState {
+    for (const id of ["a1", "a2", "b1"]) {
+      state = applyMatchEvent(
+        state,
+        { type: "playerReady", ordinal: 0, playerId: id },
+        { now, games, initContext },
+      );
+    }
+    return state;
+  }
+
+  it("passes now to the game's apply on gameAction", () => {
+    const games = withFake({
+      init: () => ({ sawNow: 0 }),
+      apply: (_s, _p, _a, now) => ({ sawNow: now }),
+    });
+    const { m, now } = playingWith(games);
+    const acted = applyMatchEvent(
+      m,
+      { type: "gameAction", ordinal: 0, playerId: "a1", action: {} },
+      { now: now + 123, games },
+    );
+    expect(acted.slots[0]!.payload).toEqual({ sawNow: now + 123 });
+  });
+
+  it("lets a game's outcome override the normalized-mean winner", () => {
+    const games = withFake({
+      init: () => ({}),
+      scores: () => ({ a1: 5, a2: 5, b1: 1 }), // A has the higher mean
+      outcome: () => "B",
+    });
+    const { m, now } = playingWith(games);
+    const done = applyMatchEvent(
+      m,
+      { type: "finalize", ordinal: 0 },
+      { now: now + 10_000, games },
+    );
+    expect(done.slots[0]!.winner).toBe("B");
+    expect(done.slots[0]!.normA).toBe(5);
+    expect(done.slots[0]!.normB).toBe(1);
+  });
+
+  it("falls back to means when outcome returns null", () => {
+    const games = withFake({
+      init: () => ({}),
+      scores: () => ({ a1: 5, a2: 5, b1: 1 }),
+      outcome: () => null,
+    });
+    const { m, now } = playingWith(games);
+    const done = applyMatchEvent(
+      m,
+      { type: "finalize", ordinal: 0 },
+      { now: now + 10_000, games },
+    );
+    expect(done.slots[0]!.winner).toBe("A");
+  });
+
+  it("passes initContext[kind] to init at countdown start", () => {
+    const games = withFake({
+      init: (_snapshot, _seed, context) => ({ sawContext: context }),
+    });
+    const m = readyAllWith(fresh(), T0, games, { stub: ["ctx"] });
+    expect(m.slots[0]!.payload).toEqual({ sawContext: ["ctx"] });
   });
 });

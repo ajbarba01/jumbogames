@@ -10,6 +10,8 @@ import {
   toMatchView,
   type MatchRows,
 } from "./snapshot";
+import { MINIGAMES } from "@/lib/minigames/registry";
+import type { MinigameKind, MinigameServer } from "@/lib/minigames/types";
 import type { SlotState } from "@/lib/match/types";
 
 const rows: MatchRows = {
@@ -107,6 +109,38 @@ describe("toMatchView", () => {
     });
     expect(view.viewerId).toBeNull();
     expect(view.role).toBe("spectator");
+  });
+
+  it("redacts slot payloads per viewer when the game defines redact", () => {
+    const games: Record<MinigameKind, MinigameServer> = {
+      ...MINIGAMES,
+      stub: {
+        ...MINIGAMES.stub,
+        redact: (_state, viewerId) => ({ redactedFor: viewerId }),
+      } as MinigameServer,
+    };
+    const state = rowsToMatchState(rows);
+    const view = toMatchView(state, {
+      viewerId: "a1",
+      role: "player",
+      labels: {},
+      games,
+    });
+    expect(view.match.slots[0]!.payload).toEqual({ redactedFor: "a1" });
+    // Slot 1 has no payload — redaction must not conjure one.
+    expect(view.match.slots[1]!.payload).toBeNull();
+  });
+
+  it("ships payload as-is when the game defines no redact", () => {
+    const state = rowsToMatchState(rows);
+    const view = toMatchView(state, {
+      viewerId: "a1",
+      role: "player",
+      labels: {},
+    });
+    expect(view.match.slots[0]!.payload).toEqual({
+      counts: { a1: 0, a2: 0, b1: 0 },
+    });
   });
 });
 

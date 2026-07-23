@@ -28,6 +28,8 @@ export const stubGame: MinigameServer<StubState, StubAction> = {
     for (const id of [...snapshot.teamA, ...snapshot.teamB]) counts[id] = 0;
     return { counts };
   },
+  // Contract note: apply's trailing `now` is omitted — mash scoring is
+  // time-independent.
   apply(state, playerId, action) {
     if (action.type !== "mash") return state;
     const current = state.counts[playerId];

@@ -9,6 +9,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 import { promoteToAdmin } from "./support/db";
+import { expectNoHorizontalOverflow } from "./support/viewport";
 
 const PASSWORD = "password1234";
 
@@ -188,6 +189,9 @@ test("the host sees a spectate link into a live match and it opens the match", a
   await spectate.click();
   await expect(host).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
   await expect(host.getByRole("button", MATCH_SLOT_CARD)).toBeVisible();
+
+  // The match surface is where a player spends the round, phone in hand.
+  await expectNoHorizontalOverflow(host, "/t/[id]/m/[matchId]");
 
   await hostContext.close();
   await alphaContext.close();

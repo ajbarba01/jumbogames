@@ -8,6 +8,7 @@
  */
 import { test, expect, type Page } from "@playwright/test";
 import { promoteToAdmin } from "./support/db";
+import { expectNoHorizontalOverflow } from "./support/viewport";
 
 const PASSWORD = "password1234";
 
@@ -93,6 +94,12 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
 
   // Host sees Bravo arrive over Realtime; Start enables once all are ready.
   await expect(host.getByText("Bravo")).toBeVisible();
+
+  // The lobby is fully populated here — code, both teams, the roster — so it
+  // is the right moment to hold it to the floor width (docs/UI.md).
+  await expectNoHorizontalOverflow(host, "/t/[id] (lobby, host)");
+  await expectNoHorizontalOverflow(player, "/t/[id] (lobby, player)");
+
   const startButton = host.getByRole("button", { name: "Start tournament" });
   await expect(startButton).toBeEnabled();
   await startButton.click();
@@ -116,6 +123,11 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   // this before proceeding.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
   await expect(player.getByTestId("slam-wipe")).toHaveCount(0);
+
+  // The round board carries the widest content in the app (standings plus the
+  // round's matches), and a spectator may well be on a phone.
+  await expectNoHorizontalOverflow(host, "/t/[id] (round board, host)");
+  await expectNoHorizontalOverflow(player, "/t/[id] (round board, player)");
 
   // Home offers a rejoin while the tournament is live; it routes back to it.
   await host.goto("/");

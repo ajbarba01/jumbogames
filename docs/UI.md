@@ -101,6 +101,24 @@
 - **Keybinds are a registry.** One table drives both dispatch and the
   shortcuts reference, so a bind cannot exist without being discoverable;
   shortcuts render as kbd chips.
+- **Fluid to the floor.** Players join by phone at a hacknight, so **375px is
+  the floor width** — every real route renders at 375 with no horizontal
+  scroll, and `documentElement.scrollWidth` never exceeds the viewport. There
+  is no upper bound to design for: surfaces are authored fluid (percentage,
+  `flex`, `min()`, `clamp()`) and breakpoint prefixes are the **exception**,
+  reached for only when a layout must genuinely re-form — a column count, a
+  rail that becomes a drawer. A fixed pixel size is a promise the narrowest
+  viewport has to keep, so **no kit primitive may demand more width than the
+  narrowest card it can sit in**: at the floor that budget is **207px** — the
+  page's `p-8` gutters, the card's 3px sticker border, and its `p-6` padding
+  eat the rest. Do that arithmetic in rem, not px: the register runs the root
+  at **145%** for projector legibility, so a spacing step is 5.8px and `p-8`
+  is 46px, not 32. A 375px phone therefore has the layout room of a ~259px
+  one, which is what makes the floor bite this hard.
+  Fixed sizes remain correct where the element is inherently fixed —
+  an icon button, a toggle, a keycap — because those stay under the budget at
+  any viewport. Projector surfaces are read at the other extreme, but the
+  floor still binds: a spectator's phone loads the same route.
 - **Banners' function, not banners.** A status or predictive notice —
   waiting on the other team, a dropped connection — surfaces as one quiet
   line in status-vocabulary form: status hue, name, inline action, docked to
@@ -129,6 +147,19 @@
   12-step scale, the status colors, and the shadows, replaced together at
   equal quality — never a partial recolor. The current register is one such
   file; a future theme is another, held to the same bar.
+- **Declare what squeezes.** A flex or grid child's automatic minimum size is
+  its content, not zero — so a long name, a wide input, or a nested flex row
+  refuses to shrink and pushes its siblings out of the card instead. Every row
+  built under the fluid law states its intent explicitly: a child that may be
+  squeezed carries `min-w-0` (plus `truncate` if it is text), and a label, tag,
+  or icon that must keep its size carries `shrink-0`. Neither is decoration —
+  an unmarked row is an untested assumption about content length. When a row
+  runs out of width, prefer in this order: **shrink** the one child that can
+  lose width without losing meaning; **wrap** (`flex-wrap`) when the children
+  are peers of similar weight, such as a control cluster; **scroll** only for
+  content that is inherently wide and browsable — a table, a code block — in
+  its own `overflow-x-auto` container, never the page. The page itself never
+  scrolls sideways.
 - **Semantic z-index scale.** Layers stack by name — sticky, modal-backdrop,
   modal, dropdown, toast, tooltip — never by an arbitrary number. Dropdown
   ranks above modal on purpose: a select portaled from inside a dialog has
@@ -150,4 +181,4 @@
 
 ---
 
-_Last reviewed: 2026-07-16_
+_Last reviewed: 2026-07-24_

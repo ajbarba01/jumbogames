@@ -51,7 +51,12 @@ function Section({
       <h2 className="font-display text-sec uppercase tracking-wider text-s11">
         {title}
       </h2>
-      <div className="flex flex-wrap items-center gap-4">{children}</div>
+      {/* Specimens are shown at their natural size — several are legitimately
+          wider than the floor viewport — so the row scrolls itself rather than
+          the page (the fluid law's scroll case, docs/UI.md). */}
+      <div className="flex flex-wrap items-center gap-4 overflow-x-auto">
+        {children}
+      </div>
     </section>
   );
 }
@@ -150,6 +155,17 @@ function InputsSection() {
           onChange={setCode}
           placeholder="JUMBOS"
         />
+      </Specimen>
+      {/* The floor-width case: 207px is what a card leaves at 375px (UI.md),
+          so this is the narrowest box the component has to survive. */}
+      <Specimen label="CodeInput — floor width (cells and glyph shrink to fit)">
+        <div className="w-[207px]">
+          <CodeInput
+            aria-label="Game code narrow"
+            value="JUMBOS"
+            onChange={() => {}}
+          />
+        </div>
       </Specimen>
       <Specimen label="CodeInput — invalid">
         <CodeInput
@@ -624,7 +640,7 @@ export function ShowcaseGallery(): React.JSX.Element {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-s1 px-8 py-10">
-        <div className="mx-auto flex max-w-[960px] flex-col gap-10">
+        <div className="mx-auto flex w-full max-w-[960px] min-w-0 flex-col gap-10">
           <header className="flex flex-col gap-1">
             <h1 className="font-display text-2xl uppercase text-s12">
               @jumbo/ui <span className="text-accent">showcase</span>

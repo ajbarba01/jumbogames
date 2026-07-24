@@ -40,8 +40,14 @@ export default async function Home() {
             {profile.role}
           </span>
         </div>
-        <span className="text-sec text-s9">Signed in as {profile.email}</span>
-        <div className="flex items-center gap-4 border-t-2 border-s6 pt-4">
+        {/* A long address has no break opportunity, so it overflows the card
+            as inline text at the floor width — wrap it anywhere it must. */}
+        <span className="text-sec wrap-anywhere text-s9">
+          Signed in as {profile.email}
+        </span>
+        {/* Up to three peer links for an owner — more than fits a phone in one
+            line, and peers of equal weight, so the row wraps (docs/UI.md). */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t-2 border-s6 pt-4">
           <LogoutButton />
           {profile.role === "owner" ? (
             <Link

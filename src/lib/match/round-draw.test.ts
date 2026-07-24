@@ -1,10 +1,15 @@
 /**
- * Tests for the seeded per-round minigame draw and its pre-commit guard:
+ * Tests for the seeded per-round minigame draw and its pre-commit guards:
  * deterministic under a seed, distinct while the pool lasts, cycling when K
- * exceeds the pool, and `checkRoundDraw` rejecting a draw that can't fill K.
+ * exceeds the pool, `checkRoundDraw` rejecting a draw that can't fill K, and
+ * `checkContentReady` rejecting a drawn kind with no content to serve.
  */
 import { describe, expect, it } from "vitest";
-import { checkRoundDraw, drawRoundGames } from "./round-draw";
+import {
+  checkContentReady,
+  checkRoundDraw,
+  drawRoundGames,
+} from "./round-draw";
 import type { MinigameKind } from "@/lib/minigames/types";
 
 // Widened pool for draw semantics; only "stub" exists as a real kind today.
@@ -55,5 +60,16 @@ describe("checkRoundDraw", () => {
       ok: false,
       reason: "No minigames are available to play in this environment",
     });
+  });
+});
+
+describe("checkContentReady", () => {
+  it("fails a draw containing trivia when the bank is empty", () => {
+    const check = checkContentReady(["trivia"], 0);
+    expect(check.ok).toBe(false);
+  });
+  it("passes trivia with a stocked bank and non-trivia draws regardless", () => {
+    expect(checkContentReady(["trivia"], 1).ok).toBe(true);
+    expect(checkContentReady(["stub"], 0).ok).toBe(true);
   });
 });

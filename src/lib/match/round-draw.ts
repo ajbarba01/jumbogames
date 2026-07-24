@@ -37,3 +37,20 @@ export function checkRoundDraw(drawn: MinigameKind[], k: number): DrawCheck {
   }
   return { ok: true };
 }
+
+// Trivia's slot payload is built from a question bank fetched at the IO edge;
+// an empty bank has nothing to deal, so the check runs before the draw is
+// committed rather than surfacing as an unplayable slot mid-match.
+export function checkContentReady(
+  drawn: MinigameKind[],
+  triviaBankCount: number,
+): DrawCheck {
+  if (drawn.includes("trivia") && triviaBankCount < 1) {
+    return {
+      ok: false,
+      reason:
+        "The trivia question bank is empty — an admin must add questions first",
+    };
+  }
+  return { ok: true };
+}

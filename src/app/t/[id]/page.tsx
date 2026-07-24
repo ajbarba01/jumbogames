@@ -31,7 +31,7 @@ export default async function TournamentPage(props: {
       <LobbyView
         initialState={toLobbyDTO(state)}
         viewerId={auth.profile.id}
-        viewerEmail={auth.profile.email}
+        viewerDisplayName={auth.profile.displayName}
         isHost={isHost}
       />
     );

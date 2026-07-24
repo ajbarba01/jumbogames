@@ -261,6 +261,13 @@ test("a sitting-out team's player sees the board's bye card", async ({
   const byePlayer = playerByTeam[byeTeamName];
   expect(byePlayer).toBeDefined();
 
+  // The bye player takes no action this round, so their board only learns of the
+  // bye from a Realtime broadcast -> router.refresh() (see BoardRefresher). That
+  // push to an idle client is the flakiest hop in the suite. Reloading forces the
+  // same fresh server render the app performs on tab-restore (useRefreshOnRestore),
+  // so the assertion reflects server truth (viewerBye) rather than a possibly-
+  // dropped or delayed broadcast.
+  await byePlayer!.reload();
   await expect(byePlayer!.getByText("Bye round")).toBeVisible();
 
   await hostContext.close();

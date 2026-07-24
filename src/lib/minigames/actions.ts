@@ -8,8 +8,15 @@ import type { MinigameKind } from "./types";
 
 const stubAction = z.object({ type: z.literal("mash") });
 
+const triviaAction = z.object({
+  type: z.literal("answer"),
+  deckIndex: z.number().int().min(0),
+  choiceIndex: z.number().int().min(0).max(3),
+});
+
 const ACTION_SCHEMAS: Record<MinigameKind, z.ZodType> = {
   stub: stubAction,
+  trivia: triviaAction,
 };
 
 export function actionSchemaFor(kind: MinigameKind): z.ZodType {

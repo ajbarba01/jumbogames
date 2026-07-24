@@ -24,6 +24,7 @@ enum TournamentPhase {
 
 enum MinigameKind {
   stub
+  trivia
 }
 
 enum RoundState {
@@ -185,4 +186,20 @@ model MinigameSlot {
 
   @@unique([matchId, ordinal])
   @@map("minigame_slots")
+}
+
+/// Admin-authored trivia question bank. The correct answer is stored apart
+/// from the distractors so each match's deck can shuffle choice order per
+/// card without ever leaking the answer through option position.
+model TriviaQuestion {
+  id               String   @id @default(uuid())
+  prompt           String
+  correctAnswer    String   @map("correct_answer")
+  incorrectAnswers String[] @map("incorrect_answers")
+  category         String?
+  difficulty       String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("trivia_questions")
 }

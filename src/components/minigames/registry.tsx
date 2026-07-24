@@ -7,6 +7,7 @@ import type { MatchView } from "@/lib/match/client";
 import type { SlotState } from "@/lib/match/types";
 import type { MinigameKind } from "@/lib/minigames/types";
 import { StubPlay } from "./StubPlay";
+import { TriviaPlay } from "./TriviaPlay";
 
 export interface MinigamePlayProps {
   view: MatchView;
@@ -23,4 +24,5 @@ export const MINIGAME_SURFACES: Record<
   ComponentType<MinigamePlayProps>
 > = {
   stub: StubPlay,
+  trivia: TriviaPlay,
 };

@@ -68,7 +68,8 @@ export class FakeMatchClient implements MatchClient {
         colorIndex: 2,
         members: membersB,
       },
-      kinds: drawRoundGames(poolFor("development"), config.k, "mock-round"),
+      // The mock plays only dev-only games; real games need server content.
+      kinds: drawRoundGames(poolFor("test"), config.k, "mock-round"),
     });
     this.view = this.buildView();
     this.timer = setInterval(() => this.tick(), TICK_MS);

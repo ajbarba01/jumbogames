@@ -7,7 +7,7 @@
  * separately (no React here).
  */
 
-export type MinigameKind = "stub";
+export type MinigameKind = "stub" | "trivia";
 
 export interface RosterSnapshot {
   teamA: string[];

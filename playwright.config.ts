@@ -45,6 +45,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
+  // Most assertions here wait on state that propagates across separate browser
+  // contexts over Supabase Realtime (a team readying up, a round starting, a
+  // bye landing on another player's board). Under CI load that hop can outrun
+  // Playwright's 5s default and flake the round-start suite, so give every
+  // web-first assertion more headroom; the per-test 30s budget still bounds a
+  // genuinely stuck wait, and the slow lifecycle tests raise it themselves.
+  expect: { timeout: 15_000 },
   use: {
     baseURL: `http://localhost:${E2E_PORT}`,
     trace: "on-first-retry",

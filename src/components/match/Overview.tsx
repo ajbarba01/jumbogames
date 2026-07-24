@@ -13,13 +13,15 @@ import { MINIGAMES } from "@/lib/minigames/registry";
 
 function TeamBadge({ team }: { team: MatchTeam }): React.JSX.Element {
   return (
-    <span className="flex items-center gap-2.5 font-display text-2xl text-s12">
+    <span className="flex min-w-0 items-center gap-2.5 font-display text-2xl text-s12">
       <span
         className="h-4 w-4 flex-none rounded-r1"
         style={{ background: `var(--color-team-${team.colorIndex})` }}
         aria-hidden
       />
-      {team.name}
+      {/* The chip must keep its size and the name is what can lose width, so
+          the name is the one that truncates (docs/UI.md). */}
+      <span className="truncate">{team.name}</span>
     </span>
   );
 }
@@ -98,9 +100,12 @@ export function Overview({
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-10 p-8">
-      <header className="flex items-center gap-6">
+      {/* Two projector-scale team names either side of a projector-scale score
+          do not fit a phone in one line, so the row wraps rather than pushing
+          the page sideways; the tally never shrinks, it is the point. */}
+      <header className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-1">
         <TeamBadge team={match.teamA} />
-        <span className="font-display text-5xl text-s12">
+        <span className="shrink-0 font-display text-5xl text-s12">
           {tally.a}–{tally.b}
         </span>
         <TeamBadge team={match.teamB} />

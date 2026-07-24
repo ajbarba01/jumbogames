@@ -68,11 +68,16 @@ unverified in CI.
 
 Milestone 8's first half has landed ahead of the rest of the milestone: `displayName` is now a real,
 `NOT NULL`, required-at-signup, user-editable `Profile` field (existing rows backfilled from the email
-local part; edits go through `PATCH /api/profile` — there's no edit UI yet, that's still to come), and
+local part; edits go through `PATCH /api/profile`, from an inline editor on the home identity card), and
 every other-player-facing label — lobby roster, presence, match member labels — renders it instead of
 email. Home self-identity ("Signed in as {email}") and the admin permissions page still show email;
 that's deliberate, not leftover. Spectate-by-link, the other half of M8 (DESIGN decision 16), hasn't
 shipped yet — it's gated on this field, not on top of it.
+
+Milestone 7's first surface has landed ahead of the rest of the milestone: the home reskin (event-join
+hero + inline displayName edit) and the tournament→"event" UI-copy sweep (DESIGN decision 15) shipped
+as Slice 1 of the mockup-integration program. Open hosting and the create-game surface — the rest of
+milestone 7 — haven't shipped, so the milestone stays pending.
 
 ## Known gaps (carry into the next branches)
 

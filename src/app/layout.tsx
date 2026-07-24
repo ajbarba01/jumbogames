@@ -40,7 +40,7 @@ const gaegu = Gaegu({
 export const metadata: Metadata = {
   title: "Jumbogames",
   description:
-    "Team-based tournament of co-operative minigames for JumboCode hacknights",
+    "Team-based events of short co-operative minigames for JumboCode hacknights",
 };
 
 export default function RootLayout({

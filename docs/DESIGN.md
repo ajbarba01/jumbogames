@@ -198,22 +198,23 @@ arrive already solved; a theme is a token-scale swap by design.
     if format-shaped conditionals ever creep into the engine, revisit. This also supersedes
     admin-only hosting; admins keep content management (see Roles). Full rationale in the
     [games-first spec](superpowers/specs/2026-07-23-games-first-refactor-design.md) (local artifact).
-15. **Vocabulary mapping: code `Tournament` = product "game".** The schema, routes, and types keep
-    `Tournament` to avoid rename churn; all UI copy says "game", using "tournament" only for actual
-    multi-team games. Recorded so the drift is a deliberate translation, not an accident; a future
+15. **Vocabulary mapping: code `Tournament` = product "event".** The schema, routes, and types keep
+    `Tournament` to avoid rename churn; all UI copy says "event" (the `game`/`minigame` overload drove
+    the switch from "game" to "event"; landed Slice 1, 2026-07-24), using "tournament" only for actual
+    multi-team events. Recorded so the drift is a deliberate translation, not an accident; a future
     code rename stays open.
 16. **Spectate by link, play by code.** Board and match-spectate reads are open to any signed-in
     user (no membership required); mutations that join a game — picking a team — require the game
     code, validated server-side in the join request. Link = read, code = write. Anonymous (no-auth)
     spectating is a deliberate post-MVP loosening, gated on `displayName` fully replacing emails.
     `displayName` itself has landed ahead of the read-opening it gates: it's a real, `NOT NULL`,
-    required-at-signup, user-editable field (backfilled from the email local part for existing rows,
-    changed via `PATCH /api/profile`; there's no edit UI yet), and every other-player-facing label
-    (lobby roster, presence, match member labels) now renders it instead of email. Home
-    self-identity ("Signed in as {email}") and the admin permissions page deliberately still show
-    email — both are the account owner looking at their own or another admin's account, not a
-    player-facing label, so the leak this decision is about doesn't apply there. The spectate
-    read-opening itself is unchanged by this and still ships later (Slice 3).
+    required-at-signup, user-editable field (backfilled from the email local part for existing
+    rows, changed via `PATCH /api/profile`, edited in place on the home identity card), and
+    every other-player-facing label (lobby roster, presence, match member labels) now renders it
+    instead of email. Home self-identity ("Signed in as {email}") and the admin permissions page
+    deliberately still show email — both are the account owner looking at their own or another
+    admin's account, not a player-facing label, so the leak this decision is about doesn't apply
+    there. The spectate read-opening itself is unchanged by this and still ships later (Slice 3).
 17. **Roster fluidity under the lock rule.** Join, leave, and leader-kick are allowed only while the
     team has no live match (lobby phase or between rounds); slot roster snapshots already make the
     boundary safe. Leader leaving auto-transfers leadership to the earliest-joined member; an empty

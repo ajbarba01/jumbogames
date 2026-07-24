@@ -151,7 +151,7 @@ export function CredentialForm({
         <p className="font-display text-3xl uppercase text-s12">
           Jumbo <span className="text-accent">minigames</span>
         </p>
-        <p className="text-sec text-s9">Team tournament of co-op minigames.</p>
+        <p className="text-sec text-s9">Short co-op minigames, team vs team.</p>
       </div>
 
       <Card className="flex flex-col gap-5 p-6">

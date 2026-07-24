@@ -38,7 +38,7 @@ test("a non-member is refused on lobby, board, and match", async ({
   await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
-  await host.getByRole("button", { name: "Create tournament" }).click();
+  await host.getByRole("button", { name: "Create an event" }).click();
   await host.waitForURL(/\/host$/);
   await host.getByPlaceholder("Tournament name").fill("Authz Cup");
   await host.getByRole("button", { name: "Create and host" }).click();

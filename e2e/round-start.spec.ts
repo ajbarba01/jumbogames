@@ -114,7 +114,10 @@ test("board auto-pull carries players into their match while the host stays on t
   const startRound = host.getByRole("button", { name: "Start round 1" });
   await expect(startRound).toBeVisible();
   await startRound.click();
-  await expect(host.getByTestId("slam-wipe")).toBeVisible();
+  // Wait for the round-transition wipe to clear before reading the board. Only
+  // the settled (unmounted) state is asserted: the wipe is a fast transient that
+  // can finish before a `toBeVisible()` poll ever catches it, so asserting it
+  // was seen mid-sweep is inherently racy.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
   // Both rostered players are pulled straight off the board and into their
@@ -171,7 +174,10 @@ test("the host sees a spectate link into a live match and it opens the match", a
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   await host.getByRole("button", { name: "Start round 1" }).click();
-  await expect(host.getByTestId("slam-wipe")).toBeVisible();
+  // Wait for the round-transition wipe to clear before reading the board. Only
+  // the settled (unmounted) state is asserted: the wipe is a fast transient that
+  // can finish before a `toBeVisible()` poll ever catches it, so asserting it
+  // was seen mid-sweep is inherently racy.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
   // The host is staff (host + admin, see resolveViewer) and is on neither
@@ -231,7 +237,10 @@ test("a sitting-out team's player sees the board's bye card", async ({
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   await host.getByRole("button", { name: "Start round 1" }).click();
-  await expect(host.getByTestId("slam-wipe")).toBeVisible();
+  // Wait for the round-transition wipe to clear before reading the board. Only
+  // the settled (unmounted) state is asserted: the wipe is a fast transient that
+  // can finish before a `toBeVisible()` poll ever catches it, so asserting it
+  // was seen mid-sweep is inherently racy.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
   // The circle-method schedule seeds from server-side state the test cannot
@@ -252,6 +261,13 @@ test("a sitting-out team's player sees the board's bye card", async ({
   const byePlayer = playerByTeam[byeTeamName];
   expect(byePlayer).toBeDefined();
 
+  // The bye player takes no action this round, so their board only learns of the
+  // bye from a Realtime broadcast -> router.refresh() (see BoardRefresher). That
+  // push to an idle client is the flakiest hop in the suite. Reloading forces the
+  // same fresh server render the app performs on tab-restore (useRefreshOnRestore),
+  // so the assertion reflects server truth (viewerBye) rather than a possibly-
+  // dropped or delayed broadcast.
+  await byePlayer!.reload();
   await expect(byePlayer!.getByText("Bye round")).toBeVisible();
 
   await hostContext.close();
@@ -320,7 +336,10 @@ test("starting the next round force-yields players off their finished match's en
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   await host.getByRole("button", { name: "Start round 1" }).click();
-  await expect(host.getByTestId("slam-wipe")).toBeVisible();
+  // Wait for the round-transition wipe to clear before reading the board. Only
+  // the settled (unmounted) state is asserted: the wipe is a fast transient that
+  // can finish before a `toBeVisible()` poll ever catches it, so asserting it
+  // was seen mid-sweep is inherently racy.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
   // Auto-pull carries all four players into one of round 1's two matches.
@@ -365,7 +384,10 @@ test("starting the next round force-yields players off their finished match's en
   const startRound2 = host.getByRole("button", { name: "Start round 2" });
   await expect(startRound2).toBeVisible({ timeout: 15_000 });
   await startRound2.click();
-  await expect(host.getByTestId("slam-wipe")).toBeVisible();
+  // Wait for the round-transition wipe to clear before reading the board. Only
+  // the settled (unmounted) state is asserted: the wipe is a fast transient that
+  // can finish before a `toBeVisible()` poll ever catches it, so asserting it
+  // was seen mid-sweep is inherently racy.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
   // The point of the test: the round-start broadcast force-yields both

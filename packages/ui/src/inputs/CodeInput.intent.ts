@@ -18,7 +18,7 @@ export const codeInputIntent: ComponentIntent = assertIntent({
     "A very long code where segmentation stops helping — prefer a single field.",
   ],
   anatomy:
-    "A labelled group of single-character inputs; typing advances, backspace steps back, paste distributes, and focus jumps to the first empty cell so entry stays gapless. Each cell owns the browser's caret and selection. An optional hidden aggregate carries the value for form posts.",
+    "A labelled group of single-character inputs; typing advances, backspace steps back, paste distributes, and focus jumps to the first empty cell so entry stays gapless. Each cell owns the browser's caret and selection. An optional hidden aggregate carries the value for form posts. Cells are fluid — they divide the row, cap at the desktop size, and scale their glyph with their own width, so the shipped six fit the floor width; a much longer code would need the row to wrap rather than divide further.",
   variantsStates: [
     "default · empty (per-cell ghost placeholder) · hover (cell sticker lift) · focus (global accent ring) · disabled (s3 face, no hover) · invalid (crit border on cells) · complete (fires onComplete)",
   ],

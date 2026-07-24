@@ -5,6 +5,8 @@
  * focus jumps to the first empty cell so entry stays gapless. Controlled:
  * `value` is the joined, uppercased string; charset is alphanumeric. Each cell
  * is its own input, so the caret and text selection are the browser's own.
+ * Cells are fluid: they share the row's width, cap at the desktop size, and
+ * scale their glyph with themselves so the row fits the floor width (UI.md).
  */
 "use client";
 
@@ -156,32 +158,45 @@ export function CodeInput({
       );
 
   return (
-    <div role="group" aria-label={ariaLabel} className="flex gap-2">
+    <div role="group" aria-label={ariaLabel} className="flex w-full gap-2">
       {chars.map((char, index) => (
-        <input
+        // Each cell is its own container so the glyph can be sized against
+        // that cell's width. An input cannot shrink below its own line box,
+        // so a fixed font size would keep the cell tall as it narrowed and
+        // leave a sliver at the floor width; scaling the two together holds
+        // the proportion instead. Sizing lives out here because the input
+        // fills the box, and the box is what the flex row resolves.
+        <div
           key={index}
-          ref={(el) => {
-            refs.current[index] = el;
-          }}
-          value={char}
-          placeholder={placeholder?.[index] ?? undefined}
-          disabled={disabled}
-          autoFocus={autoFocus && index === 0}
-          onChange={(event) => handleChange(index, event)}
-          onKeyDown={(event) => handleKeyDown(index, event)}
-          onPaste={(event) => handlePaste(index, event)}
-          onFocus={() => handleFocus(index)}
-          inputMode="text"
-          autoComplete="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-          maxLength={1}
-          aria-label={`${ariaLabel} character ${index + 1}`}
-          className={cx(
-            "slip h-14 w-12 rounded-r1 text-center font-mono text-xl font-bold uppercase",
-            cellFace,
-          )}
-        />
+          className="@container aspect-6/7 min-w-0 max-w-12 flex-1 basis-0"
+        >
+          <input
+            ref={(el) => {
+              refs.current[index] = el;
+            }}
+            value={char}
+            placeholder={placeholder?.[index] ?? undefined}
+            disabled={disabled}
+            autoFocus={autoFocus && index === 0}
+            onChange={(event) => handleChange(index, event)}
+            onKeyDown={(event) => handleKeyDown(index, event)}
+            onPaste={(event) => handlePaste(index, event)}
+            onFocus={() => handleFocus(index)}
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={1}
+            aria-label={`${ariaLabel} character ${index + 1}`}
+            className={cx(
+              // The glyph rides the cell's own width, floored at the secondary
+              // text token so a floor-width cell stays readable; leading-none
+              // keeps the line box out of the height calculation.
+              "slip h-full w-full rounded-r1 text-center font-mono text-[max(var(--text-sec),42cqw)] leading-none font-bold uppercase",
+              cellFace,
+            )}
+          />
+        </div>
       ))}
       {name ? <input type="hidden" name={name} value={value} /> : null}
     </div>

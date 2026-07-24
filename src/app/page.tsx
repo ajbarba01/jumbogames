@@ -1,8 +1,9 @@
 /**
  * Home: the authenticated landing. One hero card takes a game code and joins;
  * admins and owners also get a route into hosting. A small identity card shows
- * the signed-in account, log out, and an owner-only permissions link.
- * Logged-out visitors are sent to login.
+ * the signed-in account, log out, an owner-only permissions link, and a
+ * question-bank link for admins and owners. Logged-out visitors are sent to
+ * login.
  */
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -65,6 +66,14 @@ export default async function Home() {
               className="slip text-sec font-bold text-s9 underline-offset-4 hover:text-s11 hover:underline"
             >
               Manage permissions
+            </Link>
+          ) : null}
+          {profile.role !== "player" ? (
+            <Link
+              href="/admin/questions"
+              className="slip text-sec font-bold text-s9 underline-offset-4 hover:text-s11 hover:underline"
+            >
+              Question bank
             </Link>
           ) : null}
         </div>

@@ -16,14 +16,14 @@ describe("stubGame", () => {
 
   it("increments the acting player's count", () => {
     const s0 = stubGame.init(snapshot, "seed");
-    const s1 = stubGame.apply(s0, "p1", { type: "mash" });
+    const s1 = stubGame.apply(s0, "p1", { type: "mash" }, 0);
     expect(s1.counts).toEqual({ p1: 1, p2: 0, p3: 0 });
     expect(s0.counts.p1).toBe(0); // immutable
   });
 
   it("ignores players outside the snapshot", () => {
     const s0 = stubGame.init(snapshot, "seed");
-    expect(stubGame.apply(s0, "intruder", { type: "mash" })).toBe(s0);
+    expect(stubGame.apply(s0, "intruder", { type: "mash" }, 0)).toBe(s0);
   });
 
   it("never self-finishes (timer-bounded only)", () => {
@@ -34,7 +34,7 @@ describe("stubGame", () => {
 
   it("reports counts as per-player raw scores", () => {
     let s = stubGame.init(snapshot, "seed");
-    s = stubGame.apply(s, "p3", { type: "mash" });
+    s = stubGame.apply(s, "p3", { type: "mash" }, 0);
     expect(stubGame.scores(s)).toEqual({ p1: 0, p2: 0, p3: 1 });
   });
 });

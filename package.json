@@ -19,7 +19,8 @@
     "test:unit:watch": "vitest",
     "postinstall": "prisma generate",
     "db:migrate": "dotenv -e .env.test.local -- prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "seed:trivia": "dotenv -e .env.test.local -- jiti scripts/seed-trivia.ts"
   },
   "dependencies": {
     "@jumbo/ui": "*",

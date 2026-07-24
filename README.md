@@ -76,6 +76,15 @@ Playwright E2E tests live in [e2e/](e2e/) and cover auth and CRUD flows. They ru
 on every push and PR against a dedicated test Supabase project with dedicated test users — see
 [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
+## Trivia question bank
+
+The `trivia_questions` table backs the Trivia Tug-of-War minigame. Seed it with
+`npm run seed:trivia`, which targets the test/dev database by default (via
+`.env.test.local`); Duplicate prompts are never re-inserted, but each run draws a fresh random sample from OpenTDB, so re-running adds new questions rather than inserting nothing. Seeding production is a deliberate manual act: run
+the script with a production `DATABASE_URL` yourself, it is never automated.
+Questions are seeded from the [Open Trivia Database](https://opentdb.com)
+under CC BY-SA 4.0.
+
 ## Contributing workflow
 
 Branches are named `[topic]/[feature]` (e.g. `feature/trivia-tug-of-war`); all work merges via PR

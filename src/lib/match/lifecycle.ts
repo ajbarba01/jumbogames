@@ -24,6 +24,9 @@ import {
 export interface MatchDeps {
   now: number;
   games: Record<MinigameKind, MinigameServer>;
+  // Per-kind data fetched at the IO edge for init (e.g. trivia's question
+  // bank); absent for games that need none.
+  initContext?: Partial<Record<MinigameKind, unknown>>;
 }
 
 export function createMatch(params: {
@@ -77,7 +80,11 @@ function startCountdown(
     phase: "countdown",
     snapshot,
     countdownEndsAt: deps.now + COUNTDOWN_SECONDS * 1000,
-    payload: game.init(snapshot, `${state.seed}:${slot.ordinal}`),
+    payload: game.init(
+      snapshot,
+      `${state.seed}:${slot.ordinal}`,
+      deps.initContext?.[slot.kind],
+    ),
   });
 }
 
@@ -150,7 +157,12 @@ export function applyMatchEvent(
       const game = deps.games[slot.kind];
       return replaceSlot(state, {
         ...slot,
-        payload: game.apply(slot.payload, event.playerId, event.action),
+        payload: game.apply(
+          slot.payload,
+          event.playerId,
+          event.action,
+          deps.now,
+        ),
       });
     }
     case "finalize": {
@@ -163,8 +175,10 @@ export function applyMatchEvent(
       const raws = game.scores(slot.payload);
       const normA = normalizeTeamScore(raws, slot.snapshot.teamA);
       const normB = normalizeTeamScore(raws, slot.snapshot.teamB);
+      // A game-decided outcome (e.g. a rope pin) beats the mean comparison.
+      const override = game.outcome?.(slot.payload) ?? null;
       const winner: SlotWinner =
-        normA > normB ? "A" : normB > normA ? "B" : "tie";
+        override ?? (normA > normB ? "A" : normB > normA ? "B" : "tie");
       return replaceSlot(state, {
         ...slot,
         phase: "scoring",

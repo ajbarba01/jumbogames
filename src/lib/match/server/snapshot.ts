@@ -10,7 +10,12 @@ import type {
   SlotState,
   SlotWinner,
 } from "@/lib/match/types";
-import type { MinigameKind, RosterSnapshot } from "@/lib/minigames/types";
+import { MINIGAMES } from "@/lib/minigames/registry";
+import type {
+  MinigameKind,
+  MinigameServer,
+  RosterSnapshot,
+} from "@/lib/minigames/types";
 
 export interface SlotRow {
   ordinal: number;
@@ -109,13 +114,23 @@ export function toMatchView(
     viewerId: string | null;
     role: ViewerRole;
     labels: Record<string, string>;
+    games?: Record<MinigameKind, MinigameServer>;
   },
 ): MatchView {
-  // The audience seam: the stub carries no hidden info, so the full state ships
-  // to every viewer. Games with secret state redact here before the snapshot
-  // leaves the server.
+  // The audience seam: games with hidden info define redact and get their
+  // payloads stripped per viewer before the snapshot leaves the server;
+  // games without it (the stub) ship state whole.
+  const games = opts.games ?? MINIGAMES;
+  const redacted: MatchState = {
+    ...state,
+    slots: state.slots.map((slot) => {
+      const game = games[slot.kind];
+      if (!game.redact || slot.payload === null) return slot;
+      return { ...slot, payload: game.redact(slot.payload, opts.viewerId) };
+    }),
+  };
   return {
-    match: state,
+    match: redacted,
     viewerId: opts.viewerId,
     role: opts.role,
     playerLabels: opts.labels,

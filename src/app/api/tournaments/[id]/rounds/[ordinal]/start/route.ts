@@ -8,7 +8,11 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/profile";
 import { prisma } from "@/lib/prisma";
 import { RoundState, TournamentPhase } from "@/generated/prisma/client";
-import { checkRoundDraw, drawRoundGames } from "@/lib/match/round-draw";
+import {
+  checkContentReady,
+  checkRoundDraw,
+  drawRoundGames,
+} from "@/lib/match/round-draw";
 import { poolFor } from "@/lib/minigames/registry";
 import { buildRoundSlots } from "@/lib/match/server/round-slots";
 import { broadcastTournamentChange } from "@/lib/realtime/broadcast";
@@ -97,6 +101,13 @@ export async function POST(
   const drawCheck = checkRoundDraw(drawnGames, tournament.minigamesPerMatch);
   if (!drawCheck.ok) {
     return NextResponse.json({ error: drawCheck.reason }, { status: 409 });
+  }
+  const bankCount = drawnGames.includes("trivia")
+    ? await prisma.triviaQuestion.count()
+    : 0;
+  const contentCheck = checkContentReady(drawnGames, bankCount);
+  if (!contentCheck.ok) {
+    return NextResponse.json({ error: contentCheck.reason }, { status: 409 });
   }
   const slots = buildRoundSlots(
     round.matches.map((m) => ({ id: m.id, isBye: m.teamBId === null })),

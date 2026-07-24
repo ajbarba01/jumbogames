@@ -6,8 +6,10 @@
  */
 import { prisma } from "@/lib/prisma";
 import { MINIGAMES } from "@/lib/minigames/registry";
+import { INIT_CONTEXT_LOADERS } from "@/lib/minigames/prepare";
 import { applyMatchEvent } from "@/lib/match/lifecycle";
 import { derivePhase } from "@/lib/match/derive";
+import type { MinigameKind } from "@/lib/minigames/types";
 import type { MatchEvent } from "@/lib/match/types";
 import {
   broadcastMatchChange,
@@ -62,7 +64,25 @@ export async function mutateMatch(
     }
 
     const state = rowsToMatchState(loaded.rows);
-    const next = applyMatchEvent(state, event, { now, games: MINIGAMES });
+
+    const gatingKinds = new Set<MinigameKind>(
+      state.slots
+        .filter((slot) => slot.phase === "gate")
+        .map((slot) => slot.kind)
+        .filter((kind) => kind in INIT_CONTEXT_LOADERS),
+    );
+    const initContext: Partial<Record<MinigameKind, unknown>> = {};
+    await Promise.all(
+      [...gatingKinds].map(async (kind) => {
+        initContext[kind] = await INIT_CONTEXT_LOADERS[kind]!();
+      }),
+    );
+
+    const next = applyMatchEvent(state, event, {
+      now,
+      games: MINIGAMES,
+      initContext,
+    });
     if (next === state) return { ok: true, changed: false };
 
     // Interactive transaction (unlike the lobby handlers' single-shot batches):

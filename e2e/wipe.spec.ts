@@ -29,7 +29,7 @@ test("a wipe-covered nav into the tournament surface plays, clears, and leaves t
   await promoteToAdmin(email);
   await page.reload();
 
-  await page.getByRole("button", { name: "Create tournament" }).click();
+  await page.getByRole("button", { name: "Create an event" }).click();
   await page.waitForURL(/\/host$/);
   await page.getByPlaceholder("Tournament name").fill("Wipe E2E Cup");
 

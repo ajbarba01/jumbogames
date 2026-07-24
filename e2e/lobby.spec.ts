@@ -38,7 +38,7 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await promoteToAdmin(hostEmail);
   await host.reload();
 
-  await host.getByRole("button", { name: "Create tournament" }).click();
+  await host.getByRole("button", { name: "Create an event" }).click();
   await host.waitForURL(/\/host$/);
   await host.getByPlaceholder("Tournament name").fill("E2E Cup");
   await host.getByRole("button", { name: "Create and host" }).click();

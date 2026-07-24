@@ -23,7 +23,7 @@ async function signUp(page: Page, email: string, name: string): Promise<void> {
 }
 
 async function hostTournament(page: Page, name: string): Promise<string> {
-  await page.getByRole("button", { name: "Create tournament" }).click();
+  await page.getByRole("button", { name: "Create an event" }).click();
   await page.waitForURL(/\/host$/);
   await page.getByPlaceholder("Tournament name").fill(name);
   await page.getByRole("button", { name: "Create and host" }).click();

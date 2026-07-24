@@ -22,9 +22,11 @@ type Props = {
   altLabel: string;
   /** Signup: require a matching confirm-password field before submitting. */
   confirmPassword?: boolean;
+  /** Signup: collect a required display name. */
+  collectName?: boolean;
 };
 
-type FieldName = "email" | "password" | "confirm";
+type FieldName = "email" | "password" | "confirm" | "displayName";
 type Errors = Partial<Record<FieldName, string>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,6 +68,7 @@ export function CredentialForm({
   altHref,
   altLabel,
   confirmPassword = false,
+  collectName = false,
 }: Props) {
   const router = useRouter();
   const [errors, setErrors] = useState<Errors>({});
@@ -91,6 +94,13 @@ export function CredentialForm({
     if (confirmPassword) {
       if (confirm === "") next.confirm = "Re-enter your password.";
       else if (confirm !== password) next.confirm = "Passwords do not match.";
+    }
+
+    if (collectName) {
+      const displayName = String(form.get("displayName") ?? "").trim();
+      if (displayName === "") next.displayName = "Enter a display name.";
+      else if (displayName.length > 30)
+        next.displayName = "Use 30 characters or fewer.";
     }
 
     return next;
@@ -123,6 +133,7 @@ export function CredentialForm({
       body: JSON.stringify({
         email: form.get("email"),
         password: form.get("password"),
+        ...(collectName ? { displayName: form.get("displayName") } : {}),
       }),
     });
     setPending(false);
@@ -146,6 +157,16 @@ export function CredentialForm({
       <Card className="flex flex-col gap-5 p-6">
         <h1 className="font-display text-xl uppercase text-s12">{heading}</h1>
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+          {collectName ? (
+            <Field
+              name="displayName"
+              type="text"
+              required
+              placeholder="Display name"
+              error={errors.displayName}
+              onChange={() => clearField("displayName")}
+            />
+          ) : null}
           <Field
             name="email"
             type="email"

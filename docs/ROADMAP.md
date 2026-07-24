@@ -79,6 +79,23 @@ hero + inline displayName edit) and the tournament→"event" UI-copy sweep (DESI
 as Slice 1 of the mockup-integration program. Open hosting and the create-game surface — the rest of
 milestone 7 — haven't shipped, so the milestone stays pending.
 
+Slice 1.5 of the mockup-integration program landed between Slices 1 and 2, ahead of its approved
+sequence: [UI.md](UI.md) had no responsive guidance at all, and Slices 2, 3 and 5 add eight-plus new
+kit members between them, so the law was written before the members rather than retrofitted into
+them. `UI.md` now carries the fluid floor-width law (375px floor; 207px of content inside the
+narrowest card, since the register's 145% root makes a `p-8` gutter 46px, not 32), and `CodeInput` —
+whose six fixed 48×56 cells demanded 328px and scrolled the whole join page sideways on a phone —
+divides its row and scales each glyph with its own cell instead. Four more surfaces overflowed and
+were fixed with it: home's identity card (a long email, whose inline overflow no element rect
+reveals — only `scrollWidth`), home's owner-only account links, the match header's two
+projector-scale team names either side of a projector-scale tally, and the showcase's specimen rows,
+which are legitimately wider than a phone and now scroll inside their own section. The sweep is
+guarded rather than remembered: `e2e/support/viewport.ts` asserts no surface exceeds the floor
+width, because jsdom has no layout and cannot catch this class of bug at all. Two of those four were
+found by the guard rather than by reading, both on role-specific variants a casual pass misses.
+`/showcase` is the one route it cannot cover — `notFound()` under `NODE_ENV=production`, which is
+what the suite builds — so it is verified by hand against a dev server.
+
 ## Known gaps (carry into the next branches)
 
 - **Game reads still show emails to any signed-in user — CLOSED for other-player-facing surfaces.**
@@ -109,7 +126,18 @@ milestone 7 — haven't shipped, so the milestone stays pending.
   opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
   React drops post-await updates out of the transition, so `isPending` — the machine's `committed`
   signal — falls before the refresh lands and the panel reveals early. Covering the wait needs a
-  pending signal the machine can read that isn't the transition edge.
+  pending signal the machine can read that isn't the transition edge. Related and now closed: the wipe's two
+  sweep phases each waited on a motion callback as their _only_ trigger, and `onCovered` is where every
+  escape timer is armed — so a dropped in-sweep callback left no ceiling at all (an opaque panel over
+  the app, permanently) and a dropped out-sweep callback left the panel mounted off-screen, invisible
+  to a user but fatal to any assertion that it had cleared. Each waiting phase now carries a watchdog
+  at its own sweep duration plus grace (`WipeProvider`, covered by `WipeProvider.test.tsx`). This is
+  the most likely mechanism behind the round-start wipe-clear flake (`e2e/round-start.spec.ts`, seen
+  both passing and failing at SHA `034a2b3`), but that flake did not reproduce locally over three runs,
+  so the link is reasoned, not observed — if it recurs, the next stop is the `committed` edge itself,
+  which a concurrent bare `router.refresh()` from `BoardRefresher` can plausibly swallow. Worth noting
+  either way: `FORCE_REVEAL_MS` (15s) is exactly the suite's `expect` timeout, so a wipe that ever
+  needs the ceiling fails the assertion no matter what — the ceiling can never be observed working.
 
 ---
 

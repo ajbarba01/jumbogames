@@ -6,6 +6,14 @@
  */
 export const SLIP_EASE = [0.34, 1.4, 0.64, 1] as const;
 
+/**
+ * Rejection-shake keyframes (docs/UI.md): the register's form-error / illegal-
+ * move affordance — a quick horizontal jitter that settles at rest. Consumed as
+ * a motion `x` keyframe array; the amplitude lives here so the CSS/JS seam is
+ * crossed by constant, not copied number (same principle as SLIP_EASE).
+ */
+export const SLIP_SHAKE = [0, -9, 8, -6, 5, -3, 0] as const;
+
 export const SLIP_DUR = {
   swift: 0.1,
   base: 0.18,

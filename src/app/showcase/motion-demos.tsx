@@ -16,6 +16,7 @@ import {
   Button,
   SLIP_DUR,
   SLIP_EASE,
+  SLIP_SHAKE,
   WIPE_DUR,
   WIPE_EASE,
   cx,
@@ -231,7 +232,7 @@ function PopDemo() {
 function ShakeDemo() {
   return (
     <motion.div
-      animate={{ x: [0, -9, 8, -6, 5, -3, 0] }}
+      animate={{ x: [...SLIP_SHAKE] }}
       transition={{ duration: 0.4, delay: 0.4 }}
       className="border-2 border-crit px-6 py-4 text-sec font-bold text-crit"
     >

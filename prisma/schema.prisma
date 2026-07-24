@@ -51,11 +51,12 @@ enum SlotWinner {
 /// Application mirror of a Supabase auth user, keyed by the same id. Created
 /// lazily on first authenticated request. No FK to auth.users (different schema).
 model Profile {
-  id        String   @id
-  email     String   @unique
-  role      Role     @default(player)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String   @id
+  email       String   @unique
+  displayName String   @map("display_name")
+  role        Role     @default(player)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   hostedTournaments Tournament[] @relation("TournamentHost")
   ledTeams          Team[]       @relation("TeamLeader")

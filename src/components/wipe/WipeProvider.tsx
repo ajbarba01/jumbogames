@@ -44,6 +44,11 @@ const toMs = (seconds: number) => seconds * 1000;
 // so the panel reveals on its own rather than trapping the user behind it.
 const FORCE_REVEAL_MS = 15_000;
 
+// How long past a sweep's own duration to wait for its animation to report
+// completing before proceeding without it. Generous enough that a merely busy
+// main thread still lands its callback and keeps the choreography exact.
+const SWEEP_GRACE_MS = 1_000;
+
 export function WipeProvider({
   children,
 }: {
@@ -135,6 +140,28 @@ export function WipeProvider({
       dispatch({ type: "committed" });
     }
   }, [isPending]);
+
+  // Both sweep phases wait on a callback from the panel's animation, and an
+  // animation callback is droppable — an interrupted or frame-starved sweep
+  // never reports. That is not a cosmetic risk: `onCovered` is where every
+  // escape timer (including the force-reveal ceiling) is armed, so a dropped
+  // in-sweep callback leaves no way out of `covering` at all, and a dropped
+  // out-sweep callback leaves the panel mounted off-screen forever. Each
+  // waiting phase therefore carries a watchdog at its own sweep duration plus
+  // grace: the animation still owns the timing whenever it reports, and a
+  // dropped callback costs a frame of polish instead of the whole app.
+  useEffect(() => {
+    if (state.phase !== "covering" && state.phase !== "revealing") return;
+    const covering = state.phase === "covering";
+    const sweepMs = reduceMotion
+      ? 0
+      : toMs(covering ? WIPE_DUR.in : WIPE_DUR.out);
+    const watchdog = setTimeout(
+      () => (covering ? onCovered() : onUncovered()),
+      sweepMs + SWEEP_GRACE_MS,
+    );
+    return () => clearTimeout(watchdog);
+  }, [state.phase, reduceMotion, onCovered, onUncovered]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 

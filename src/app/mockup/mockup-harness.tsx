@@ -72,7 +72,7 @@ export function MockupHarness(): React.JSX.Element {
         skipIntro={skipIntro}
         onExit={() => setResetKey((n) => n + 1)}
       />
-      <Card className="fixed bottom-4 left-4 z-(--z-toast) flex w-64 flex-col gap-3 p-4">
+      <Card className="fixed bottom-4 left-4 z-(--z-sticky) flex w-64 flex-col gap-3 p-4">
         <Labeled label="Minigames (K)">
           <StepSlider
             stops={COUNT_STOPS}

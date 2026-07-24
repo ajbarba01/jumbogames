@@ -11,9 +11,10 @@ import { promoteToAdmin } from "./support/db";
 
 const PASSWORD = "password1234";
 
-async function signUp(page: Page, email: string): Promise<void> {
+async function signUp(page: Page, email: string, name: string): Promise<void> {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Display name").fill(name);
   await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
   await page.getByPlaceholder("Confirm password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign up" }).click();
@@ -33,7 +34,7 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   const player = await playerContext.newPage();
 
   // Host: sign up, gain admin, and create a tournament.
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
 
@@ -59,7 +60,7 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
 
   // Player: sign up, join by code, create and ready team Bravo. The code field
   // is segmented — focus the first cell and type; focus advances per character.
-  await signUp(player, playerEmail);
+  await signUp(player, playerEmail, "Grace");
   await player
     .getByRole("group", { name: "Game code" })
     .getByRole("textbox")
@@ -74,13 +75,21 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await expect(player.getByText("Alpha")).toBeVisible();
 
   // The teamless player shows up in the host's "not on a team yet" card,
-  // driven by lobby presence, and leaves it once they form a team.
+  // driven by lobby presence, and leaves it once they form a team. Presence
+  // renders the player's display name, not their email (leak-fix regression
+  // guard): the name must be visible and the email must not appear at all.
   await expect(host.getByText("Not on a team yet")).toBeVisible();
-  await expect(host.getByText(playerEmail)).toBeVisible();
+  await expect(host.getByText("Grace")).toBeVisible();
+  await expect(host.getByText(playerEmail)).toHaveCount(0);
 
   await player.getByPlaceholder("Team name").fill("Bravo");
   await player.getByRole("button", { name: "Create team" }).click();
   await player.getByRole("button", { name: "Ready up" }).click();
+
+  // Once rostered onto a team, the player's roster entry still shows the
+  // display name and never their email.
+  await expect(host.getByText("Grace")).toBeVisible();
+  await expect(host.getByText(playerEmail)).toHaveCount(0);
 
   // Host sees Bravo arrive over Realtime; Start enables once all are ready.
   await expect(host.getByText("Bravo")).toBeVisible();

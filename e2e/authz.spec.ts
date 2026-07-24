@@ -9,9 +9,10 @@ import { promoteToAdmin, firstMatchId } from "./support/db";
 
 const PASSWORD = "password1234";
 
-async function signUp(page: Page, email: string): Promise<void> {
+async function signUp(page: Page, email: string, name: string): Promise<void> {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Display name").fill(name);
   await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
   await page.getByPlaceholder("Confirm password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign up" }).click();
@@ -34,7 +35,7 @@ test("a non-member is refused on lobby, board, and match", async ({
   const outsider = await outsiderContext.newPage();
 
   // Host: sign up, gain admin, create a tournament.
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   await host.getByRole("button", { name: "Create tournament" }).click();
@@ -57,7 +58,7 @@ test("a non-member is refused on lobby, board, and match", async ({
   // The lobby is joinable by code, so during the lobby phase any signed-in user
   // may read it (they may hold the code) — the gate deliberately opens here.
   // The same URL is refused once the tournament locks (asserted after start).
-  await signUp(outsider, outsiderEmail);
+  await signUp(outsider, outsiderEmail, "Ivy");
   const lobbyResponse = await outsider.goto(tournamentUrl);
   expect(lobbyResponse?.status()).toBe(200);
 
@@ -68,7 +69,7 @@ test("a non-member is refused on lobby, board, and match", async ({
   await expect(host.getByText("Alpha")).toBeVisible();
   await host.getByRole("button", { name: "Ready up" }).click();
 
-  await signUp(player, playerEmail);
+  await signUp(player, playerEmail, "Grace");
   await player
     .getByRole("group", { name: "Game code" })
     .getByRole("textbox")

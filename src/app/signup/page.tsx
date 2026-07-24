@@ -22,6 +22,7 @@ export default async function SignupPage() {
       passwordPlaceholder="Password (8+ characters)"
       minPasswordLength={8}
       confirmPassword
+      collectName
       errorMessage="Could not sign up. Use a valid email and 8+ char password."
       altHref="/login"
       altLabel="Have an account? Log in"

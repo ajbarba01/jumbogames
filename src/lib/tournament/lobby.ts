@@ -30,7 +30,7 @@ export function getTournamentState(id: string) {
             orderBy: { joinedAt: "asc" },
             select: {
               profileId: true,
-              profile: { select: { email: true } },
+              profile: { select: { displayName: true } },
             },
           },
         },
@@ -48,7 +48,7 @@ export type TournamentState = NonNullable<
 // shape; the client never needs the readyAt timestamp itself.
 export interface LobbyMemberDTO {
   profileId: string;
-  email: string;
+  displayName: string;
 }
 
 export interface LobbyTeamDTO {
@@ -88,7 +88,7 @@ export function toLobbyDTO(state: TournamentState): LobbyDTO {
       ready: team.readyAt !== null,
       members: team.members.map((member) => ({
         profileId: member.profileId,
-        email: member.profile.email,
+        displayName: member.profile.displayName,
       })),
     })),
   };

@@ -15,9 +15,10 @@ import { promoteToAdmin } from "./support/db";
 
 const PASSWORD = "password1234";
 
-async function signUp(page: Page, email: string): Promise<void> {
+async function signUp(page: Page, email: string, name: string): Promise<void> {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Display name").fill(name);
   await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
   await page.getByPlaceholder("Confirm password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign up" }).click();
@@ -64,12 +65,12 @@ test("a lobby restored by browser back shows a team created while it was away", 
   const host = await hostContext.newPage();
   const player = await playerContext.newPage();
 
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   const code = await hostTournament(host, "Back Nav Cup");
 
-  await signUp(player, playerEmail);
+  await signUp(player, playerEmail, "Grace");
   await joinByCode(player, code);
   await expect(player.getByPlaceholder("Team name")).toBeVisible();
 
@@ -106,7 +107,7 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   const host = await hostContext.newPage();
   const player = await playerContext.newPage();
 
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   const code = await hostTournament(host, "Beat Wipe Cup");
@@ -116,7 +117,7 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   await expect(host.getByText("Alpha")).toBeVisible();
   await host.getByRole("button", { name: "Ready up" }).click();
 
-  await signUp(player, playerEmail);
+  await signUp(player, playerEmail, "Grace");
   await joinByCode(player, code);
   await player.getByPlaceholder("Team name").fill("Bravo");
   await player.getByRole("button", { name: "Create team" }).click();

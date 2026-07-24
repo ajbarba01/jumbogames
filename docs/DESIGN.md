@@ -206,6 +206,14 @@ arrive already solved; a theme is a token-scale swap by design.
     user (no membership required); mutations that join a game — picking a team — require the game
     code, validated server-side in the join request. Link = read, code = write. Anonymous (no-auth)
     spectating is a deliberate post-MVP loosening, gated on `displayName` fully replacing emails.
+    `displayName` itself has landed ahead of the read-opening it gates: it's a real, `NOT NULL`,
+    required-at-signup, user-editable field (backfilled from the email local part for existing rows,
+    changed via `PATCH /api/profile`; there's no edit UI yet), and every other-player-facing label
+    (lobby roster, presence, match member labels) now renders it instead of email. Home
+    self-identity ("Signed in as {email}") and the admin permissions page deliberately still show
+    email — both are the account owner looking at their own or another admin's account, not a
+    player-facing label, so the leak this decision is about doesn't apply there. The spectate
+    read-opening itself is unchanged by this and still ships later (Slice 3).
 17. **Roster fluidity under the lock rule.** Join, leave, and leader-kick are allowed only while the
     team has no live match (lobby phase or between rounds); slot roster snapshots already make the
     boundary safe. Leader leaving auto-transfers leadership to the earliest-joined member; an empty
@@ -224,4 +232,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-23_
+_Last reviewed: 2026-07-24_

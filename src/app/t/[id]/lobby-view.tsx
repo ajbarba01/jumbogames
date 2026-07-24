@@ -29,14 +29,14 @@ const JSON_HEADERS = { "Content-Type": "application/json" };
 type Props = {
   initialState: LobbyDTO;
   viewerId: string;
-  viewerEmail: string;
+  viewerDisplayName: string;
   isHost: boolean;
 };
 
 export function LobbyView({
   initialState,
   viewerId,
-  viewerEmail,
+  viewerDisplayName,
   isHost,
 }: Props) {
   const router = useRouter();
@@ -67,11 +67,11 @@ export function LobbyView({
   useEffect(() => {
     const unsubscribe = subscribeToLobbyPresence(
       initialState.id,
-      { profileId: viewerId, email: viewerEmail },
+      { profileId: viewerId, displayName: viewerDisplayName },
       setPresent,
     );
     return unsubscribe;
-  }, [initialState.id, viewerId, viewerEmail]);
+  }, [initialState.id, viewerId, viewerDisplayName]);
 
   useEffect(() => {
     // Once the host starts, the page's server render swaps to the round
@@ -118,7 +118,7 @@ export function LobbyView({
         person.profileId !== state.hostId &&
         !teamMemberIds.has(person.profileId),
     )
-    .sort((a, b) => a.email.localeCompare(b.email));
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-8">
@@ -217,7 +217,7 @@ export function LobbyView({
           <ul className="flex flex-col gap-1">
             {unassigned.map((person) => (
               <li key={person.profileId} className="text-sec text-s10">
-                {person.email}
+                {person.displayName}
               </li>
             ))}
           </ul>
@@ -360,7 +360,7 @@ function TeamCard({
       <ul className="flex flex-col gap-1">
         {team.members.map((member) => (
           <li key={member.profileId} className="text-sec text-s10">
-            {member.email}
+            {member.displayName}
             {member.profileId === team.leaderId ? (
               <span className="ml-2 text-meta uppercase tracking-widest text-s7">
                 leader

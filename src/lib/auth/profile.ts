@@ -8,6 +8,7 @@ import { Role } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { isOwnerEmail, parseOwnerEmails } from "@/lib/auth/owner-email";
+import { localPartOf } from "@/lib/auth/display-name";
 
 export type AuthResult =
   { ok: true; profile: Profile } | { ok: false; status: 401 | 403 };
@@ -18,6 +19,12 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) return null;
+
+  const metaName = user.user_metadata?.display_name;
+  const displayName =
+    typeof metaName === "string" && metaName.trim() !== ""
+      ? metaName.trim()
+      : localPartOf(user.email);
 
   const shouldOwn = isOwnerEmail(
     user.email,
@@ -32,6 +39,7 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
     create: {
       id: user.id,
       email: user.email,
+      displayName,
       role: shouldOwn ? Role.owner : Role.player,
     },
   });

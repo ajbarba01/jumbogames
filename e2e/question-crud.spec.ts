@@ -24,6 +24,7 @@ async function signInAsOwner(page: Page): Promise<void> {
   if (await loginError.isVisible().catch(() => false)) {
     await page.goto("/signup");
     await page.getByPlaceholder("Email").fill(OWNER_EMAIL);
+    await page.getByPlaceholder("Display name").fill("Owner");
     await page
       .getByPlaceholder("Password (8+ characters)")
       .fill(OWNER_PASSWORD);
@@ -98,6 +99,7 @@ test("a plain player is refused by the questions API", async ({ page }) => {
 
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Display name").fill("Ada");
   await page.getByPlaceholder("Password (8+ characters)").fill(password);
   await page.getByPlaceholder("Confirm password").fill(password);
   await page.getByRole("button", { name: "Sign up" }).click();

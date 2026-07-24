@@ -19,6 +19,7 @@ test("a wipe-covered nav into the tournament surface plays, clears, and leaves t
 
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Display name").fill("Ada");
   await page.getByPlaceholder("Password (8+ characters)").fill(password);
   await page.getByPlaceholder("Confirm password").fill(password);
   await page.getByRole("button", { name: "Sign up" }).click();

@@ -21,11 +21,11 @@ function teamRows(team: {
   id: string;
   name: string;
   colorIndex: number;
-  members: { profileId: string; profile: { email: string } }[];
+  members: { profileId: string; profile: { displayName: string } }[];
 }): { rows: MatchTeamRows; labels: Record<string, string> } {
   const labels: Record<string, string> = {};
   for (const member of team.members)
-    labels[member.profileId] = member.profile.email;
+    labels[member.profileId] = member.profile.displayName;
   return {
     rows: {
       id: team.id,
@@ -41,7 +41,7 @@ export async function loadMatchRows(
   matchId: string,
 ): Promise<LoadedMatch | null> {
   const teamMembers = {
-    select: { profileId: true, profile: { select: { email: true } } },
+    select: { profileId: true, profile: { select: { displayName: true } } },
   } as const;
 
   const match = await prisma.match.findUnique({

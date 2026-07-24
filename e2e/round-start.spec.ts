@@ -12,9 +12,10 @@ import { promoteToAdmin } from "./support/db";
 
 const PASSWORD = "password1234";
 
-async function signUp(page: Page, email: string): Promise<void> {
+async function signUp(page: Page, email: string, name: string): Promise<void> {
   await page.goto("/signup");
   await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Display name").fill(name);
   await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
   await page.getByPlaceholder("Confirm password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign up" }).click();
@@ -89,17 +90,17 @@ test("board auto-pull carries players into their match while the host stays on t
   const alpha = await alphaContext.newPage();
   const bravo = await bravoContext.newPage();
 
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   const code = await hostTournament(host, "Auto Pull Cup");
 
   // The host never joins a team, so it has no live match of its own.
-  await signUp(alpha, alphaEmail);
+  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail);
+  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
@@ -152,16 +153,16 @@ test("the host sees a spectate link into a live match and it opens the match", a
   const alpha = await alphaContext.newPage();
   const bravo = await bravoContext.newPage();
 
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   const code = await hostTournament(host, "Spectate Cup");
 
-  await signUp(alpha, alphaEmail);
+  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail);
+  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
@@ -211,20 +212,20 @@ test("a sitting-out team's player sees the board's bye card", async ({
   const bravo = await bravoContext.newPage();
   const charlie = await charlieContext.newPage();
 
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   const code = await hostTournament(host, "Bye Cup");
 
-  await signUp(alpha, alphaEmail);
+  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail);
+  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
-  await signUp(charlie, charlieEmail);
+  await signUp(charlie, charlieEmail, "Nora");
   await joinByCode(charlie, code);
   await createAndReadyTeam(charlie, "Charlie");
 
@@ -302,7 +303,7 @@ test("starting the next round force-yields players off their finished match's en
   const charlie = await charlieContext.newPage();
   const delta = await deltaContext.newPage();
 
-  await signUp(host, hostEmail);
+  await signUp(host, hostEmail, "Ada");
   await promoteToAdmin(hostEmail);
   await host.reload();
   const code = await hostTournament(host, "Force Yield Cup");
@@ -311,19 +312,19 @@ test("starting the next round force-yields players off their finished match's en
   // team count, so this is the smallest field that guarantees both tracked
   // players (Alpha and Bravo) land on a real match — never a bye — in round 2
   // as well as round 1, whichever way the schedule pairs them.
-  await signUp(alpha, alphaEmail);
+  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail);
+  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
-  await signUp(charlie, charlieEmail);
+  await signUp(charlie, charlieEmail, "Nora");
   await joinByCode(charlie, code);
   await createAndReadyTeam(charlie, "Charlie");
 
-  await signUp(delta, deltaEmail);
+  await signUp(delta, deltaEmail, "Mia");
   await joinByCode(delta, code);
   await createAndReadyTeam(delta, "Delta");
 

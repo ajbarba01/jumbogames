@@ -12,7 +12,7 @@ import { lobbyPresenceChannel } from "./channels";
 
 export interface LobbyPresence {
   profileId: string;
-  email: string;
+  displayName: string;
 }
 
 export function subscribeToLobbyPresence(
@@ -34,7 +34,7 @@ export function subscribeToLobbyPresence(
         for (const entry of entries) {
           byId.set(entry.profileId, {
             profileId: entry.profileId,
-            email: entry.email,
+            displayName: entry.displayName,
           });
         }
       }

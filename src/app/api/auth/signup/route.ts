@@ -5,18 +5,22 @@
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { credentialsSchema } from "@/lib/schemas/auth";
+import { signupSchema } from "@/lib/schemas/auth";
 import { getOrCreateProfile } from "@/lib/auth/profile";
 import { parseJsonBody } from "@/lib/http";
 
 export async function POST(request: Request) {
-  const parsed = credentialsSchema.safeParse(await parseJsonBody(request));
+  const parsed = signupSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp(parsed.data);
+  const { error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: { data: { display_name: parsed.data.displayName } },
+  });
   if (error) {
     return NextResponse.json({ error: "Could not sign up" }, { status: 400 });
   }

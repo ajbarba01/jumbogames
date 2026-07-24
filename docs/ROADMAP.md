@@ -10,22 +10,22 @@ The cut line rule ([DESIGN.md](DESIGN.md) decision 5): shell + one minigame end-
 second game. Submittable at every checkpoint. Each minigame gets a short design session before its
 build (per-game specifics are listed under Deferred design in DESIGN.md).
 
-| #   | Milestone                                                                                                                                          | Status  |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 0   | Repo scaffolding — Next.js app, docs, templates, Playwright CI, deploy                                                                             | done    |
-| 1   | Auth + roles — Supabase auth, profiles, owner allowlist, owner permissions page; auth E2E spec                                                     | done    |
-| 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                            | done    |
-| 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done    |
-| 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done    |
-| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | done    |
-| 6   | Final standings + per-player normalization utilities                                                                                               | pending |
-| 7   | Open hosting — player-creatable games, config (max teams, minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                            | pending |
-| 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | pending |
-| 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | pending |
-| 10  | Minigame 2: typing race                                                                                                                            | pending |
-| 11  | Minigame 3: word game (territory capture)                                                                                                          | pending |
-| 12  | Minigame 4: battleship                                                                                                                             | pending |
-| 13  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending |
+| #   | Milestone                                                                                                                                          | Status      |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 0   | Repo scaffolding — Next.js app, docs, templates, Playwright CI, deploy                                                                             | done        |
+| 1   | Auth + roles — Supabase auth, profiles, owner allowlist, owner permissions page; auth E2E spec                                                     | done        |
+| 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                            | done        |
+| 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done        |
+| 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done        |
+| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | done        |
+| 6   | Final standings + per-player normalization utilities                                                                                               | pending     |
+| 7   | Open hosting — player-creatable games, config (max teams, minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                            | pending     |
+| 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | in progress |
+| 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | pending     |
+| 10  | Minigame 2: typing race                                                                                                                            | pending     |
+| 11  | Minigame 3: word game (territory capture)                                                                                                          | pending     |
+| 12  | Minigame 4: battleship                                                                                                                             | pending     |
+| 13  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending     |
 
 Everything graded is complete after 6; 7–13 are the full vision. The games-first milestones (7–9) sit
 before the remaining minigames because minigames are swappable content behind a container the
@@ -66,13 +66,24 @@ either 409 on the new empty-bank guard or need seeding on every run, and the stu
 every board/match mechanic the suite checks. E2E stays stub-only by that guard, not because trivia is
 unverified in CI.
 
+Milestone 8's first half has landed ahead of the rest of the milestone: `displayName` is now a real,
+`NOT NULL`, required-at-signup, user-editable `Profile` field (existing rows backfilled from the email
+local part; edits go through `PATCH /api/profile` — there's no edit UI yet, that's still to come), and
+every other-player-facing label — lobby roster, presence, match member labels — renders it instead of
+email. Home self-identity ("Signed in as {email}") and the admin permissions page still show email;
+that's deliberate, not leftover. Spectate-by-link, the other half of M8 (DESIGN decision 16), hasn't
+shipped yet — it's gated on this field, not on top of it.
+
 ## Known gaps (carry into the next branches)
 
-- **Game reads still show emails to any signed-in user.** The games-first design (DESIGN decision 16)
-  makes open reads _intentional_ — spectate by link, play by code — so the old "lobby reads are open"
-  gap stops being a gap to close and becomes a leak to fix: the leaked data is emails, and Milestone 8's
-  `displayName` (schema + backfill + label swap) kills it. Until M8 lands, board/match views stay
-  membership-gated as built; the gate relaxation ships with M8, not before.
+- **Game reads still show emails to any signed-in user — CLOSED for other-player-facing surfaces.**
+  The games-first design (DESIGN decision 16) makes open reads _intentional_ — spectate by link, play
+  by code — so the old "lobby reads are open" gap stopped being a gap to close and became a leak to
+  fix: the leaked data was emails. Milestone 8's first half (`displayName` schema + backfill + label
+  swap) has landed and kills the leak everywhere a player sees another player — lobby roster, presence,
+  match member labels. Home self-identity and the admin permissions page still show email by design,
+  not oversight. What's still open: board/match reads stay membership-gated as built — the actual
+  gate relaxation (spectate-by-link) is the rest of M8 and hasn't shipped.
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
   `{children}` subtree; `ModalShell`, `PopoverCard`, `Select`, `Tooltip`, and `FloatCard` all portal to
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
@@ -97,4 +108,4 @@ unverified in CI.
 
 ---
 
-_Last reviewed: 2026-07-23_
+_Last reviewed: 2026-07-24_

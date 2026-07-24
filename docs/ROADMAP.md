@@ -17,7 +17,7 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                            | done    |
 | 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done    |
 | 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done    |
-| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | pending |
+| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | done    |
 | 6   | Final standings + per-player normalization utilities                                                                                               | pending |
 | 7   | Open hosting — player-creatable games, config (max teams, minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                            | pending |
 | 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | pending |
@@ -50,6 +50,22 @@ double-counted for it. It covers all in-app (client) navigations, the primary ca
 first-paint cover is deferred — the provider is client-only, so a pre-hydration cover risks an SSR
 flash and needs its own pass.
 
+Milestone 5 is done: trivia tug-of-war (both server logic and play UI) and the admin question-bank
+CRUD landed together, since the minigame has nothing to deal without content behind it. Landing the
+first content-backed minigame grew the contract rather than special-casing trivia around it: `apply`
+now takes a server-stamped `now` so time-based state (the rope's decay) stays deterministic off the
+same clock as the route handler; an optional `outcome` lets a game declare a winner that overrides the
+normalized-mean comparison (trivia's pin); an optional `redact` lets a game strip per-viewer payload
+before a state ever reaches a client (trivia hides each player's own current question from opponents
+and everyone's correct answers pre-reveal); and `init` now accepts route-supplied context, fetched at
+the IO edge and awaited in the same mutate seam that gates a match into its next phase, so a pure
+reducer never touches Prisma directly. `poolFor("production")` is no longer empty — trivia is the
+first non-`devOnly` minigame, so production rounds can draw it — but the test pool flipped the other
+way, to devOnly kinds only: E2E's database carries no question content, so a trivia draw in CI would
+either 409 on the new empty-bank guard or need seeding on every run, and the stub still exercises
+every board/match mechanic the suite checks. E2E stays stub-only by that guard, not because trivia is
+unverified in CI.
+
 ## Known gaps (carry into the next branches)
 
 - **Game reads still show emails to any signed-in user.** The games-first design (DESIGN decision 16)
@@ -62,13 +78,17 @@ flash and needs its own pass.
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
   opaque panel, and the modal's own outside-hiding can silence the wipe's still-loading cue for screen
   readers. Must be solved before any navigation inside a modal opts into the wipe.
-- **Production still has no playable minigame until M5.** `poolFor("production")` stays empty until a
-  non-`devOnly` minigame lands. E2E no longer shares that limitation: `JUMBO_TEST_MINIGAME_POOL`, set
-  only in `playwright.config.ts`, opts the spawned E2E server into the `stub` game, so round start,
-  board auto-pull, spectate entry, byes, and the live-match `beforeunload` guard are all observable
-  (see `e2e/round-start.spec.ts`). In production, `checkRoundDraw` now fails a round start closed
-  (409, no mutation, the round stays `pending`) rather than committing a round with zero slots — the
-  empty pool can no longer corrupt a round, only block starting one until M5 ships.
+- **Production's only minigame depends on admin-authored content.** `poolFor("production")` is
+  `["trivia"]` now that a non-`devOnly` minigame has landed, but a round draw that lands on trivia
+  still needs the question bank populated: `checkContentReady` (`round-draw.ts`) 409s a round start
+  closed, before any mutation, if the bank is empty, so an unseeded production deploy blocks starting
+  a round rather than committing one with an unplayable slot. `npm run seed:trivia` (OpenTDB) is the
+  fix, not code. E2E doesn't exercise this path — `JUMBO_TEST_MINIGAME_POOL`, set only in
+  `playwright.config.ts`, flips the eligible pool to test mode, which admits only `devOnly` kinds, so
+  the spawned E2E server keeps drawing the deterministic `stub` game instead of trivia. Round start,
+  board auto-pull, spectate entry, byes, and the live-match `beforeunload` guard are all covered
+  against `stub` (see `e2e/round-start.spec.ts`); trivia's own play surface is covered by unit tests
+  and the admin question-bank CRUD spec, not by a round-start E2E run.
 - **A round start's network wait is uncovered.** `BoardRoundStart` awaits the round-start POST before
   opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
   React drops post-await updates out of the transition, so `isPending` — the machine's `committed`

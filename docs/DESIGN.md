@@ -86,8 +86,18 @@ joining a team is what requires the code (link = read, code = write).
 All co-op: every player on a team acts; the server aggregates. Each game gets its own design session
 before build (see [ROADMAP.md](ROADMAP.md)); the shapes below are the agreed baseline.
 
-1. **Trivia tug-of-war** — both teams answer the same questions; the rope moves by fraction correct
-   and speed. Questions are **admin-authored content** (CRUD via admin UI), not hardcoded.
+1. **Trivia tug-of-war** — both teams draw from the same seeded deck of admin-authored MC-4 questions
+   (CRUD via admin UI, seedable from OpenTDB), in the same order, so neither team gets an easier
+   sequence; each player free-paces their own stream of cards from their team's shared deck rather
+   than waiting on a shared clock, and a team never repeats a card until every member has personally
+   exhausted the deck. A correct answer is worth +3, a wrong one −1, so blind guessing nets zero
+   expected value and doesn't pay. Every answer also pulls a rope: a decaying-impulse model where
+   each pull scales down with team size (so a bigger team's individual answers move it less, keeping
+   totals comparable) and idle time relaxes the rope back toward center on a 10-second half-life, so
+   a losing team is never locked out of a comeback. Pinning the rope at either wall ends the match
+   immediately and wins it outright, overriding the normalized-score comparison; if neither side pins,
+   the 120-second timer ends the match and the higher normalized mean wins. There is no skip — every
+   question must be answered to advance.
 2. **Typing race** — same passage for all; team progress is the normalized aggregate of individual
    typing.
 3. **Word game (territory capture)** — one shared letter grid; players drag across adjacent letters
@@ -204,8 +214,8 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ## Deferred design (grill before building each)
 
-- Per-game specifics: trivia timing/rope math, typing passage source, word-game grid size and
-  word validation dictionary, battleship fleet/volley numbers and turn cadence.
+- Per-game specifics: typing passage source, word-game grid size and word validation dictionary,
+  battleship fleet/volley numbers and turn cadence.
 - The exact per-player normalization formula per game.
 - Reconnect UX polish (server-authoritative state makes resume-on-rejoin near-free; the polish is
   client-side).

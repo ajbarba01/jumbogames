@@ -30,4 +30,17 @@ describe("CopyCode", () => {
     render(<CopyCode value="HACK42" data-testid="game-code" />);
     expect(screen.getByTestId("game-code")).toHaveTextContent("HACK42");
   });
+
+  it("renders at the inline size by default", () => {
+    render(<CopyCode value="HACK42" data-testid="code" />);
+    expect(screen.getByTestId("code").className).toContain("text-2xl");
+  });
+
+  it("renders fluid type at the display size", () => {
+    render(<CopyCode value="HACK42" size="display" data-testid="code" />);
+    const cls = screen.getByTestId("code").className;
+    expect(cls).not.toContain("text-2xl");
+    // Fluid, not a fixed step — six cells must survive the 207px floor.
+    expect(cls).toContain("clamp(");
+  });
 });

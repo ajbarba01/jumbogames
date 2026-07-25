@@ -1,17 +1,18 @@
 /**
- * Route handler: an admin or owner hosts a new tournament. Validates the body,
- * generates a unique join code, and creates the tournament in the lobby phase
- * with the caller as host.
+ * Route handler: any signed-in user creates a game. Validates the body
+ * (including the minigame pool, fail-closed at the write boundary), generates
+ * a unique join code, and creates the game in the lobby phase with the caller
+ * as its host.
  */
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/profile";
+import { requireUser } from "@/lib/auth/profile";
 import { createTournamentSchema } from "@/lib/schemas/tournament";
 import { parseJsonBody } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { generateUniqueJoinCode } from "@/lib/tournament/join-code";
 
 export async function POST(request: Request) {
-  const auth = await requireAdmin();
+  const auth = await requireUser();
   if (!auth.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: auth.status });
   }
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       code,
       name: parsed.data.name,
       minigamesPerMatch: parsed.data.minigamesPerMatch,
+      pool: parsed.data.pool,
       hostId: auth.profile.id,
     },
     select: { id: true, code: true },

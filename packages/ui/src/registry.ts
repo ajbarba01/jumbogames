@@ -28,6 +28,8 @@ import {
 import { kbdIntent } from "./keys/Kbd.intent";
 import { shortcutsOverlayIntent } from "./keys/ShortcutsOverlay.intent";
 import { codeInputIntent } from "./inputs/CodeInput.intent";
+import { fieldIntent } from "./inputs/Field.intent";
+import { optionCardIntent } from "./inputs/OptionCard.intent";
 import { selectIntent } from "./inputs/Select.intent";
 import { stepSliderIntent } from "./inputs/StepSlider.intent";
 import { textFieldIntent } from "./inputs/TextField.intent";
@@ -62,4 +64,6 @@ export const allIntents: ComponentIntent[] = [
   dialogSearchHeadIntent,
   tocRailIntent,
   settingRowIntent,
+  fieldIntent,
+  optionCardIntent,
 ];

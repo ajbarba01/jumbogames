@@ -58,8 +58,8 @@ export async function requireOwner(): Promise<AuthResult> {
   return result;
 }
 
-// Passes for admin and owner (owner > admin > player). Gates hosting and other
-// tournament-management actions.
+// Passes for admin and owner (owner > admin > player). Gates the question bank
+// and other admin-only pages; hosting is gated by isGameHost, not this.
 export async function requireAdmin(): Promise<AuthResult> {
   const result = await requireUser();
   if (!result.ok) return result;
@@ -74,4 +74,17 @@ export function listProfiles() {
     orderBy: { email: "asc" },
     select: { id: true, email: true, role: true },
   });
+}
+
+// Host powers over a single game: its creator, or any admin/owner acting as a
+// rescue path when the creator drops off mid-event. Pure so routes can apply it
+// to a tournament row they already fetched, without a second query. Takes only
+// the id/role shape (not the full Profile) so resolveViewer — which only ever
+// has a viewerId/viewerRole pair, not a loaded Profile — can share this one
+// definition instead of re-deriving the rule.
+export function isGameHost(
+  profile: Pick<Profile, "id" | "role">,
+  hostId: string,
+): boolean {
+  return profile.id === hostId || profile.role !== Role.player;
 }

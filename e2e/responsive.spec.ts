@@ -84,9 +84,9 @@ test("host and admin surfaces fit the floor width", async ({ page }) => {
   await signInAsOwner(page);
   await expectNoHorizontalOverflow(page, "/ (home, owner)");
 
-  await page.goto("/host");
-  await expect(page.getByPlaceholder("Tournament name")).toBeVisible();
-  await expectNoHorizontalOverflow(page, "/host");
+  await page.goto("/create");
+  await expect(page.getByPlaceholder("Thursday hacknight")).toBeVisible();
+  await expectNoHorizontalOverflow(page, "/create");
 
   await page.goto("/admin/permissions");
   await expect(

@@ -19,6 +19,7 @@ export const copyCodeIntent: ComponentIntent = assertIntent({
   anatomy:
     "A button whose face is the code itself (mono, accent) plus a copy glyph that flips to a check with an sr-only status on success.",
   variantsStates: [
+    "inline (default) · display (fluid landing-screen size)",
     "default · hover (glyph brightens) · copied (check + 'Copied' status, ~1.5s) · unavailable (clipboard blocked: no confirmation)",
   ],
   accessibility:

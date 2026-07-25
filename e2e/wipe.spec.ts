@@ -3,13 +3,12 @@
  * tournament surface must actually play the covering panel, then fully clear
  * it afterward — proving the committed + min-floor interlock resolves rather
  * than trapping the user under a stuck panel. Exercises two independent
- * adopters that both cross into the game surface (host-form's useWipeNav on
+ * adopters that both cross into the game surface (create-form's useWipeNav on
  * create, then rejoin-button's on return), asserting the panel's testid
  * across each lifecycle (appears, then detaches) and that the destination is
  * left genuinely interactive, not just painted.
  */
 import { test, expect } from "@playwright/test";
-import { promoteToAdmin } from "./support/db";
 
 test("a wipe-covered nav into the tournament surface plays, clears, and leaves the destination interactive", async ({
   page,
@@ -25,19 +24,15 @@ test("a wipe-covered nav into the tournament surface plays, clears, and leaves t
   await page.getByRole("button", { name: "Sign up" }).click();
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
 
-  // Hosting requires admin — a precondition the UI cannot set for itself.
-  await promoteToAdmin(email);
-  await page.reload();
+  await page.getByRole("button", { name: "Create a game" }).click();
+  await page.waitForURL(/\/create$/);
+  await page.getByPlaceholder("Thursday hacknight").fill("Wipe E2E Cup");
 
-  await page.getByRole("button", { name: "Create an event" }).click();
-  await page.waitForURL(/\/host$/);
-  await page.getByPlaceholder("Tournament name").fill("Wipe E2E Cup");
-
-  // 1. Submitting the host form fires a real useWipeNav() adopter, crossing
+  // 1. Submitting the create form fires a real useWipeNav() adopter, crossing
   // into the tournament surface. The panel stays attached from navStart
   // through wipeOutDone — a floor of WIPE_DUR.in + minCovered + out (~1.02s)
   // — so the window is guaranteed to exist and needs no manual delay.
-  await page.getByRole("button", { name: "Create and host" }).click();
+  await page.getByRole("button", { name: "Create game" }).click();
   await expect(page.getByTestId("slam-wipe")).toBeVisible();
 
   // 2. The navigation lands on the new tournament's lobby.

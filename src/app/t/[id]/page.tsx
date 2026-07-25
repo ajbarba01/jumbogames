@@ -24,7 +24,7 @@ export default async function TournamentPage(props: {
   });
   if (!gated) notFound();
   const { state, relation } = gated;
-  const isHost = relation.as === "host";
+  const isHost = relation.canHost;
 
   if (state.phase === "lobby") {
     return (

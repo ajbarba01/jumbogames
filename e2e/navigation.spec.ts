@@ -11,7 +11,6 @@
  * that the E2E server's minigame pool is non-empty (see playwright.config.ts).
  */
 import { test, expect, type Page } from "@playwright/test";
-import { promoteToAdmin } from "./support/db";
 
 const PASSWORD = "password1234";
 
@@ -26,10 +25,10 @@ async function signUp(page: Page, email: string, name: string): Promise<void> {
 }
 
 async function hostTournament(page: Page, name: string): Promise<string> {
-  await page.getByRole("button", { name: "Create an event" }).click();
-  await page.waitForURL(/\/host$/);
-  await page.getByPlaceholder("Tournament name").fill(name);
-  await page.getByRole("button", { name: "Create and host" }).click();
+  await page.getByRole("button", { name: "Create a game" }).click();
+  await page.waitForURL(/\/create$/);
+  await page.getByPlaceholder("Thursday hacknight").fill(name);
+  await page.getByRole("button", { name: "Create game" }).click();
   await page.waitForURL(/\/t\/[^/]+$/);
   // The destination subtree is inert while covered and `.fill()` no-ops
   // against it rather than waiting, so let the panel detach before reading.
@@ -66,8 +65,6 @@ test("a lobby restored by browser back shows a team created while it was away", 
   const player = await playerContext.newPage();
 
   await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
   const code = await hostTournament(host, "Back Nav Cup");
 
   await signUp(player, playerEmail, "Grace");
@@ -108,8 +105,6 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   const player = await playerContext.newPage();
 
   await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
   const code = await hostTournament(host, "Beat Wipe Cup");
 
   await host.getByPlaceholder("Team name").fill("Alpha");

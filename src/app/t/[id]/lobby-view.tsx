@@ -139,6 +139,7 @@ export function LobbyView({
             </span>
             <CopyCode
               value={state.code}
+              size="display"
               aria-label="Copy game code"
               data-testid="game-code"
             />
@@ -230,7 +231,11 @@ export function LobbyView({
             Create a team
           </h2>
           <form
-            className="flex gap-3"
+            // min-w-0 on the field below lets it shrink to its share of the
+            // row instead of forcing the row past the floor width; flex-wrap
+            // drops the button under the field if the row is ever too narrow
+            // to hold both (docs/UI.md fluid law).
+            className="flex flex-wrap gap-3"
             onSubmit={(event) => {
               event.preventDefault();
               if (teamName.trim() === "") return;
@@ -248,7 +253,7 @@ export function LobbyView({
               value={teamName}
               onChange={(event) => setTeamName(event.target.value)}
               placeholder="Team name"
-              className="flex-1"
+              className="min-w-0 flex-1"
             />
             <Button
               type="submit"

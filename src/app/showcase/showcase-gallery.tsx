@@ -16,6 +16,7 @@ import {
   CopyCode,
   cx,
   DialogSearchHead,
+  Field,
   SettingRow,
   TocRail,
   Spinner,
@@ -26,6 +27,7 @@ import {
   CapsLabel,
   MenuCard,
   MenuItem,
+  OptionCard,
   FloatCard,
   ModalShell,
   PopoverCard,
@@ -130,6 +132,9 @@ function ActionsSection() {
       <Specimen label="CopyCode — click to copy (check + 'Copied' on success)">
         <CopyCode value="HACK42" />
       </Specimen>
+      <Specimen label="CopyCode — display size (lobby-scale headline, fluid to the floor width)">
+        <CopyCode value="HACK42" size="display" />
+      </Specimen>
     </Section>
   );
 }
@@ -206,6 +211,26 @@ function InputsSection() {
           defaultValue="not-a-code"
         />
       </Specimen>
+      <Specimen label="Field — label, detail, helper, error">
+        <div className="flex flex-col gap-4">
+          <Field label="Name">
+            <TextField
+              placeholder="Thursday hacknight"
+              aria-label="field name"
+            />
+          </Field>
+          <Field
+            label="Minigames"
+            detail="1 of 2 picked"
+            helper="Repeats fill in if the pool is smaller."
+          >
+            <TextField aria-label="field minigames" />
+          </Field>
+          <Field label="Name" error="Required">
+            <TextField aria-label="field name invalid" invalid />
+          </Field>
+        </div>
+      </Specimen>
       {/* Select has no disabled prop — the kit declares no disabled state for it. */}
       <Specimen label="Select — populated">
         <Select
@@ -238,6 +263,29 @@ function InputsSection() {
             value={effort}
             onChange={setEffort}
             aria-label="effort specimen"
+          />
+        </div>
+      </Specimen>
+      <Specimen label="OptionCard — unselected, selected, disabled">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <OptionCard
+            title="Trivia tug-of-war"
+            description="Answer fast, pull the rope"
+            selected
+            onToggle={() => {}}
+          />
+          <OptionCard
+            title="Typing race"
+            description="The whole team types; combined pace wins"
+            selected={false}
+            onToggle={() => {}}
+          />
+          <OptionCard
+            title="Word territory"
+            description="Claim grid tiles"
+            selected={false}
+            disabled
+            onToggle={() => {}}
           />
         </div>
       </Specimen>

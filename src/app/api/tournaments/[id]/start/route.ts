@@ -6,7 +6,7 @@
  */
 import { NextResponse } from "next/server";
 import { randomInt } from "node:crypto";
-import { requireAdmin } from "@/lib/auth/profile";
+import { requireUser, isGameHost } from "@/lib/auth/profile";
 import { parseJsonBody } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { TournamentPhase } from "@/generated/prisma/client";
@@ -21,7 +21,7 @@ export async function POST(
   request: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdmin();
+  const auth = await requireUser();
   if (!auth.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: auth.status });
   }
@@ -43,7 +43,7 @@ export async function POST(
   if (!tournament) {
     return NextResponse.json({ error: "No such tournament" }, { status: 404 });
   }
-  if (tournament.hostId !== auth.profile.id) {
+  if (!isGameHost(auth.profile, tournament.hostId)) {
     return NextResponse.json(
       { error: "Only the host can start this tournament" },
       { status: 403 },

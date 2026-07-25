@@ -109,7 +109,7 @@ describe("WipeProvider", () => {
     // Realtime broadcast's bare refresh landing during the in-sweep) starts no
     // transition, so isPending never flips and there is no settle edge. The
     // panel must still come down on the min floor rather than holding the
-    // screen until the 15s force-reveal ceiling.
+    // screen until the 8s force-reveal ceiling.
     renderProvider();
     await act(async () => {
       screen.getByText("cover inert").click();
@@ -137,8 +137,7 @@ describe("WipeProvider", () => {
 
     // Each fallback arms the next phase's, so the clock is advanced in steps
     // with a render between: in-sweep fallback, min floor, out-sweep fallback.
-    // All of it well inside the 15s force-reveal ceiling — which the E2E
-    // suite's own patience (15s) could never outwait anyway.
+    // All of it well inside the 8s force-reveal ceiling.
     for (let step = 0; step < 3; step++) {
       await act(async () => {
         vi.advanceTimersByTime(1500);

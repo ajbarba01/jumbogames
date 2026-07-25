@@ -39,10 +39,13 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await promoteToAdmin(hostEmail);
   await host.reload();
 
-  await host.getByRole("button", { name: "Create an event" }).click();
-  await host.waitForURL(/\/host$/);
-  await host.getByPlaceholder("Tournament name").fill("E2E Cup");
-  await host.getByRole("button", { name: "Create and host" }).click();
+  await host.getByRole("button", { name: "Create a game" }).click();
+  await host.waitForURL(/\/create$/);
+  await host.getByPlaceholder("Thursday hacknight").fill("E2E Cup");
+  // Under JUMBO_TEST_MINIGAME_POOL the only eligible kind is the stub, so it
+  // is auto-selected; picking is a no-op here but keeps the spec honest if a
+  // second dev-only kind is ever registered.
+  await host.getByRole("button", { name: "Create game" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
   // Create-and-host now fires the slam wipe (a game-beat crossing into the
   // tournament surface): the destination subtree is `inert` — and `.fill()`

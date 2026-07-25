@@ -5,7 +5,7 @@
  * gate. Runs against the dedicated test Supabase project.
  */
 import { test, expect, type Page } from "@playwright/test";
-import { promoteToAdmin, firstMatchId } from "./support/db";
+import { firstMatchId } from "./support/db";
 
 const PASSWORD = "password1234";
 
@@ -34,16 +34,15 @@ test("a non-member is refused on lobby, board, and match", async ({
   const player = await playerContext.newPage();
   const outsider = await outsiderContext.newPage();
 
-  // Host: sign up, gain admin, create a tournament.
+  // Host: sign up and create a game. Creation is open to any signed-in user
+  // (M7) — no admin precondition needed here.
   await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
-  await host.getByRole("button", { name: "Create an event" }).click();
-  await host.waitForURL(/\/host$/);
-  await host.getByPlaceholder("Tournament name").fill("Authz Cup");
-  await host.getByRole("button", { name: "Create and host" }).click();
+  await host.getByRole("button", { name: "Create a game" }).click();
+  await host.waitForURL(/\/create$/);
+  await host.getByPlaceholder("Thursday hacknight").fill("Authz Cup");
+  await host.getByRole("button", { name: "Create game" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
-  // Create-and-host fires the slam wipe; the destination is inert while covered
+  // Create fires the slam wipe; the destination is inert while covered
   // and `.fill()` no-ops against an inert field, so wait for the panel to clear
   // before typing.
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);

@@ -24,10 +24,13 @@ async function signUp(page: Page, email: string, name: string): Promise<void> {
 }
 
 async function hostTournament(page: Page, name: string): Promise<string> {
-  await page.getByRole("button", { name: "Create an event" }).click();
-  await page.waitForURL(/\/host$/);
-  await page.getByPlaceholder("Tournament name").fill(name);
-  await page.getByRole("button", { name: "Create and host" }).click();
+  await page.getByRole("button", { name: "Create a game" }).click();
+  await page.waitForURL(/\/create$/);
+  await page.getByPlaceholder("Thursday hacknight").fill(name);
+  // Under JUMBO_TEST_MINIGAME_POOL the only eligible kind is the stub, so it
+  // is auto-selected; picking is a no-op here but keeps the spec honest if a
+  // second dev-only kind is ever registered.
+  await page.getByRole("button", { name: "Create game" }).click();
   await page.waitForURL(/\/t\/[^/]+$/);
   // The destination subtree is inert while covered and `.fill()` no-ops
   // against it rather than waiting, so let the panel detach before reading.

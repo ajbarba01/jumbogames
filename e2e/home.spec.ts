@@ -64,7 +64,7 @@ test("home shows event copy and shakes off a bad code without navigating", async
     page.getByRole("heading", { name: "Join an event" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Create an event" }),
+    page.getByRole("button", { name: "Create a game" }),
   ).toBeVisible();
 
   // A bad code reports inline and does not leave home.

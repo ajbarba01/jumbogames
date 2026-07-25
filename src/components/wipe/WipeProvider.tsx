@@ -39,10 +39,10 @@ import { initialWipeState, wipeReducer } from "@/lib/wipe/machine";
 
 const toMs = (seconds: number) => seconds * 1000;
 
-// Upper bound on how long a stalled navigation may hold the screen. A
-// destination that never commits leaves no other way out of the covered hold,
-// so the panel reveals on its own rather than trapping the user behind it.
-const FORCE_REVEAL_MS = 15_000;
+// A stuck-state backstop, not an animation duration. Deliberately well under
+// Playwright's 15s expect timeout: when the two were equal, a wipe that
+// reached its ceiling raced the assertion waiting for it and failed at random.
+const FORCE_REVEAL_MS = 8_000;
 
 // How long past a sweep's own duration to wait for its animation to report
 // completing before proceeding without it. Generous enough that a merely busy

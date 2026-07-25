@@ -204,6 +204,13 @@ test("the host sees a spectate link into a live match and it opens the match", a
 test("a sitting-out team's player sees the board's bye card", async ({
   browser,
 }) => {
+  // Three signups, a lobby setup and a round start already sit close to the
+  // default 30s budget, and the retry loop at the end needs its own 20s to be
+  // worth anything. Leaving them to share one budget would let the per-test
+  // timeout cut the retries short — the same two-budgets-collide bug that made
+  // FORCE_REVEAL_MS a coin flip. Give the retry room that is actually its own.
+  test.setTimeout(90_000);
+
   const stamp = Date.now();
   const hostEmail = `e2e-bye-host+${stamp}@test.example.com`;
   const alphaEmail = `e2e-bye-p1+${stamp}@test.example.com`;
@@ -275,8 +282,19 @@ test("a sitting-out team's player sees the board's bye card", async ({
   // same fresh server render the app performs on tab-restore (useRefreshOnRestore),
   // so the assertion reflects server truth (viewerBye) rather than a possibly-
   // dropped or delayed broadcast.
-  await byePlayer!.reload();
-  await expect(byePlayer!.getByText("Bye round")).toBeVisible();
+  //
+  // The reload is retried as a unit rather than awaited once: the broadcast this
+  // step exists to bypass can still land while the reload is in flight, and the
+  // refresh it triggers tears the navigation out from under Playwright
+  // (`net::ERR_ABORTED; maybe frame was detached?`). That failure is instant, so
+  // a longer timeout on the reload buys nothing — only another attempt does. A
+  // bye card that never renders still fails once the outer budget runs out.
+  await expect(async () => {
+    await byePlayer!.reload();
+    await expect(byePlayer!.getByText("Bye round")).toBeVisible({
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 20_000 });
 
   await hostContext.close();
   await alphaContext.close();

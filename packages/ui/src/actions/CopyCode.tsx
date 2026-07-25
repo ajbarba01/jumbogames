@@ -16,13 +16,24 @@ export interface CopyCodeProps {
   "aria-label"?: string;
   /** Passed to the value element so callers can target the code text in tests. */
   "data-testid"?: string;
+  /** Visual weight: inline chip (default) or the landing-screen headline. */
+  size?: "inline" | "display";
   className?: string;
 }
+
+// The display size is fluid, not a fixed step: six mono cells with 0.2em
+// tracking must still fit the 207px narrowest card at the 375px floor
+// (docs/UI.md, fluid law).
+const SIZE_CLASS = {
+  inline: "text-2xl",
+  display: "text-[clamp(1.75rem,9vw,2.75rem)]",
+} as const;
 
 export function CopyCode({
   value,
   "aria-label": ariaLabel,
   "data-testid": dataTestId,
+  size = "inline",
   className,
 }: CopyCodeProps): React.JSX.Element {
   const [copied, setCopied] = useState(false);
@@ -58,7 +69,10 @@ export function CopyCode({
     >
       <span
         data-testid={dataTestId}
-        className="font-mono text-2xl font-bold tracking-[0.2em] text-accent"
+        className={cx(
+          "font-mono font-bold tracking-[0.2em] text-accent",
+          SIZE_CLASS[size],
+        )}
       >
         {value}
       </span>

@@ -22,7 +22,7 @@ Displays a short code in accent mono and copies it to the clipboard on click.
 - **Use it when:** Showing a game/join code the host reads aloud and wants to share. Any short literal a viewer will want to copy rather than retype.
 - **Don't use it when:** The value is editable (use CodeInput or TextField). Copying long or structured content where a code chip misreads (use a labelled field).
 - **Anatomy:** A button whose face is the code itself (mono, accent) plus a copy glyph that flips to a check with an sr-only status on success.
-- **Variants & states:** default · hover (glyph brightens) · copied (check + 'Copied' status, ~1.5s) · unavailable (clipboard blocked: no confirmation)
+- **Variants & states:** inline (default) · display (fluid landing-screen size), default · hover (glyph brightens) · copied (check + 'Copied' status, ~1.5s) · unavailable (clipboard blocked: no confirmation)
 - **Accessibility:** A labelled button ('Copy code {value}'); success is announced through a role=status live region, not color alone.
 - **Related:** CodeInput, Button
 
@@ -108,6 +108,28 @@ Segmented entry for a short fixed-length code, one cell per character.
 - **Variants & states:** default · empty (per-cell ghost placeholder) · hover (cell sticker lift) · focus (global accent ring) · disabled (s3 face, no hover) · invalid (crit border on cells) · complete (fires onComplete)
 - **Accessibility:** role=group with an accessible name; each cell is a labelled textbox with its own caret and selection; mono voice is the register's sanctioned code treatment; invalid must be mirrored by text the caller renders, not color alone.
 - **Related:** TextField, Select
+
+### Field
+
+Wraps a form control with the register's caps label and a single helper/error message slot.
+
+- **Use it when:** Any labelled control on a form surface. A control that needs guidance text or a validation message beneath it.
+- **Don't use it when:** The control already carries its own visible label. Laying out a settings row (use SettingRow).
+- **Anatomy:** A caps label with an optional detail suffix, the control as children, and one message line where an error displaces the helper.
+- **Variants & states:** default · with detail · helper · error (displaces helper, role=alert)
+- **Accessibility:** The label is visible text — the control keeps its own accessible name; errors are announced through role=alert rather than color alone.
+- **Related:** TextField, CodeInput, SettingRow
+
+### OptionCard
+
+A sticker card that toggles on press, for picking several options out of a small visible set.
+
+- **Use it when:** Choosing a subset from a handful of options that each need a line of explanation. The options deserve more room than a checkbox row gives them.
+- **Don't use it when:** Exactly one option may be chosen (use Select or a radio group). The set is long enough to need scrolling or search (use a menu). The control is a binary setting (use Toggle).
+- **Anatomy:** A full-width button holding a title, an optional description, and a trailing check that appears when selected; the selected face also takes a tint.
+- **Variants & states:** unselected · selected (tint + check) · hover · pressed · disabled (dimmed, inert)
+- **Accessibility:** A button with aria-pressed carrying the selection state; the check is decorative, so selection is never conveyed by the marker alone.
+- **Related:** Toggle, MenuItem, Select
 
 ### Select
 

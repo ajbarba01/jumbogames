@@ -74,6 +74,7 @@ model Tournament {
   name              String
   phase             TournamentPhase @default(lobby)
   minigamesPerMatch Int             @default(1) @map("minigames_per_match")
+  pool              MinigameKind[]  @default([])
   roundCount        Int?            @map("round_count")
   hostId            String          @map("host_id")
   createdAt         DateTime        @default(now()) @map("created_at")

@@ -19,7 +19,7 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done        |
 | 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | done        |
 | 6   | Final standings + per-player normalization utilities                                                                                               | pending     |
-| 7   | Open hosting — player-creatable games, config (max teams, minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                            | pending     |
+| 7   | Open hosting — player-creatable games, config (minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                                       | done        |
 | 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | in progress |
 | 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | pending     |
 | 10  | Minigame 2: typing race                                                                                                                            | pending     |
@@ -74,10 +74,22 @@ email. Home self-identity ("Signed in as {email}") and the admin permissions pag
 that's deliberate, not leftover. Spectate-by-link, the other half of M8 (DESIGN decision 16), hasn't
 shipped yet — it's gated on this field, not on top of it.
 
-Milestone 7's first surface has landed ahead of the rest of the milestone: the home reskin (event-join
-hero + inline displayName edit) and the tournament→"event" UI-copy sweep (DESIGN decision 15) shipped
-as Slice 1 of the mockup-integration program. Open hosting and the create-game surface — the rest of
-milestone 7 — haven't shipped, so the milestone stays pending.
+Milestone 7 is done. Its first surface — the home reskin (event-join hero + inline displayName edit)
+and the tournament→"event" UI-copy sweep (DESIGN decision 15) — shipped as Slice 1 of the
+mockup-integration program. Slice 2 landed the rest: `/create` replaces `/host`, open to any
+signed-in user rather than gated to admins; `isGameHost` gives host powers to a game's creator (or,
+as a rescue path, any admin/owner) instead of to a role, applied at all six host-only routes. A
+follow-up fix closed the gap between that API surface and the UI: `resolveViewer` now also reports
+`canHost` (same `isGameHost` predicate), so a non-creator admin/owner sees and can use the lobby and
+board host controls, not just the routes accepting their requests. Each `Tournament` now stores its
+own `pool` (a per-game minigame subset, backed by a migration that
+backfills existing rows to `['trivia']`), so the round draw intersects a game's stored pool with
+what the environment can actually play instead of reading a single global pool. **Cut, not deferred:**
+an earlier design paired the pool column with a per-game `maxTeams` (2–15); the maintainer cut
+`maxTeams` entirely before this slice built it, so team count is capped only by the fixed 15-color
+palette ceiling (`MAX_TEAMS`), the same for every game — there is no `maxTeams` field, column, or
+stepper anywhere in the repo, and none should be added without a fresh decision (see DESIGN decision
+14).
 
 Slice 1.5 of the mockup-integration program landed between Slices 1 and 2, ahead of its approved
 sequence: [UI.md](UI.md) had no responsive guidance at all, and Slices 2, 3 and 5 add eight-plus new
@@ -136,9 +148,10 @@ what the suite builds — so it is verified by hand against a dev server.
   both passing and failing at SHA `034a2b3`), but that flake did not reproduce locally over three runs,
   so the link is reasoned, not observed — if it recurs, the next stop is the `committed` edge itself,
   which a concurrent bare `router.refresh()` from `BoardRefresher` can plausibly swallow. Worth noting
-  either way: `FORCE_REVEAL_MS` (15s) is exactly the suite's `expect` timeout, so a wipe that ever
-  needs the ceiling fails the assertion no matter what — the ceiling can never be observed working.
+  either way: `FORCE_REVEAL_MS` was 15s, exactly the suite's `expect` timeout, so a wipe that ever
+  needed the ceiling raced the assertion waiting for it and failed at random. Slice 2 lowered it to
+  8s, deliberately under the 15s timeout, so the ceiling firing no longer races the assertion.
 
 ---
 
-_Last reviewed: 2026-07-24_
+_Last reviewed: 2026-07-25_

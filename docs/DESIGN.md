@@ -62,8 +62,11 @@ Full rationale and the pure-engine contract live in the
 ## Creating a game
 
 Any signed-in player can create a game: name it, pick the **minigame pool** (non-empty subset), set
-**K** (`minigamesPerMatch`, 1–4, K ≤ pool size) and **max teams** (2–15, the team-palette ceiling) →
-land in the game with its code (for the projector or the table). The creator holds the game's host
+**K** (`minigamesPerMatch`, 1–4, independent of pool size — the draw repeats kinds when the pool is
+shorter than K) → land in the game with its code (for the projector or the table). Team count is not
+a per-game config: any game may hold up to `MAX_TEAMS` (15, the kit's fixed color-palette ceiling), a
+constant, not a host-set field — the earlier `maxTeams` (2–15) per-game config was cut before it was
+built (decision 14). The creator holds the game's host
 powers — Start when all leaders are ready (with an override to start anyway or remove a dead team) —
 and may also join a team and play; hosting is a role on the game, not a seat. Spectators need no
 code: any signed-in user can open a game's board by link and spectate any live match full-screen;
@@ -77,9 +80,12 @@ joining a team is what requires the code (link = read, code = write).
   promote/demote **admins**. The allowlist only grants owner, never revokes it; removing an email
   from `OWNER_EMAILS` does not demote its existing owner row. Demoting an owner requires a direct
   database update.
-- **Admin** — manages content: the trivia question bank (and future minigame content).
+- **Admin** — manages content: the trivia question bank (and future minigame content); also holds
+  host powers over every game, admin/owner alike, as a rescue path for when its creator drops off
+  mid-event (`isGameHost`, [ROADMAP.md](ROADMAP.md)).
 - **Player** — signs up (email + password, confirmation off), joins with a game code, plays — and
-  can create games (decision 14). Per-game host powers belong to the game's creator, not to a role.
+  can create games (decision 14). Per-game host powers belong to the game's creator first, with the
+  admin/owner rescue path above as the exception — not to a role in general.
 
 ## The minigames
 
@@ -189,8 +195,13 @@ arrive already solved; a theme is a token-scale swap by design.
     rostered on — is never moved, so opening a match to spectate is never undone by another team's round
     starting.
 14. **Games-first, no format enum: a tournament is a game with more teams.** Anyone signed in creates
-    a game, configuring `maxTeams` (2–15), the minigame pool (non-empty subset), and K (K ≤ pool
-    size); a pickup game is `maxTeams: 2`. Differences are **config values, never branches** — the
+    a game, configuring the minigame pool (non-empty subset) and K (1–4, independent of pool size —
+    `drawRoundGames` repeats kinds when the pool is shorter than K; amended from the original "K ≤
+    pool size" cap by the 2026-07-24 create-game slice spec); a pickup game is just a 2-team one — no
+    format field distinguishes it. A per-game `maxTeams` (2–15) was planned alongside the pool column
+    but cut before the 2026-07-24 create-game slice built it: team count is capped only by the fixed
+    `MAX_TEAMS` (15) palette ceiling, the same for every game, not a host-set config value. Differences
+    that remain are **config values, never branches** — the
     engine (rounds, matches, slots, scoring) has zero format awareness, and every game runs the same
     start → board → start-round flow. A true data-model inversion (Game as root, Tournament as
     wrapper) was evaluated and rejected: its real cost is `Team` scoping (polymorphic parents or
@@ -233,4 +244,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-24_
+_Last reviewed: 2026-07-25_

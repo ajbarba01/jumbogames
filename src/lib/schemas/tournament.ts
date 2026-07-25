@@ -5,11 +5,14 @@
  * numbers.
  */
 import { z } from "zod";
+import { MinigameKind } from "@/generated/prisma/client";
+import { eligibleEnv } from "@/lib/minigames/eligible";
+import { poolFor } from "@/lib/minigames/registry";
 
 export const MAX_TEAMS = 15; // matches the kit's 15-color team palette
 export const MIN_TEAMS_TO_START = 2; // a round-robin needs at least one pairing
 export const MIN_MINIGAMES_PER_MATCH = 1;
-export const MAX_MINIGAMES_PER_MATCH = 4; // size of the minigame pool
+export const MAX_MINIGAMES_PER_MATCH = 4; // a UX cap; a short pool repeats
 
 export const createTournamentSchema = z.object({
   name: z.string().trim().min(1).max(60),
@@ -19,6 +22,20 @@ export const createTournamentSchema = z.object({
     .min(MIN_MINIGAMES_PER_MATCH)
     .max(MAX_MINIGAMES_PER_MATCH)
     .default(1),
+  // Fail closed at the write boundary: only kinds playable in this
+  // environment may be stored. The round draw intersects again at start,
+  // for pools that go stale after the fact.
+  // z.enum accepts a native enum object in Zod 4; z.nativeEnum is deprecated
+  // there and this repo has no other use of it.
+  pool: z
+    .array(z.enum(MinigameKind))
+    .min(1)
+    .refine((kinds) => new Set(kinds).size === kinds.length, {
+      message: "Duplicate minigame",
+    })
+    .refine((kinds) => kinds.every((k) => poolFor(eligibleEnv()).includes(k)), {
+      message: "Minigame not available here",
+    }),
 });
 
 // Codes are normalized to uppercase for lookup; the canonical format lives in

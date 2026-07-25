@@ -4,7 +4,7 @@
  * team" override before starting.
  */
 import { NextResponse } from "next/server";
-import { requireUser, requireAdmin } from "@/lib/auth/profile";
+import { requireUser, isGameHost } from "@/lib/auth/profile";
 import { parseJsonBody } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { readyTeamSchema } from "@/lib/schemas/tournament";
@@ -61,7 +61,7 @@ export async function DELETE(
   _request: Request,
   ctx: { params: Promise<{ id: string; teamId: string }> },
 ) {
-  const auth = await requireAdmin();
+  const auth = await requireUser();
   if (!auth.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: auth.status });
   }
@@ -71,7 +71,7 @@ export async function DELETE(
   if (!lobby.ok) {
     return NextResponse.json({ error: lobby.error }, { status: lobby.status });
   }
-  if (lobby.tournament.hostId !== auth.profile.id) {
+  if (!isGameHost(auth.profile, lobby.tournament.hostId)) {
     return NextResponse.json(
       { error: "Only the host can remove teams" },
       { status: 403 },

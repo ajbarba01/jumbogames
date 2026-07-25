@@ -5,7 +5,7 @@
  * Sequential: only the earliest non-complete round starts.
  */
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/profile";
+import { requireUser, isGameHost } from "@/lib/auth/profile";
 import { prisma } from "@/lib/prisma";
 import { RoundState, TournamentPhase } from "@/generated/prisma/client";
 import {
@@ -13,23 +13,15 @@ import {
   checkRoundDraw,
   drawRoundGames,
 } from "@/lib/match/round-draw";
-import { poolFor } from "@/lib/minigames/registry";
+import { eligibleEnv, eligiblePool } from "@/lib/minigames/eligible";
 import { buildRoundSlots } from "@/lib/match/server/round-slots";
 import { broadcastTournamentChange } from "@/lib/realtime/broadcast";
-
-// Playwright runs against a production build, where the production pool is
-// empty (the only registered minigame is devOnly). The test pool admits
-// devOnly kinds so E2E can exercise a real round. Never set this in Vercel.
-function eligibleEnv(): "development" | "test" | "production" {
-  if (process.env.JUMBO_TEST_MINIGAME_POOL === "1") return "test";
-  return process.env.NODE_ENV === "production" ? "production" : "development";
-}
 
 export async function POST(
   _request: Request,
   ctx: { params: Promise<{ id: string; ordinal: string }> },
 ) {
-  const auth = await requireAdmin();
+  const auth = await requireUser();
   if (!auth.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: auth.status });
   }
@@ -46,6 +38,7 @@ export async function POST(
       hostId: true,
       phase: true,
       minigamesPerMatch: true,
+      pool: true,
       rounds: {
         orderBy: { ordinal: "asc" },
         select: {
@@ -60,7 +53,7 @@ export async function POST(
   if (!tournament) {
     return NextResponse.json({ error: "No such tournament" }, { status: 404 });
   }
-  if (tournament.hostId !== auth.profile.id) {
+  if (!isGameHost(auth.profile, tournament.hostId)) {
     return NextResponse.json(
       { error: "Only the host can start a round" },
       { status: 403 },
@@ -93,8 +86,12 @@ export async function POST(
     );
   }
 
+  // A stored pool can go stale (a kind unregistered, or a dev-only kind on a
+  // row now played in production). Intersecting means an unplayable pool
+  // becomes an empty draw — which checkRoundDraw already turns into a 409 —
+  // rather than an absent registry entry at play time.
   const drawnGames = drawRoundGames(
-    poolFor(eligibleEnv()),
+    eligiblePool(tournament.pool, eligibleEnv()),
     tournament.minigamesPerMatch,
     `${id}:${ordinal}`,
   );

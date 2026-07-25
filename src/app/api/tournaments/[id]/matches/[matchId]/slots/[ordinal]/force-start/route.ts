@@ -1,9 +1,10 @@
 /**
  * Route handler: the host force-starts a slot's gate, skipping unready players.
- * Host-only — a per-round valve for dead laptops and AFK ready-blockers.
+ * Host-only (creator, or any admin/owner as a rescue path) — a per-round valve
+ * for dead laptops and AFK ready-blockers.
  */
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth/profile";
+import { requireUser, isGameHost } from "@/lib/auth/profile";
 import { loadMatchRows } from "@/lib/match/server/load";
 import { mutateMatch } from "@/lib/match/server/mutate";
 
@@ -28,7 +29,7 @@ export async function POST(
   if (!loaded || loaded.rows.teamB === null) {
     return NextResponse.json({ error: "No such match" }, { status: 404 });
   }
-  if (loaded.hostId !== auth.profile.id) {
+  if (!isGameHost(auth.profile, loaded.hostId)) {
     return NextResponse.json({ error: "Host only" }, { status: 403 });
   }
 

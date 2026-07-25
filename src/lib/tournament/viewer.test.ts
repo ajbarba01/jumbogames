@@ -1,7 +1,9 @@
 /**
  * Unit tests for resolveViewer: the pure access predicate deciding whether a
  * viewer may read a tournament, and in what relation (host / member / admin /
- * guest). Guest admission is gated on `joinable` — the lobby-open phase.
+ * guest), plus the orthogonal `canHost` (may exercise host controls, shared
+ * with isGameHost). Guest admission is gated on `joinable` — the lobby-open
+ * phase.
  */
 import { describe, it, expect } from "vitest";
 import { resolveViewer } from "./viewer";
@@ -17,7 +19,7 @@ describe("resolveViewer", () => {
   it("admits the host, who holds no member row", () => {
     expect(
       resolveViewer({ ...LOCKED, viewerId: HOST, viewerRole: "player" }),
-    ).toEqual({ allowed: true, as: "host" });
+    ).toEqual({ allowed: true, as: "host", canHost: true });
   });
 
   it("resolves a host who also joined a team as host, not member", () => {
@@ -29,31 +31,31 @@ describe("resolveViewer", () => {
         memberIds: [HOST, MEMBER],
         joinable: false,
       }),
-    ).toEqual({ allowed: true, as: "host" });
+    ).toEqual({ allowed: true, as: "host", canHost: true });
   });
 
   it("admits a tournament member", () => {
     expect(
       resolveViewer({ ...LOCKED, viewerId: MEMBER, viewerRole: "player" }),
-    ).toEqual({ allowed: true, as: "member" });
+    ).toEqual({ allowed: true, as: "member", canHost: false });
   });
 
-  it("admits a non-host admin as admin", () => {
+  it("admits a non-host admin as admin, and lets them host as a rescue path", () => {
     expect(
       resolveViewer({ ...LOCKED, viewerId: STRANGER, viewerRole: "admin" }),
-    ).toEqual({ allowed: true, as: "admin" });
+    ).toEqual({ allowed: true, as: "admin", canHost: true });
   });
 
-  it("admits an owner as admin", () => {
+  it("admits an owner as admin, and lets them host as a rescue path", () => {
     expect(
       resolveViewer({ ...LOCKED, viewerId: STRANGER, viewerRole: "owner" }),
-    ).toEqual({ allowed: true, as: "admin" });
+    ).toEqual({ allowed: true, as: "admin", canHost: true });
   });
 
-  it("resolves an admin who is also a member as member (more specific)", () => {
+  it("resolves an admin who is also a member as member (more specific), but still lets them host", () => {
     expect(
       resolveViewer({ ...LOCKED, viewerId: MEMBER, viewerRole: "admin" }),
-    ).toEqual({ allowed: true, as: "member" });
+    ).toEqual({ allowed: true, as: "member", canHost: true });
   });
 
   it("refuses a signed-in player with no tie once the tournament is locked", () => {
@@ -83,7 +85,7 @@ describe("resolveViewer", () => {
         memberIds: [MEMBER],
         joinable: true,
       }),
-    ).toEqual({ allowed: true, as: "guest" });
+    ).toEqual({ allowed: true, as: "guest", canHost: false });
   });
 
   it("still resolves the host as host in a joinable lobby, not guest", () => {
@@ -95,7 +97,7 @@ describe("resolveViewer", () => {
         memberIds: [],
         joinable: true,
       }),
-    ).toEqual({ allowed: true, as: "host" });
+    ).toEqual({ allowed: true, as: "host", canHost: true });
   });
 
   it("still resolves a member as member in a joinable lobby, not guest", () => {
@@ -107,6 +109,6 @@ describe("resolveViewer", () => {
         memberIds: [MEMBER],
         joinable: true,
       }),
-    ).toEqual({ allowed: true, as: "member" });
+    ).toEqual({ allowed: true, as: "member", canHost: false });
   });
 });

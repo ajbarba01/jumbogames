@@ -171,6 +171,16 @@ found by the guard rather than by reading, both on role-specific variants a casu
 `/showcase` is the one route it cannot cover — `notFound()` under `NODE_ENV=production`, which is
 what the suite builds — so it is verified by hand against a dev server.
 
+CI now runs once per commit. `on: [push, pull_request]` fired both events for a pushed branch with an
+open PR, so every commit launched two identical suites against the single shared Supabase test
+project — cross-run interference that made any non-atomic fixture a first-run race, and a standing
+source of confusing red builds. `push` is now scoped to `main` and `pull_request` covers branches, so
+each commit gets exactly one run and the merge commit is still verified on `main`. A concurrency
+group cancels superseded runs on the same ref. The trade is real and accepted: a branch pushed before
+its PR exists gets no CI, which suits a repo where every change goes branch → PR. Not fixed, and
+deliberately so: two PRs, or a PR plus a `main` push, still race the same test project — a global
+queue is the escalation if a second change is ever in flight.
+
 ## Known gaps (carry into the next branches)
 
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
@@ -200,10 +210,6 @@ what the suite builds — so it is verified by hand against a dev server.
   difficulty or category but never unset one — the save reports success and the old value stays.
   The fix is `z.null()` in the update schema plus a client that sends `null` rather than dropping
   the key. The editor's "no difficulty" option is honest on create and a no-op on edit until then.
-- **CI races two runs against one Supabase project.** The workflow triggers on
-  `on: [push, pull_request]`, so a pushed PR branch runs the whole E2E suite twice, concurrently,
-  against the single shared test project. Cross-run interference is a live source of confusing red
-  builds, and it makes any non-atomic fixture (the trivia bank seed, for one) a first-run race.
 - **A round start's network wait is uncovered.** `BoardRoundStart` awaits the round-start POST before
   opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
   React drops post-await updates out of the transition, so `isPending` — the machine's `committed`

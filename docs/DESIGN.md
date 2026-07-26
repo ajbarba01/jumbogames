@@ -209,28 +209,48 @@ arrive already solved; a theme is a token-scale swap by design.
     if format-shaped conditionals ever creep into the engine, revisit. This also supersedes
     admin-only hosting; admins keep content management (see Roles). Full rationale in the
     [games-first spec](superpowers/specs/2026-07-23-games-first-refactor-design.md) (local artifact).
-15. **Vocabulary mapping: code `Tournament` = product "event".** The schema, routes, and types keep
-    `Tournament` to avoid rename churn; all UI copy says "event" (the `game`/`minigame` overload drove
-    the switch from "game" to "event"; landed Slice 1, 2026-07-24), using "tournament" only for actual
-    multi-team events. Recorded so the drift is a deliberate translation, not an accident; a future
-    code rename stays open.
+15. **Vocabulary mapping: code `Tournament` = product "game".** The schema, routes, and types keep
+    `Tournament` to avoid rename churn; UI copy says "tournament" only when describing an actual
+    multi-team game. **Amended in Slice 3 (2026-07-25):** the product word flipped back from "event"
+    to "game" — the mockup, the handoff spec, `/create`, and everyone talking about the project all
+    said "game", and "game"/"minigame" coexist readably in context (the original overload concern
+    that drove the "event" switch didn't hold up in practice). Home's two "event" strings were swept
+    with the rest of the game-page surface in the same slice. Recorded so the drift is a deliberate
+    translation, not an accident; a future code rename stays open.
 16. **Spectate by link, play by code.** Board and match-spectate reads are open to any signed-in
     user (no membership required); mutations that join a game — picking a team — require the game
     code, validated server-side in the join request. Link = read, code = write. Anonymous (no-auth)
     spectating is a deliberate post-MVP loosening, gated on `displayName` fully replacing emails.
-    `displayName` itself has landed ahead of the read-opening it gates: it's a real, `NOT NULL`,
-    required-at-signup, user-editable field (backfilled from the email local part for existing
-    rows, changed via `PATCH /api/profile`, edited in place on the home identity card), and
-    every other-player-facing label (lobby roster, presence, match member labels) now renders it
-    instead of email. Home self-identity ("Signed in as {email}") and the admin permissions page
-    deliberately still show email — both are the account owner looking at their own or another
+    `displayName` is a real, `NOT NULL`, required-at-signup, user-editable field (backfilled from the
+    email local part for existing rows, changed via `PATCH /api/profile`, edited in place on the home
+    identity card), and every other-player-facing label (lobby roster, presence, match member labels)
+    renders it instead of email. Home self-identity ("Signed in as {email}") and the admin permissions
+    page deliberately still show email — both are the account owner looking at their own or another
     admin's account, not a player-facing label, so the leak this decision is about doesn't apply
-    there. The spectate read-opening itself is unchanged by this and still ships later (Slice 3).
+    there. The read-opening itself has now shipped (Slice 3): `resolveViewer` no longer refuses any
+    signed-in viewer, and `canSpectate` was deleted rather than rehomed — once reads opened, its only
+    honest value was `true`. The game code became a withheld credential instead, via `holdsGameCode`
+    (`src/lib/tournament/viewer.ts`), consumed by both the game page and the tournament read route.
+    The code is also stripped from the address bar (`history.replaceState`, client-side) once the
+    server has admitted a `?c=` link: the server reads it on the initial request and never needs it
+    again, so leaving it visible would only turn the natural "come spectate, here's the link" gesture
+    into handing over the write credential — the exact failure this decision exists to prevent.
+    The accepted consequence: a link-borne viewer who has **not yet joined a team** is demoted on
+    reload, because nothing persists that grant once the URL stops carrying it — they need the link
+    again. Every other viewer class is unaffected, since a member's, host's or admin's grant is
+    derived from the roster and is reconstructed on every render.
 17. **Roster fluidity under the lock rule.** Join, leave, and leader-kick are allowed only while the
     team has no live match (lobby phase or between rounds); slot roster snapshots already make the
     boundary safe. Leader leaving auto-transfers leadership to the earliest-joined member; an empty
     team stays in the schedule and forfeits. Team size stays score-neutral by per-player
-    normalization; kick is the answer to sandbagging.
+    normalization; kick is the answer to sandbagging. **Landed in Slice 3:** the lock rule is
+    `isTeamLocked` (pure, `src/lib/tournament/roster-lock.ts`), enforced on writes by
+    `requireRosterOpen` (`src/lib/tournament/access.ts`); forfeit is derived from an empty roster and
+    is never stored — there is no forfeit column or migration. An emptied team survives after start
+    because the round schedule holds foreign keys to it, so it stays in standings, marked, scores
+    frozen. A kicked player returns to the team picker and may pick another team under the same lock
+    rule. Creating a team also now requires the game code, closing a hole where create-team was an
+    unguarded way to join a game without one.
 
 ## Deferred design (grill before building each)
 

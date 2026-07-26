@@ -1,6 +1,7 @@
 /**
  * Home: the authenticated landing. A game-code hero card takes the code and
- * joins, with "Create a game" shown to every signed-in viewer. A small
+ * joins, with "Create a game" shown to every signed-in viewer; a named rejoin
+ * action sits above it when the viewer is already in a game. A small
  * identity card shows the signed-in account with an editable display name, log
  * out, an owner-only user-management link, and a question-bank link for admins and
  * owners. Logged-out visitors are sent to login.
@@ -12,6 +13,7 @@ import { getOrCreateProfile } from "@/lib/auth/profile";
 import { findCurrentTournament } from "@/lib/tournament/current";
 import { LogoutButton } from "./logout-button";
 import { JoinCard } from "./join-card";
+import { RejoinButton } from "./rejoin-button";
 import { DisplayNameEditor } from "./display-name-editor";
 
 export default async function Home() {
@@ -29,9 +31,11 @@ export default async function Home() {
         <p className="text-sec text-s9">Short co-op minigames, team vs team.</p>
       </div>
 
-      <JoinCard
-        current={current ? { id: current.id, name: current.name } : null}
-      />
+      {current ? (
+        <RejoinButton tournamentId={current.id} tournamentName={current.name} />
+      ) : null}
+
+      <JoinCard />
 
       <Card className="flex flex-col gap-4 p-6">
         <div className="flex items-center justify-between gap-3">

@@ -172,9 +172,11 @@ export type DoodleMix = "cream" | "accent" | "even";
 const CYCLE = [CREAM, YELLOW, PINK] as const;
 
 /**
- * How loud the field's colour runs. "cream" is the authored assignment, which
- * leans on the neutral; "accent" keeps every third mark neutral and paints the
- * rest; "even" gives the three colours equal share.
+ * How loud the field's colour runs, quietest first: "cream" is the authored
+ * assignment, which leans hard on the neutral; "even" gives the three colours
+ * an equal share; "accent" leaves only every fourth mark neutral and paints
+ * the rest. The three must differ in how much neutral they keep — that is the
+ * knob — so they are pinned apart in specs.test.ts.
  */
 export function strokeFor(
   doodle: Doodle,
@@ -183,5 +185,5 @@ export function strokeFor(
 ): string {
   if (mix === "cream") return doodle.stroke;
   if (mix === "even") return CYCLE[index % CYCLE.length]!;
-  return index % 3 === 0 ? CREAM : CYCLE[(index % 2) + 1]!;
+  return index % 4 === 0 ? CREAM : CYCLE[(index % 2) + 1]!;
 }

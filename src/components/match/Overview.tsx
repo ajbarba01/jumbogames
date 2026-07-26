@@ -6,25 +6,11 @@
 "use client";
 
 import { motion } from "motion/react";
+import { TeamChip } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
 import { derivePhase, minigamesWon } from "@/lib/match/derive";
-import type { MatchState, MatchTeam, SlotState } from "@/lib/match/types";
+import type { MatchState, SlotState } from "@/lib/match/types";
 import { MINIGAMES } from "@/lib/minigames/registry";
-
-function TeamBadge({ team }: { team: MatchTeam }): React.JSX.Element {
-  return (
-    <span className="flex min-w-0 items-center gap-2.5 font-display text-2xl text-s12">
-      <span
-        className="h-4 w-4 flex-none rounded-r1"
-        style={{ background: `var(--color-team-${team.colorIndex})` }}
-        aria-hidden
-      />
-      {/* The chip must keep its size and the name is what can lose width, so
-          the name is the one that truncates (docs/UI.md). */}
-      <span className="truncate">{team.name}</span>
-    </span>
-  );
-}
 
 function SlotCard({
   slot,
@@ -104,11 +90,19 @@ export function Overview({
           do not fit a phone in one line, so the row wraps rather than pushing
           the page sideways; the tally never shrinks, it is the point. */}
       <header className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-1">
-        <TeamBadge team={match.teamA} />
+        <TeamChip
+          colorIndex={match.teamA.colorIndex}
+          name={match.teamA.name}
+          className="text-s12"
+        />
         <span className="shrink-0 font-display text-5xl text-s12">
           {tally.a}–{tally.b}
         </span>
-        <TeamBadge team={match.teamB} />
+        <TeamChip
+          colorIndex={match.teamB.colorIndex}
+          name={match.teamB.name}
+          className="text-s12"
+        />
       </header>
       <div className="flex flex-wrap items-center justify-center gap-6">
         {match.slots.map((slot) => (

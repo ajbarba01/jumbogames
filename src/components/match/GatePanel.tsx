@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { Button } from "@jumbo/ui";
+import { Button, TeamChip } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
 import type { MatchTeam, SlotState } from "@/lib/match/types";
 import { MINIGAMES } from "@/lib/minigames/registry";
@@ -20,15 +20,13 @@ function ReadyColumn({
   labels: Record<string, string>;
 }): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="flex items-center gap-2 font-bold text-s12">
-        <span
-          className="h-3 w-3 rounded-r1"
-          style={{ background: `var(--color-team-${team.colorIndex})` }}
-          aria-hidden
-        />
-        {team.name}
-      </span>
+    <div className="flex min-w-0 flex-col gap-1">
+      <TeamChip
+        colorIndex={team.colorIndex}
+        name={team.name}
+        size="sm"
+        className="text-s12"
+      />
       {team.members.map((id) => (
         <span key={id} className="flex items-center gap-2 text-s11">
           <span aria-hidden>{readySet.has(id) ? "✓" : "·"}</span>
@@ -57,7 +55,7 @@ export function GatePanel({
     <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
       <h2 className="font-display text-3xl text-s12">{game.title}</h2>
       <p className="max-w-md text-center text-s11">{game.instructions}</p>
-      <div className="flex gap-12">
+      <div className="flex max-w-full gap-12">
         <ReadyColumn
           team={view.match.teamA}
           readySet={readySet}

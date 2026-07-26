@@ -1,8 +1,17 @@
-# CI: typecheck, lint, format check, and the Playwright E2E suite on every
-# push and pull request. E2E runs against the dedicated test Supabase project
-# (secrets configured in the repo settings).
+# CI: typecheck, lint, format check, and the Playwright E2E suite on every pull
+# request and on pushes to main — one run per commit, since a branch push plus
+# its open PR would otherwise race two suites against the one shared Supabase
+# test project. E2E runs against that dedicated test project (secrets configured
+# in the repo settings).
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest

@@ -45,7 +45,7 @@ and gates still apply. The test is "does this need design to get right?", not "i
 - `npm run typecheck` — `tsc --strict`, zero errors
 - `npm run lint` — ESLint clean
 - `npm run format:check` — Prettier clean
-- `npm run test:e2e` — Playwright green (also runs in CI on every push/PR)
+- `npm run test:e2e` — Playwright green (also runs in CI on every PR and on pushes to `main`)
 - Unit tests green for pure game logic
 - Manually exercise the changed flow in the running app
 - Docs updated in the same change (same-commit rule)

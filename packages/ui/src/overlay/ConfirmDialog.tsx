@@ -4,10 +4,13 @@
  * a team). Weight is carried by the copy, not by color — the register reserves
  * crit for live state, so the confirm button is the ordinary accent action.
  * Cancel comes first so the focus trap lands there, not on the destructive path.
+ * Optionally renders a crit StatusLine if the last confirmation attempt failed,
+ * keeping buttons enabled for retry.
  */
 "use client";
 
 import { Button } from "../actions/Button";
+import { StatusLine } from "../frame/StatusLine";
 import { ModalShell } from "./ModalShell";
 
 export interface ConfirmDialogProps {
@@ -22,6 +25,9 @@ export interface ConfirmDialogProps {
   cancelLabel?: string;
   /** Disables both actions while the confirmed request is in flight. */
   busy?: boolean;
+  /** Why the last confirmation failed. Shown as a docked crit status line so
+   *  the dialog stays open and the action stays retryable. */
+  error?: string;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -33,6 +39,7 @@ export function ConfirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   busy = false,
+  error,
   onConfirm,
   onClose,
 }: ConfirmDialogProps): React.JSX.Element {
@@ -46,6 +53,11 @@ export function ConfirmDialog({
       <div className="flex flex-col gap-4 p-6">
         <h2 className="font-display text-xl uppercase">{title}</h2>
         {description ? <p className="text-sec text-s4">{description}</p> : null}
+        {error ? (
+          <StatusLine tone="crit" live>
+            {error}
+          </StatusLine>
+        ) : null}
         <div className="flex justify-end gap-3">
           <Button variant="outline" disabled={busy} onClick={onClose}>
             {cancelLabel}

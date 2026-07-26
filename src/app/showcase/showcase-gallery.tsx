@@ -20,8 +20,10 @@ import {
   SettingRow,
   TocRail,
   Spinner,
+  SkeletonRows,
   Select,
   StepSlider,
+  Textarea,
   TextField,
   Toggle,
   CapsLabel,
@@ -214,6 +216,23 @@ function InputsSection() {
           defaultValue="not-a-code"
         />
       </Specimen>
+      <Specimen label="Textarea — default">
+        <Textarea placeholder="Prompt" aria-label="textarea default" />
+      </Specimen>
+      <Specimen label="Textarea — invalid">
+        <Textarea
+          aria-label="textarea invalid"
+          invalid
+          defaultValue="not-a-question"
+        />
+      </Specimen>
+      <Specimen label="Textarea — disabled">
+        <Textarea
+          placeholder="Disabled"
+          aria-label="textarea disabled"
+          disabled
+        />
+      </Specimen>
       <Specimen label="Field — label, detail, helper, error">
         <div className="flex flex-col gap-4">
           <Field label="Name">
@@ -234,13 +253,42 @@ function InputsSection() {
           </Field>
         </div>
       </Specimen>
-      {/* Select has no disabled prop — the kit declares no disabled state for it. */}
-      <Specimen label="Select — populated">
+      <Specimen label="Select — chip (default)">
         <Select
           options={["sand dark", "sand light", "system"]}
           value={theme}
           onChange={setTheme}
           aria-label="select specimen"
+        />
+      </Specimen>
+      <Specimen label="Select — chip, disabled">
+        <Select
+          options={["sand dark", "sand light", "system"]}
+          value={theme}
+          onChange={setTheme}
+          disabled
+          aria-label="select chip disabled specimen"
+        />
+      </Specimen>
+      <Specimen label="Select — field, caller-sized">
+        <Select
+          options={["sand dark", "sand light", "system"]}
+          value={theme}
+          onChange={setTheme}
+          size="field"
+          className="w-full"
+          aria-label="select field specimen"
+        />
+      </Specimen>
+      <Specimen label="Select — field, disabled">
+        <Select
+          options={["sand dark", "sand light", "system"]}
+          value={theme}
+          onChange={setTheme}
+          size="field"
+          className="w-full"
+          disabled
+          aria-label="select field disabled specimen"
         />
       </Specimen>
       <Specimen label="Toggle — off / on / disabled off / disabled on">
@@ -334,6 +382,7 @@ function OverlaySection() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmErrorOpen, setConfirmErrorOpen] = useState(false);
 
   return (
     <Section title="Overlay">
@@ -405,6 +454,18 @@ function OverlaySection() {
           confirmLabel="End game"
           onConfirm={() => setConfirmOpen(false)}
           onClose={() => setConfirmOpen(false)}
+        />
+      </Specimen>
+      <Specimen label="ConfirmDialog — error state (buttons enabled for retry)">
+        <Button onClick={() => setConfirmErrorOpen(true)}>
+          Delete question
+        </Button>
+        <ConfirmDialog
+          open={confirmErrorOpen}
+          title="Delete question?"
+          error="Could not delete question."
+          onConfirm={() => setConfirmErrorOpen(false)}
+          onClose={() => setConfirmErrorOpen(false)}
         />
       </Specimen>
       <FloatCardSpecimen side="top" label="FloatCard — placement top" />
@@ -727,6 +788,16 @@ function SurfaceSection() {
         </p>
         <Button variant="primary">Primary action</Button>
       </Card>
+      <Specimen label="SkeletonRows — default (5 rows)">
+        <div className="w-80">
+          <SkeletonRows />
+        </div>
+      </Specimen>
+      <Specimen label="SkeletonRows — rows={3}">
+        <div className="w-80">
+          <SkeletonRows rows={3} />
+        </div>
+      </Specimen>
     </Section>
   );
 }

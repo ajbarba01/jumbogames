@@ -19,9 +19,9 @@ export const confirmDialogIntent: ComponentIntent = assertIntent({
   anatomy:
     "ModalShell wrapping a display title, an optional description line, and a cancel/confirm button pair; cancel is first so the focus trap lands there.",
   variantsStates: [
-    "default · busy (both actions disabled while the request runs) · closed (renders nothing)",
+    "default · busy (both actions disabled while the request runs) · error (confirmation failed; buttons stay enabled for retry) · closed (renders nothing)",
   ],
   accessibility:
-    "Inherits ModalShell's labelled dialog, focus trap, and Escape/scrim dismissal (which cancel); weight is in the copy, not color, per the status-vocabulary law.",
+    "Inherits ModalShell's labelled dialog, focus trap, and Escape/scrim dismissal (which cancel); weight is in the copy, not color, per the status-vocabulary law. A failed confirmation is announced through a live region (role=status) rather than signalled by color alone.",
   related: ["ModalShell", "Button"],
 });

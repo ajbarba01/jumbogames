@@ -7,6 +7,14 @@
 export const SLIP_EASE = [0.34, 1.4, 0.64, 1] as const;
 
 /**
+ * The no-overshoot curve (tokens.css `--ease-slip`), for movement whose target
+ * is a hard edge. A shared element growing to fill the viewport has nothing to
+ * settle into past full screen, so Thunk's overshoot reads as elastic rather
+ * than as weight.
+ */
+export const SLIP_EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+/**
  * Rejection-shake keyframes (docs/UI.md): the register's form-error / illegal-
  * move affordance — a quick horizontal jitter that settles at rest. Consumed as
  * a motion `x` keyframe array; the amplitude lives here so the CSS/JS seam is

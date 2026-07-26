@@ -5,12 +5,14 @@
  * possible at the gate. The panel wears no sticker chrome: a full-bleed
  * surface is in-flow content, which owns the darkest ground and casts no
  * shadow (docs/UI.md's outline vocabulary — board stickers are for game
- * surfaces that float).
+ * surfaces that float). The layout animation takes the no-overshoot curve:
+ * this rect's target is the viewport edge, and Thunk's overshoot would carry
+ * its borders out of frame.
  */
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Button, useDismissLayer } from "@jumbo/ui";
+import { Button, SLIP_DUR, SLIP_EASE_OUT, useDismissLayer } from "@jumbo/ui";
 import type { MatchClient, MatchView } from "@/lib/match/client";
 import type { SlotState } from "@/lib/match/types";
 import { MINIGAME_SURFACES } from "@/components/minigames/registry";
@@ -64,6 +66,9 @@ export function PlayFrame({
     >
       <motion.div
         layoutId={`slot-card-${slot.ordinal}`}
+        transition={{
+          layout: { duration: SLIP_DUR.move, ease: SLIP_EASE_OUT },
+        }}
         onLayoutAnimationComplete={onZoomDone}
         className="relative flex h-full w-full flex-col overflow-hidden bg-s1"
       >

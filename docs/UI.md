@@ -62,8 +62,11 @@
   position/size, mount — on two curves: anything that moves settles with one
   small overshoot past its target (`--ease-thunk`, things land with weight);
   color and opacity ride a clean out-curve (overshoot extrapolates channel
-  values). The CSS classes and SLIP_* constants keep the historical `slip`
-  naming as the kit's stable motion API. Transitions own interruptible
+  values). A shared element whose target is the viewport edge is the
+  exception and takes the no-overshoot curve (`SLIP_EASE_OUT`) — past full
+  screen there is nothing to settle into, so the overshoot reads as elastic
+  instead of as weight. The CSS classes and SLIP_* constants keep the
+  historical `slip` naming as the kit's stable motion API. Transitions own interruptible
   state; keyframes are reserved for mount/unmount, and mount animations use
   fill-mode `backwards` rather than `forwards`: a filled end-state transform
   turns the element into a containing block and would hijack a

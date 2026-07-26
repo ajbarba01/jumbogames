@@ -1,10 +1,12 @@
 /**
- * The gated match read path: load a match, admit the viewer through
- * resolveViewer against the full tournament roster, and project the
- * audience-filtered MatchView. Access uses the tournament roster so any team
- * can spectate (DESIGN.md line 29); the player-vs-spectator role still uses the
- * match's own two teams. A missing match, a bye, a URL whose tournament id does
- * not match the match, or a refused viewer all return null (caller -> 404).
+ * The gated match read path: load a match, resolve the viewer's relation
+ * through resolveViewer against the full tournament roster, and project the
+ * audience-filtered MatchView. Reads are open to any signed-in user (decision
+ * 16, spectate by link); the tournament roster only decides the player-vs-
+ * spectator role within the match, not whether the viewer is admitted. A
+ * missing match, a bye, or a URL whose tournament id does not match the match
+ * all return null (caller -> 404); the caller's own auth check is what keeps
+ * this route signed-in-only.
  */
 import type { Role } from "@/generated/prisma/client";
 import { rowsToMatchState, toMatchView } from "./snapshot";
@@ -14,7 +16,7 @@ import type { MatchView } from "@/lib/match/client";
 
 export interface GatedMatchView {
   view: MatchView;
-  relation: Extract<ViewerRelation, { allowed: true }>;
+  relation: ViewerRelation;
 }
 
 export async function gateMatchView(
@@ -33,11 +35,7 @@ export async function gateMatchView(
     viewerRole: viewer.viewerRole,
     hostId: loaded.hostId,
     memberIds: [...loaded.tournamentMemberIds],
-    // A match exists only after the tournament has started, so it is never
-    // joinable — match reads are always strictly membership-gated.
-    joinable: false,
   });
-  if (!relation.allowed) return null;
 
   const state = rowsToMatchState(loaded.rows);
   const isPlayer = loaded.memberIds.has(viewer.viewerId);

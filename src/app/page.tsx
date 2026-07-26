@@ -1,6 +1,6 @@
 /**
- * Home: the authenticated landing. An event-code hero card takes the code and
- * joins, with "Create an event" shown to every signed-in viewer. A small
+ * Home: the authenticated landing. A game-code hero card takes the code and
+ * joins, with "Create a game" shown to every signed-in viewer. A small
  * identity card shows the signed-in account with an editable display name, log
  * out, an owner-only permissions link, and a question-bank link for admins and
  * owners. Logged-out visitors are sent to login.

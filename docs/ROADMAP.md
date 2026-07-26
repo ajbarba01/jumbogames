@@ -21,7 +21,7 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 6   | Final standings + per-player normalization utilities                                                                                               | pending     |
 | 7   | Open hosting — player-creatable games, config (minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                                       | done        |
 | 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | in progress |
-| 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | pending     |
+| 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | done        |
 | 10  | Minigame 2: typing race                                                                                                                            | pending     |
 | 11  | Minigame 3: word game (territory capture)                                                                                                          | pending     |
 | 12  | Minigame 4: battleship                                                                                                                             | pending     |
@@ -74,6 +74,14 @@ email. Home self-identity ("Signed in as {email}") and the admin permissions pag
 that's deliberate, not leftover. Spectate-by-link, the other half of M8 (DESIGN decision 16), hasn't
 shipped yet — it's gated on this field, not on top of it.
 
+Milestone 9 is done, closing Slice 3 of the mockup-integration program: the lobby and the projector
+board collapsed into one tabbed game page present at every phase, board/match reads opened to any
+signed-in user, and roster fluidity shipped under the lock rule (mechanics: DESIGN decisions 16, 17).
+The team mockup is retired now that its real surface has shipped. `Tabs` and `StatusLine` joined
+`@jumbo/ui`, closing two more `KIT-GAPS.md` rows. Also landed, outside the plan: a fix making the
+theme emit `--color-team-2` through `--color-team-15` statically, after Tailwind v4 tree-shook them
+and left every team after the first with an invisible identity chip.
+
 Milestone 7 is done. Its first surface — the home reskin (event-join hero + inline displayName edit)
 and the tournament→"event" UI-copy sweep (DESIGN decision 15) — shipped as Slice 1 of the
 mockup-integration program. Slice 2 landed the rest: `/create` replaces `/host`, open to any
@@ -110,14 +118,6 @@ what the suite builds — so it is verified by hand against a dev server.
 
 ## Known gaps (carry into the next branches)
 
-- **Game reads still show emails to any signed-in user — CLOSED for other-player-facing surfaces.**
-  The games-first design (DESIGN decision 16) makes open reads _intentional_ — spectate by link, play
-  by code — so the old "lobby reads are open" gap stopped being a gap to close and became a leak to
-  fix: the leaked data was emails. Milestone 8's first half (`displayName` schema + backfill + label
-  swap) has landed and kills the leak everywhere a player sees another player — lobby roster, presence,
-  match member labels. Home self-identity and the admin permissions page still show email by design,
-  not oversight. What's still open: board/match reads stay membership-gated as built — the actual
-  gate relaxation (spectate-by-link) is the rest of M8 and hasn't shipped.
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
   `{children}` subtree; `ModalShell`, `PopoverCard`, `Select`, `Tooltip`, and `FloatCard` all portal to
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the

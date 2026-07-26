@@ -25,6 +25,8 @@ import {
   settingRowIntent,
   tocRailIntent,
 } from "./frame/SettingsFrame.intent";
+import { statusLineIntent } from "./frame/StatusLine.intent";
+import { tabsIntent } from "./frame/Tabs.intent";
 import { kbdIntent } from "./keys/Kbd.intent";
 import { shortcutsOverlayIntent } from "./keys/ShortcutsOverlay.intent";
 import { codeInputIntent } from "./inputs/CodeInput.intent";
@@ -66,4 +68,6 @@ export const allIntents: ComponentIntent[] = [
   settingRowIntent,
   fieldIntent,
   optionCardIntent,
+  tabsIntent,
+  statusLineIntent,
 ];

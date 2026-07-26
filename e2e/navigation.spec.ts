@@ -118,12 +118,12 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   await player.getByRole("button", { name: "Create team" }).click();
   await player.getByRole("button", { name: "Ready up" }).click();
 
-  await expect(host.getByText("Bravo")).toBeVisible();
-  const startTournament = host.getByRole("button", {
-    name: "Start tournament",
-  });
-  await expect(startTournament).toBeEnabled();
-  await startTournament.click();
+  // The host is on their own team room, so Bravo readying up shows up only as
+  // the dock's Start unlocking — the tabbed surface has no all-teams view
+  // before the board opens.
+  const startGame = host.getByRole("button", { name: "Start game" });
+  await expect(startGame).toBeEnabled();
+  await startGame.click();
 
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);

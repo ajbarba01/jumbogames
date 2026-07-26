@@ -86,7 +86,16 @@ export async function DELETE(
     return NextResponse.json({ error: "No such team" }, { status: 404 });
   }
 
-  await prisma.team.delete({ where: { id: teamId } }); // cascades members
+  // requireLobby's phase read and this write are two round trips apart, so
+  // don't trust it alone: if the host's start commits in between, a bare
+  // `team.delete` would cascade-delete the schedule's Match rows for this team
+  // (onDelete: Cascade) with no error to catch. Re-check the phase inside the
+  // WHERE, atomically with the delete itself, so a flip mid-flight makes this a
+  // no-op instead of silent data loss. Same shape as removeTeamMember's empty
+  // team delete (src/lib/tournament/remove-member.ts) — the twins match.
+  await prisma.team.deleteMany({
+    where: { id: teamId, tournament: { phase: "lobby" } },
+  }); // cascades members
   await broadcastTournamentChange(id);
   return NextResponse.json({ ok: true });
 }

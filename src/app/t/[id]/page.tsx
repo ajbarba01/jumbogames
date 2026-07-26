@@ -1,18 +1,20 @@
 /**
- * Tournament page. Guards auth, then renders by phase: the live lobby island
- * while teams form, or the projector round board once the tournament is active.
- * A missing tournament 404s.
+ * Game page. Guards auth, admits any signed-in viewer (DESIGN decision 16),
+ * then renders the one tabbed surface that serves every phase. The game code is
+ * a join credential, not page furniture: it reaches the client only for someone
+ * who already holds it — a member, the host, or a link that carried it — so an
+ * open board never hands a spectator the write key.
  */
 import { notFound, redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/profile";
 import { gateTournamentRead, toLobbyDTO } from "@/lib/tournament/lobby";
+import { holdsGameCode } from "@/lib/tournament/viewer";
 import { getBoardState } from "@/lib/tournament/board";
-import { LobbyView } from "./lobby-view";
-import { RoundBoard } from "./round-board";
-import { BoardRefresher } from "./board-refresher";
+import { GameView } from "./game-view";
 
-export default async function TournamentPage(props: {
+export default async function GamePage(props: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ c?: string }>;
 }) {
   const auth = await requireUser();
   if (!auth.ok) redirect("/login");
@@ -24,25 +26,34 @@ export default async function TournamentPage(props: {
   });
   if (!gated) notFound();
   const { state, relation } = gated;
-  const isHost = relation.canHost;
 
-  if (state.phase === "lobby") {
-    return (
-      <LobbyView
-        initialState={toLobbyDTO(state)}
-        viewerId={auth.profile.id}
-        viewerDisplayName={auth.profile.displayName}
-        isHost={isHost}
-      />
-    );
-  }
+  const { c } = await props.searchParams;
+  const holdsCode = holdsGameCode(relation, state.code, c ?? null);
+  // The client scrubs ?c= out of the address bar once it has been honored
+  // (decision 16), which also drops it from the router's URL — so tell the
+  // client which grant came from the link itself. That grant belongs to the tab
+  // for its lifetime; a grant that came from membership is re-derived on every
+  // render and must lapse when the membership does. Asking the same predicate
+  // with a bare guest relation is what isolates "the URL alone would grant it".
+  const urlGrantsCode = holdsGameCode(
+    { as: "guest", canHost: false },
+    state.code,
+    c ?? null,
+  );
 
-  const board = await getBoardState(id, auth.profile.id);
-  if (!board) notFound();
-  const canSpectate = relation.as === "host" || relation.as === "admin";
+  const board =
+    state.phase === "lobby" ? null : await getBoardState(id, auth.profile.id);
+  if (state.phase !== "lobby" && !board) notFound();
+
   return (
-    <BoardRefresher tournamentId={id}>
-      <RoundBoard board={board} isHost={isHost} canSpectate={canSpectate} />
-    </BoardRefresher>
+    <GameView
+      tournament={toLobbyDTO(state, holdsCode)}
+      board={board}
+      viewerId={auth.profile.id}
+      viewerDisplayName={auth.profile.displayName}
+      code={holdsCode ? state.code : null}
+      linkCode={urlGrantsCode ? state.code : null}
+      canHost={relation.canHost}
+    />
   );
 }

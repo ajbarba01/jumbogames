@@ -46,7 +46,7 @@ test("edit display name in place from home", async ({ page }) => {
   await expect(page.getByText("Grace Hopper")).toBeVisible();
 });
 
-test("home shows event copy and shakes off a bad code without navigating", async ({
+test("home shows game copy and shakes off a bad code without navigating", async ({
   page,
 }) => {
   const email = `e2e-home-copy+${Date.now()}@test.example.com`;
@@ -59,9 +59,9 @@ test("home shows event copy and shakes off a bad code without navigating", async
   await page.getByRole("button", { name: "Sign up" }).click();
   await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
 
-  // Event copy is present, shown to everyone (this user is a plain player).
+  // Game copy is present, shown to everyone (this user is a plain player).
   await expect(
-    page.getByRole("heading", { name: "Join an event" }),
+    page.getByRole("heading", { name: "Join a game" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Create a game" }),

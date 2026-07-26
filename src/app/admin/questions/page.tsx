@@ -25,7 +25,8 @@ export default async function QuestionsPage() {
           Question bank
         </h1>
         <p className="text-sec text-s9">
-          Author the trivia questions games deal from.
+          Trivia questions dealt to every game. Edits never touch matches
+          already running.
         </p>
       </div>
 

@@ -1,295 +1,40 @@
 /**
- * Client manager for the /admin/questions surface: a debounced-search,
- * paginated list of trivia questions with create/edit and delete modals.
- * Every mutation re-fetches the current page from the API so the list stays
- * the source of truth; loading, empty, and error states all render.
+ * Client manager for the /admin/questions surface: the question bank as a
+ * bordered list under a search row (debounced prompt search, difficulty
+ * filter, new-question action), with skeleton, empty, no-match and error
+ * states, per-row edit/delete actions, and a range-and-pager footer. Filtering
+ * and paging are server-side, and every mutation re-fetches the current page
+ * so the API stays the source of truth.
  */
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, ModalShell, Select, Spinner, TextField } from "@jumbo/ui";
+import { Button, Select, SkeletonRows, StatusLine, TextField } from "@jumbo/ui";
 import { QUESTIONS_PAGE_SIZE } from "@/lib/schemas/trivia";
+import { DeleteQuestionDialog } from "./delete-question-dialog";
+import { QuestionEditor } from "./question-editor";
+import {
+  ANY_DIFFICULTY,
+  DIFFICULTY_FILTERS,
+  readError,
+  type DifficultyFilter,
+  type Question,
+} from "./types";
 
 const SEARCH_DEBOUNCE_MS = 300;
-const DIFFICULTY_OPTIONS = ["any", "easy", "medium", "hard"] as const;
 
-type Difficulty = "easy" | "medium" | "hard";
-type DifficultyOption = (typeof DIFFICULTY_OPTIONS)[number];
-
-interface Question {
-  id: string;
-  prompt: string;
-  correctAnswer: string;
-  incorrectAnswers: string[];
-  category: string | null;
-  difficulty: string | null;
-}
-
-interface QuestionPayload {
-  prompt: string;
-  correctAnswer: string;
-  incorrectAnswers: [string, string, string];
-  category?: string;
-  difficulty?: Difficulty;
+/** The filter a set of results was fetched under — `null` means unfiltered.
+ *  The live inputs change a render before the matching rows arrive, so the
+ *  list's own states must read this, never `query`/`difficulty` directly. */
+interface ResultsFilter {
+  query: string;
+  difficulty: DifficultyFilter;
 }
 
 type ModalState =
   | { mode: "create" }
   | { mode: "edit"; question: Question }
   | { mode: "delete"; question: Question };
-
-async function readError(res: Response, fallback: string): Promise<string> {
-  const data: unknown = await res.json().catch(() => null);
-  if (
-    data !== null &&
-    typeof data === "object" &&
-    "error" in data &&
-    typeof (data as { error: unknown }).error === "string"
-  ) {
-    return (data as { error: string }).error;
-  }
-  return fallback;
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <label className="flex min-w-0 flex-1 flex-col gap-1">
-      <span className="text-caps font-bold uppercase tracking-widest text-s4">
-        {label}
-      </span>
-      {children}
-      {error ? (
-        <span className="text-meta font-bold text-crit">{error}</span>
-      ) : null}
-    </label>
-  );
-}
-
-function QuestionModal({
-  state,
-  onClose,
-  onSaved,
-}: {
-  state: { mode: "create" } | { mode: "edit"; question: Question };
-  onClose: () => void;
-  onSaved: () => void;
-}): React.JSX.Element {
-  const source = state.mode === "edit" ? state.question : null;
-  const [prompt, setPrompt] = useState(source?.prompt ?? "");
-  const [correctAnswer, setCorrectAnswer] = useState(
-    source?.correctAnswer ?? "",
-  );
-  const [wrong, setWrong] = useState<[string, string, string]>([
-    source?.incorrectAnswers[0] ?? "",
-    source?.incorrectAnswers[1] ?? "",
-    source?.incorrectAnswers[2] ?? "",
-  ]);
-  const [category, setCategory] = useState(source?.category ?? "");
-  const [difficulty, setDifficulty] = useState<DifficultyOption>(
-    (source?.difficulty as DifficultyOption | null) ?? "any",
-  );
-  const [touched, setTouched] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const missing = {
-    prompt: prompt.trim() === "",
-    correctAnswer: correctAnswer.trim() === "",
-    wrong: wrong.map((w) => w.trim() === "") as [boolean, boolean, boolean],
-  };
-  const invalid =
-    missing.prompt || missing.correctAnswer || missing.wrong.some(Boolean);
-
-  async function submit(): Promise<void> {
-    if (invalid) {
-      setTouched(true);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    const payload: QuestionPayload = {
-      prompt: prompt.trim(),
-      correctAnswer: correctAnswer.trim(),
-      incorrectAnswers: wrong.map((w) => w.trim()) as [string, string, string],
-      category: category.trim() || undefined,
-      difficulty: difficulty === "any" ? undefined : difficulty,
-    };
-    const res = await fetch(
-      state.mode === "edit"
-        ? `/api/admin/questions/${state.question.id}`
-        : "/api/admin/questions",
-      {
-        method: state.mode === "edit" ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      },
-    );
-    setBusy(false);
-    if (res.ok) {
-      onSaved();
-      return;
-    }
-    setError(await readError(res, "Could not save question."));
-  }
-
-  const title = state.mode === "edit" ? "Edit question" : "New question";
-
-  return (
-    <ModalShell
-      open
-      onClose={onClose}
-      aria-label={title}
-      className="flex max-h-[calc(100dvh-2rem)] w-112 max-w-[calc(100vw-2rem)] flex-col overflow-y-auto"
-    >
-      <div className="flex flex-col gap-4 p-6">
-        <h2 className="font-display text-xl uppercase">{title}</h2>
-        <Field
-          label="Prompt"
-          error={touched && missing.prompt ? "Required" : undefined}
-        >
-          <TextField
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            invalid={touched && missing.prompt}
-            disabled={busy}
-          />
-        </Field>
-        <Field
-          label="Correct answer"
-          error={touched && missing.correctAnswer ? "Required" : undefined}
-        >
-          <TextField
-            value={correctAnswer}
-            onChange={(e) => setCorrectAnswer(e.target.value)}
-            invalid={touched && missing.correctAnswer}
-            disabled={busy}
-          />
-        </Field>
-        <Field
-          label="Wrong answers"
-          error={
-            touched && missing.wrong.some(Boolean)
-              ? "All three needed"
-              : undefined
-          }
-        >
-          <div className="flex flex-col gap-2">
-            {wrong.map((value, i) => (
-              <TextField
-                key={i}
-                value={value}
-                onChange={(e) =>
-                  setWrong((prev) => {
-                    const next = [...prev] as [string, string, string];
-                    next[i] = e.target.value;
-                    return next;
-                  })
-                }
-                invalid={touched && missing.wrong[i]}
-                disabled={busy}
-                aria-label={`Wrong answer ${i + 1}`}
-              />
-            ))}
-          </div>
-        </Field>
-        <div className="flex gap-3">
-          <Field label="Category">
-            <TextField
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              disabled={busy}
-            />
-          </Field>
-          <Field label="Difficulty">
-            <Select
-              options={DIFFICULTY_OPTIONS}
-              value={difficulty}
-              onChange={(v) => setDifficulty(v as DifficultyOption)}
-              aria-label="Difficulty"
-            />
-          </Field>
-        </div>
-        {error ? <p className="text-sec font-bold text-crit">{error}</p> : null}
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" disabled={busy} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={busy}
-            onClick={() => void submit()}
-          >
-            {busy ? <Spinner label="Saving" /> : null}
-            Save question
-          </Button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-function DeleteModal({
-  question,
-  onClose,
-  onDeleted,
-}: {
-  question: Question;
-  onClose: () => void;
-  onDeleted: () => void;
-}): React.JSX.Element {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function confirm(): Promise<void> {
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/admin/questions/${question.id}`, {
-      method: "DELETE",
-    });
-    setBusy(false);
-    if (res.ok) {
-      onDeleted();
-      return;
-    }
-    setError(await readError(res, "Could not delete question."));
-  }
-
-  return (
-    <ModalShell
-      open
-      onClose={onClose}
-      aria-label="Delete question?"
-      className="w-96"
-    >
-      <div className="flex flex-col gap-4 p-6">
-        <h2 className="font-display text-xl uppercase">Delete question?</h2>
-        <p className="truncate text-sec text-s4">{question.prompt}</p>
-        {error ? <p className="text-sec font-bold text-crit">{error}</p> : null}
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" disabled={busy} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={busy}
-            onClick={() => void confirm()}
-          >
-            {busy ? <Spinner label="Deleting" /> : null}
-            Delete question
-          </Button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
 
 export function QuestionManager(): React.JSX.Element {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -298,6 +43,11 @@ export function QuestionManager(): React.JSX.Element {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [difficulty, setDifficulty] =
+    useState<DifficultyFilter>(ANY_DIFFICULTY);
+  const [resultsFilter, setResultsFilter] = useState<ResultsFilter | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -318,15 +68,24 @@ export function QuestionManager(): React.JSX.Element {
     async function run(): Promise<void> {
       setLoading(true);
       setLoadError(null);
+      // The filter this request carries, captured before it is sent so the
+      // results can be labelled with the filter that actually produced them.
+      const requestFilter: ResultsFilter | null =
+        debouncedQuery !== "" || difficulty !== ANY_DIFFICULTY
+          ? { query: debouncedQuery, difficulty }
+          : null;
       const params = new URLSearchParams({ page: String(page) });
       if (debouncedQuery) params.set("q", debouncedQuery);
+      // The sentinel is client-side only: the API accepts the three real
+      // levels and rejects anything else, so "any" means omit the param.
+      if (difficulty !== ANY_DIFFICULTY) params.set("difficulty", difficulty);
 
       try {
         const res = await fetch(`/api/admin/questions?${params.toString()}`);
         if (cancelled) return;
         if (!res.ok) {
           setLoadError(
-            await readError(res, "Couldn't load the question bank."),
+            await readError(res, "Couldn’t load the question bank."),
           );
           setLoading(false);
           return;
@@ -346,11 +105,12 @@ export function QuestionManager(): React.JSX.Element {
         setQuestions(data.questions);
         setTotal(data.total);
         setPageSize(data.pageSize);
+        setResultsFilter(requestFilter);
         setLoaded(true);
         setLoading(false);
       } catch {
         if (cancelled) return;
-        setLoadError("Couldn't load the question bank.");
+        setLoadError("Couldn’t load the question bank.");
         setLoading(false);
       }
     }
@@ -359,51 +119,134 @@ export function QuestionManager(): React.JSX.Element {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery, page, refreshKey]);
+  }, [debouncedQuery, difficulty, page, refreshKey]);
 
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const refetch = (): void => setRefreshKey((k) => k + 1);
+
+  /** Drop every filter in one batch, so the surface makes one request rather
+   *  than one now and another when the debounce catches up. */
+  function clearFilters(): void {
+    setQuery("");
+    setDebouncedQuery("");
+    setDifficulty(ANY_DIFFICULTY);
+    setPage(1);
+  }
+
+  // A narrowed result renumbers the pages, so changing the filter goes back to
+  // page 1 — the same reset the search debounce does for the query.
+  function changeDifficulty(next: DifficultyFilter): void {
+    setDifficulty(next);
+    setPage(1);
+  }
 
   function closeAfterMutation(): void {
     setModal(null);
     refetch();
   }
 
+  // Filtering and paging are both server-side, so `total` is the filtered
+  // total across every page — not the length of the page on screen.
+  const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = (page - 1) * pageSize + questions.length;
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
+      {/* Peers of similar weight, so the row wraps rather than shrinking a
+          control past the point where it loses meaning (docs/UI.md, fluid
+          law): the basis is the width below which the search placeholder and
+          the filter's own value stop being readable, so at the floor each
+          control takes its own line instead of both truncating to nothing. */}
+      <div className="flex flex-wrap items-stretch gap-3">
         <TextField
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search questions"
-          placeholder="Search questions"
-          className="min-w-0 flex-1"
+          placeholder="Search prompts"
+          className="min-w-0 flex-1 basis-40"
+          disabled={loadError !== null}
         />
-        <Button variant="primary" onClick={() => setModal({ mode: "create" })}>
+        <Select
+          options={DIFFICULTY_FILTERS}
+          value={difficulty}
+          onChange={(v) => changeDifficulty(v as DifficultyFilter)}
+          size="field"
+          disabled={loadError !== null}
+          className="min-w-0 flex-1 basis-40"
+          aria-label="Filter by difficulty"
+        />
+        <Button
+          variant="primary"
+          className="shrink-0"
+          onClick={() => setModal({ mode: "create" })}
+        >
           New question
         </Button>
       </div>
 
       <div className="overflow-hidden border-2 border-s6 bg-s2">
-        <div className="flex items-center justify-between border-b-2 border-s6 px-4 py-2 text-caps uppercase tracking-widest text-s7">
-          <span>Question</span>
-          <span>{loaded ? `${total} total` : ""}</span>
+        <div className="flex items-center justify-between gap-3 border-b-2 border-s6 px-4 py-2 text-caps uppercase tracking-widest text-s7">
+          <span className="min-w-0 truncate">Question</span>
+          <span className="shrink-0">
+            {loaded && resultsFilter === null ? `${total} total` : null}
+            {loaded && resultsFilter !== null
+              ? `${total} ${total === 1 ? "match" : "matches"}`
+              : null}
+          </span>
         </div>
 
         {loadError ? (
-          <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-            <p className="text-sec font-bold text-crit">{loadError}</p>
-            <Button variant="outline" onClick={refetch}>
-              Retry
-            </Button>
+          <div className="px-4 py-3.5">
+            <StatusLine
+              tone="crit"
+              live
+              action={
+                <Button variant="text" onClick={refetch}>
+                  Retry
+                </Button>
+              }
+            >
+              {loadError}
+            </StatusLine>
           </div>
         ) : !loaded && loading ? (
-          <div className="flex items-center justify-center px-4 py-12">
-            <Spinner label="Loading questions" />
+          <SkeletonRows />
+        ) : /* Both empty states read the filter the rows on screen were
+             fetched under, not the live inputs: clearing a filter that
+             matched nothing flips the inputs a render before the refetch
+             lands, and this panel must never claim a populated bank is
+             empty. */
+        questions.length === 0 && resultsFilter === null ? (
+          <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+            <p className="text-sec font-bold text-s11">No questions yet.</p>
+            <p className="max-w-sm text-sec text-s9">
+              Run{" "}
+              <code className="font-mono text-s10">npm run seed:trivia</code> to
+              import the starter bank, or write the first one.
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => setModal({ mode: "create" })}
+            >
+              New question
+            </Button>
           </div>
         ) : questions.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <p className="text-sec font-bold text-s11">No questions match.</p>
+            <p className="text-sec text-s9">
+              No questions match{" "}
+              {[
+                resultsFilter?.query && `“${resultsFilter.query}”`,
+                resultsFilter?.difficulty !== ANY_DIFFICULTY &&
+                  resultsFilter?.difficulty,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              .
+            </p>
+            <Button variant="text" onClick={clearFilters}>
+              Clear filters
+            </Button>
           </div>
         ) : (
           <ul className="divide-y-2 divide-s6">
@@ -420,18 +263,23 @@ export function QuestionManager(): React.JSX.Element {
                     </p>
                   ) : null}
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                {/* The glyphs are decorative; the aria-label is the name. */}
+                <div className="flex shrink-0 items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    icon
+                    aria-label={`Edit: ${q.prompt}`}
                     onClick={() => setModal({ mode: "edit", question: q })}
                   >
-                    Edit
+                    ✎
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    icon
+                    aria-label={`Delete: ${q.prompt}`}
                     onClick={() => setModal({ mode: "delete", question: q })}
                   >
-                    Delete
+                    ✕
                   </Button>
                 </div>
               </li>
@@ -439,31 +287,36 @@ export function QuestionManager(): React.JSX.Element {
           </ul>
         )}
 
-        {loaded && !loadError ? (
-          <div className="flex items-center justify-between border-t-2 border-s6 px-4 py-2">
-            <Button
-              variant="outline"
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Prev
-            </Button>
+        {/* Unlike the mockup, the footer stays up on filtered results too:
+            filtering is server-side here, so a filtered bank can genuinely run
+            to several pages and still needs its range and pager. */}
+        {loaded && !loadError && total > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-s6 px-4 py-2">
             <span className="text-caps uppercase tracking-widest text-s7">
-              Page {page} of {pageCount}
+              {rangeStart}–{rangeEnd} of {total}
             </span>
-            <Button
-              variant="outline"
-              disabled={page === pageCount}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                variant="outline"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                ← Prev
+              </Button>
+              <Button
+                variant="outline"
+                disabled={page === pageCount}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next →
+              </Button>
+            </div>
           </div>
         ) : null}
       </div>
 
       {modal?.mode === "create" || modal?.mode === "edit" ? (
-        <QuestionModal
+        <QuestionEditor
           state={modal}
           onClose={() => setModal(null)}
           onSaved={closeAfterMutation}
@@ -471,7 +324,7 @@ export function QuestionManager(): React.JSX.Element {
       ) : null}
 
       {modal?.mode === "delete" ? (
-        <DeleteModal
+        <DeleteQuestionDialog
           question={modal.question}
           onClose={() => setModal(null)}
           onDeleted={closeAfterMutation}

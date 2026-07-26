@@ -2,8 +2,13 @@
  * Home surface E2E: a signed-in user edits their display name in place on the
  * identity card (self-only PATCH /api/profile), and the new name persists across
  * a reload. Runs against the dedicated test Supabase project.
+ *
+ * The rename test keeps a throwaway account rather than a shared persona: it
+ * asserts the name a signup set and then changes it for good, which a reused
+ * account would carry into every later spec that reads a display name.
  */
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./support/personas";
 
 const PASSWORD = "password1234";
 
@@ -47,17 +52,9 @@ test("edit display name in place from home", async ({ page }) => {
 });
 
 test("home shows game copy and shakes off a bad code without navigating", async ({
-  page,
+  signedIn,
 }) => {
-  const email = `e2e-home-copy+${Date.now()}@test.example.com`;
-
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill("Ada");
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
+  const { page } = await signedIn("p2");
 
   // Game copy is present, shown to everyone (this user is a plain player).
   await expect(
@@ -74,7 +71,9 @@ test("home shows game copy and shakes off a bad code without navigating", async 
     .first()
     .click();
   await page.keyboard.type("ZZZZZZ");
-  await page.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await page.getByRole("button", { name: "Join", exact: true }).click();
   await expect(page.getByText("No tournament with that code")).toBeVisible();
   await expect(page).toHaveURL("/");
 });

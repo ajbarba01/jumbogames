@@ -1,12 +1,14 @@
 /**
  * E2E test support: direct database access for preconditions the UI cannot set
- * up itself, such as promoting a freshly signed-up user to admin so they can
- * host, and for reading ids the DOM deliberately never renders (team ids,
- * profile ids, match rows) so a spec can address a route directly or prove a
- * server-side effect the UI cannot show. Uses a plain pg query against the same
- * test-project DATABASE_URL the app server runs against — deliberately not the
- * app's Prisma client, to keep the generated client out of the Playwright
- * runtime.
+ * up itself, such as stocking the trivia bank, and for reading ids the DOM
+ * deliberately never renders (team ids, profile ids, match rows) so a spec can
+ * address a route directly or prove a server-side effect the UI cannot show.
+ * Uses a plain pg query against the same test-project DATABASE_URL the app
+ * server runs against — deliberately not the app's Prisma client, to keep the
+ * generated client out of the Playwright runtime.
+ *
+ * Roles are deliberately absent: personas.ts owns them, so no spec can promote
+ * an account that a later spec expects to be a plain player.
  */
 import { Client } from "pg";
 
@@ -23,10 +25,6 @@ async function query<T extends Record<string, unknown>>(
   } finally {
     await client.end();
   }
-}
-
-export async function promoteToAdmin(email: string): Promise<void> {
-  await query("UPDATE profiles SET role = 'admin' WHERE email = $1", [email]);
 }
 
 // The board never renders a match id in the DOM, and a non-member cannot see

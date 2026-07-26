@@ -7,10 +7,10 @@
  * starting the next round force-yields players still parked on their
  * finished match's end screen into their new one.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
-import { promoteToAdmin } from "./support/db";
-import { createAndReadyTeam, joinByCode, signUp } from "./support/flows";
+import { createAndReadyTeam, joinByCode } from "./support/flows";
+import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
 async function hostTournament(page: Page, name: string): Promise<string> {
@@ -50,31 +50,18 @@ function matchLocationFromUrl(page: Page): {
 }
 
 test("board auto-pull carries players into their match while the host stays on the board", async ({
-  browser,
+  signedIn,
 }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-pull-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-pull-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-pull-p2+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
 
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
   const code = await hostTournament(host, "Auto Pull Cup");
 
   // The host never joins a team, so it has no live match of its own.
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
@@ -104,37 +91,20 @@ test("board auto-pull carries players into their match while the host stays on t
   // stays on the board.
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
   await expect(startRound).toHaveCount(0);
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
 });
 
 test("the host sees a spectate link into a live match and it opens the match", async ({
-  browser,
+  signedIn,
 }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-spectate-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-spectate-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-spectate-p2+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
 
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
   const code = await hostTournament(host, "Spectate Cup");
 
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
@@ -161,14 +131,10 @@ test("the host sees a spectate link into a live match and it opens the match", a
 
   // The match surface is where a player spends the round, phone in hand.
   await expectNoHorizontalOverflow(host, "/t/[id]/m/[matchId]");
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
 });
 
 test("a sitting-out team's player sees the board's bye card", async ({
-  browser,
+  signedIn,
 }) => {
   // Three signups, a lobby setup and a round start already sit close to the
   // default 30s budget, and the retry loop at the end needs its own 20s to be
@@ -177,35 +143,19 @@ test("a sitting-out team's player sees the board's bye card", async ({
   // FORCE_REVEAL_MS a coin flip. Give the retry room that is actually its own.
   test.setTimeout(90_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-bye-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-bye-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-bye-p2+${stamp}@test.example.com`;
-  const charlieEmail = `e2e-bye-p3+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+  const { page: charlie } = await signedIn("p3");
 
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const charlieContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-  const charlie = await charlieContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
   const code = await hostTournament(host, "Bye Cup");
 
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
-  await signUp(charlie, charlieEmail, "Nora");
   await joinByCode(charlie, code);
   await createAndReadyTeam(charlie, "Charlie");
 
@@ -259,61 +209,37 @@ test("a sitting-out team's player sees the board's bye card", async ({
       timeout: 2_000,
     });
   }).toPass({ timeout: 20_000 });
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
-  await charlieContext.close();
 });
 
 test("starting the next round force-yields players off their finished match's end screen", async ({
-  browser,
+  signedIn,
 }) => {
   // The stub's own countdown/play/scoring deadlines (see lifecycle.ts) put a
   // firm ~18s floor under finishing round 1's matches, on top of the usual
   // signup and lobby setup, so the default per-test budget is too tight.
   test.setTimeout(120_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-yield-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-yield-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-yield-p2+${stamp}@test.example.com`;
-  const charlieEmail = `e2e-yield-p3+${stamp}@test.example.com`;
-  const deltaEmail = `e2e-yield-p4+${stamp}@test.example.com`;
+  const { page: host, context: hostContext } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+  const { page: charlie } = await signedIn("p3");
+  const { page: delta } = await signedIn("p4");
 
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const charlieContext = await browser.newContext();
-  const deltaContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-  const charlie = await charlieContext.newPage();
-  const delta = await deltaContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
   const code = await hostTournament(host, "Force Yield Cup");
 
   // Four teams, not two: a round-robin schedules zero byes only for an even
   // team count, so this is the smallest field that guarantees both tracked
   // players (Alpha and Bravo) land on a real match — never a bye — in round 2
   // as well as round 1, whichever way the schedule pairs them.
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
-  await signUp(charlie, charlieEmail, "Nora");
   await joinByCode(charlie, code);
   await createAndReadyTeam(charlie, "Charlie");
 
-  await signUp(delta, deltaEmail, "Mia");
   await joinByCode(delta, code);
   await createAndReadyTeam(delta, "Delta");
 
@@ -403,10 +329,4 @@ test("starting the next round force-yields players off their finished match's en
   ).toHaveCount(0);
   await expect(alpha.getByRole("button", MATCH_SLOT_CARD)).toBeVisible();
   await expect(bravo.getByRole("button", MATCH_SLOT_CARD)).toBeVisible();
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
-  await charlieContext.close();
-  await deltaContext.close();
 });

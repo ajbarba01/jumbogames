@@ -11,40 +11,20 @@
  *
  * Runs against the dedicated test Supabase project.
  */
-import { test, expect, type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
 import { firstMatchId, profileIdByEmail, teamIdByName } from "./support/db";
-
-const PASSWORD = "password1234";
-
-async function signUp(page: Page, email: string, name: string): Promise<void> {
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill(name);
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
+import { test, expect } from "./support/personas";
 
 test("a non-member reads the board and a match but is never handed the code", async ({
-  browser,
+  signedIn,
 }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-authz-host+${stamp}@test.example.com`;
-  const playerEmail = `e2e-authz-player+${stamp}@test.example.com`;
-  const outsiderEmail = `e2e-authz-outsider+${stamp}@test.example.com`;
+  // Every persona here is a plain player: creation is open to any signed-in
+  // user (M7), and an outsider holding the admin role would be handed the very
+  // host powers this test proves they lack.
+  const { page: host } = await signedIn("host");
+  const { page: player } = await signedIn("p1");
+  const { page: outsider } = await signedIn("p2");
 
-  const hostContext = await browser.newContext();
-  const playerContext = await browser.newContext();
-  const outsiderContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const player = await playerContext.newPage();
-  const outsider = await outsiderContext.newPage();
-
-  // Host: sign up and create a game. Creation is open to any signed-in user
-  // (M7) — no admin precondition needed here.
-  await signUp(host, hostEmail, "Ada");
   await host.getByRole("button", { name: "Create a game" }).click();
   await host.waitForURL(/\/create$/);
   await host.getByPlaceholder("Thursday hacknight").fill("Authz Cup");
@@ -66,7 +46,6 @@ test("a non-member reads the board and a match but is never handed the code", as
   // The lobby is joinable by code, so during the lobby phase any signed-in user
   // may read it (they may hold the code) — the gate deliberately opens here.
   // The same URL is refused once the tournament locks (asserted after start).
-  await signUp(outsider, outsiderEmail, "Ivy");
   const lobbyResponse = await outsider.goto(tournamentUrl);
   expect(lobbyResponse?.status()).toBe(200);
 
@@ -77,14 +56,15 @@ test("a non-member reads the board and a match but is never handed the code", as
   await expect(host.getByText("Alpha")).toBeVisible();
   await host.getByRole("button", { name: "Ready up" }).click();
 
-  await signUp(player, playerEmail, "Grace");
   await player
     .getByRole("group", { name: "Game code" })
     .getByRole("textbox")
     .first()
     .click();
   await player.keyboard.type(code as string);
-  await player.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await player.getByRole("button", { name: "Join", exact: true }).click();
   await player.waitForURL(/\/t\/[^/]+$/);
   await expect(player.getByTestId("slam-wipe")).toHaveCount(0);
 
@@ -118,28 +98,15 @@ test("a non-member reads the board and a match but is never handed the code", as
   expect(matchId).toBeTruthy();
   const matchResponse = await outsider.goto(`/t/${tournamentId}/m/${matchId}`);
   expect(matchResponse?.status()).toBe(200);
-
-  await hostContext.close();
-  await playerContext.close();
-  await outsiderContext.close();
 });
 
 test("the write routes refuse a wrong code and a non-leader kick", async ({
-  browser,
+  signedIn,
 }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-write-host+${stamp}@test.example.com`;
-  const playerEmail = `e2e-write-player+${stamp}@test.example.com`;
-  const outsiderEmail = `e2e-write-outsider+${stamp}@test.example.com`;
+  const { page: host, email: hostEmail } = await signedIn("host");
+  const { page: player } = await signedIn("p1");
+  const { page: outsider } = await signedIn("p2");
 
-  const hostContext = await browser.newContext();
-  const playerContext = await browser.newContext();
-  const outsiderContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const player = await playerContext.newPage();
-  const outsider = await outsiderContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
   await host.getByRole("button", { name: "Create a game" }).click();
   await host.waitForURL(/\/create$/);
   await host.getByPlaceholder("Thursday hacknight").fill("Write Guard Cup");
@@ -159,20 +126,19 @@ test("the write routes refuse a wrong code and a non-leader kick", async ({
   await host.getByRole("button", { name: "Create team" }).click();
   await expect(host.getByText("Alpha")).toBeVisible();
 
-  await signUp(player, playerEmail, "Grace");
   await player
     .getByRole("group", { name: "Game code" })
     .getByRole("textbox")
     .first()
     .click();
   await player.keyboard.type(code as string);
-  await player.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await player.getByRole("button", { name: "Join", exact: true }).click();
   await player.waitForURL(/\/t\/[^/]+$/);
   await expect(player.getByTestId("slam-wipe")).toHaveCount(0);
   await player.getByRole("button", { name: "Join" }).click();
   await expect(player.getByRole("tab", { name: "My team" })).toBeVisible();
-
-  await signUp(outsider, outsiderEmail, "Ivy");
 
   const teamId = await teamIdByName(tournamentId, "Alpha");
   const hostProfileId = await profileIdByEmail(hostEmail);
@@ -209,8 +175,4 @@ test("the write routes refuse a wrong code and a non-leader kick", async ({
     `/api/tournaments/${tournamentId}/teams/${teamId}/members/${hostProfileId}`,
   );
   expect(badKick.status()).toBe(403);
-
-  await hostContext.close();
-  await playerContext.close();
-  await outsiderContext.close();
 });

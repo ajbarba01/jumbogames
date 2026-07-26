@@ -56,6 +56,10 @@ and gates still apply. The test is "does this need design to get right?", not "i
   the repo. `.env.example` documents every variable without values.
 - CI/Playwright targets the **dedicated test Supabase project** ([DESIGN.md](DESIGN.md) decision 4)
   with dedicated test users — never production data.
+- **`playwright/.auth/` holds live session cookies** for the E2E personas (`e2e/support/personas.ts`)
+  and is gitignored. Never stage it, and never paste one of those files into an issue or a PR. Delete
+  the directory to force a fresh sign-in; the suite recreates it. No credential beyond the test
+  project's existing variables is needed to run E2E.
 - **A hand-run production build points at production unless you say otherwise.** `.env.local` holds
   the production Supabase URL and anon key, and a build runs at `NODE_ENV=production`, where Next
   loads `.env.production.local` and `.env.local` but never `.env.test.local` at all — so a bare

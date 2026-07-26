@@ -8,22 +8,13 @@
  * across each lifecycle (appears, then detaches) and that the destination is
  * left genuinely interactive, not just painted.
  */
-import { test, expect } from "@playwright/test";
 import { pickStubPool } from "./support/create";
+import { test, expect } from "./support/personas";
 
 test("a wipe-covered nav into the tournament surface plays, clears, and leaves the destination interactive", async ({
-  page,
+  signedIn,
 }) => {
-  const email = `e2e-wipe+${Date.now()}@test.example.com`;
-  const password = "password1234";
-
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill("Ada");
-  await page.getByPlaceholder("Password (8+ characters)").fill(password);
-  await page.getByPlaceholder("Confirm password").fill(password);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
+  const { page } = await signedIn("host");
 
   await page.getByRole("button", { name: "Create a game" }).click();
   await page.waitForURL(/\/create$/);
@@ -57,7 +48,9 @@ test("a wipe-covered nav into the tournament surface plays, clears, and leaves t
   // timer/ref hygiene across repeated navigations (the machine ignores
   // navStart unless it is idle).
   await page.goto("/");
-  const rejoin = page.getByRole("button", { name: "Rejoin" });
+  // Named rather than bare "Rejoin": the account carries games from earlier
+  // specs, and this adopter has to drive back into the one just created.
+  const rejoin = page.getByRole("button", { name: "Rejoin Wipe E2E Cup" });
   await expect(rejoin).toBeVisible();
   await rejoin.click();
   await expect(page.getByTestId("slam-wipe")).toBeVisible();

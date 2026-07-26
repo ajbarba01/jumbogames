@@ -181,6 +181,30 @@ its PR exists gets no CI, which suits a repo where every change goes branch → 
 deliberately so: two PRs, or a PR plus a `main` push, still race the same test project — a global
 queue is the escalation if a second change is ever in flight.
 
+The E2E suite now reuses authenticated personas instead of signing an account up per browser context.
+This is a **separate** problem from the CI double-run above, partly hidden behind it: even at one run
+per commit the suite made 57 sign-ups in under six minutes from a single IP, and the test Supabase
+project accepts 30 per five minutes — measured directly against it, where the 31st returns
+`over_request_rate_limit`. Sign-ins are a separate bucket of the same size, so swapping signup for
+login would not have fixed it. Whichever specs sorted last therefore failed, on an opaque 400 from
+the signup route that named no cause; `main` was red on that at `43027ef`. `e2e/support/personas.ts`
+now provisions a seven-account cast — one admin, one non-admin host, four players, the allowlisted
+owner — signs each in once per worker, and replays the session into every context via Playwright
+storage state, taking a run from 60 auth requests (57 of them sign-ups) to 11 (3 sign-ups), and to 4
+on a re-run inside the 30-minute session window. Two properties are load-bearing and neither is incidental: **roles live in the
+persona layer, never in a spec** (a shared account promoted by one test would stay admin for every
+later one and silently invert `authz.spec` — `promoteToAdmin` is gone from `e2e/support/db.ts`
+entirely), and **accounts are per worker**, since parallel specs would otherwise drive one account
+into two live games at once. Reused accounts also made two locators ambiguous that a throwaway signup
+never could: home renders a `Rejoin <game>` button for any account already in a live game, which
+matched a bare `Join` and made every bare `Rejoin` assertion pass vacuously — both are now pinned.
+Local workers are capped at 4 (from the machine default of 11) because each one costs another persona
+set against that same 30-request ceiling. `auth.spec.ts` deliberately keeps signing up and logging in
+through the real form: that flow is the graded coverage, and it is now the only thing spending the
+sign-up budget. Not fixed, and out of scope by decision: the signup route collapses every
+`supabase.auth.signUp` failure into one opaque 400, which is what made this take two days to see —
+worth its own change, since it is a production auth path under the no-leaky-logs floor.
+
 ## Known gaps (carry into the next branches)
 
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the

@@ -3,8 +3,8 @@
  * create and ready a team, and the host starts. Exercises the full M3 shell
  * flow through real auth and Realtime against the test Supabase project,
  * including the lobby → board start beat firing the slam wipe on both clients.
- * The host is a fresh signup promoted to admin — a precondition the UI cannot
- * set for itself.
+ * The host is the admin persona (see support/personas.ts) — a role the UI
+ * cannot set for itself.
  *
  * The surface is now one tabbed page at every phase, so this spec also pins the
  * pre-start shape: the Board tab present but disabled with its own status line,
@@ -15,39 +15,15 @@
  * Assertions about other teams therefore run either before the host makes
  * theirs, or from the board after the start.
  */
-import { test, expect, type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
-import { promoteToAdmin } from "./support/db";
+import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
-const PASSWORD = "password1234";
-
-async function signUp(page: Page, email: string, name: string): Promise<void> {
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill(name);
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
-
 test("admin hosts, player joins, teams ready up, and the host starts", async ({
-  browser,
+  signedIn,
 }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-host+${stamp}@test.example.com`;
-  const playerEmail = `e2e-player+${stamp}@test.example.com`;
-
-  const hostContext = await browser.newContext();
-  const playerContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const player = await playerContext.newPage();
-
-  // Host: sign up, gain admin, and create a tournament.
-  await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
+  const { page: host } = await signedIn("admin");
+  const { page: player, email: playerEmail } = await signedIn("p1");
 
   await host.getByRole("button", { name: "Create a game" }).click();
   await host.waitForURL(/\/create$/);
@@ -66,18 +42,18 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   const code = (await host.getByTestId("game-code").textContent())?.trim();
   expect(code).toBeTruthy();
 
-  // Player: sign up and join by code, before any team exists — while the host
-  // is still on the picker and can therefore see the waiting-players card. The
-  // code field is segmented: focus the first cell and type; focus advances per
-  // character.
-  await signUp(player, playerEmail, "Grace");
+  // Player: join by code, before any team exists — while the host is still on
+  // the picker and can therefore see the waiting-players card. The code field
+  // is segmented: focus the first cell and type; focus advances per character.
   await player
     .getByRole("group", { name: "Game code" })
     .getByRole("textbox")
     .first()
     .click();
   await player.keyboard.type(code as string);
-  await player.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await player.getByRole("button", { name: "Join", exact: true }).click();
   await player.waitForURL(/\/t\/[^/]+$/);
   // Join also fires the slam wipe now — same inert/`.fill()` hazard as above.
   await expect(player.getByTestId("slam-wipe")).toHaveCount(0);
@@ -175,7 +151,9 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
 
   // Home offers a rejoin while the tournament is live; it routes back to it.
   await host.goto("/");
-  const rejoin = host.getByRole("button", { name: "Rejoin" });
+  // Named rather than bare "Rejoin": the account carries games from earlier
+  // specs, and this step has to land back on this one.
+  const rejoin = host.getByRole("button", { name: "Rejoin E2E Cup" });
   await expect(rejoin).toBeVisible();
   await rejoin.click();
   await host.waitForURL(/\/t\/[^/]+$/);
@@ -188,7 +166,4 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
     .click();
   await expect(host.getByText("Ended · final standings")).toBeVisible();
   await expect(player.getByText("Ended · final standings")).toBeVisible();
-
-  await hostContext.close();
-  await playerContext.close();
 });

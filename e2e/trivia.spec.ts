@@ -4,15 +4,15 @@
  * server-side. This is the play surface's only end-to-end coverage — its
  * slice shipped on a hand check alone.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { pickTriviaPool } from "./support/create";
 import {
   dealtTriviaCard,
   profileIdByEmail,
-  promoteToAdmin,
   seedTriviaQuestions,
 } from "./support/db";
-import { createAndReadyTeam, joinByCode, signUp } from "./support/flows";
+import { createAndReadyTeam, joinByCode } from "./support/flows";
+import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
 function matchLocationFromUrl(page: Page): {
@@ -26,10 +26,10 @@ function matchLocationFromUrl(page: Page): {
 }
 
 test("a trivia round deals a card and scores an answer", async ({
-  browser,
+  signedIn,
 }) => {
-  // Three signups, a lobby, a round start and the slot's own countdown put
-  // this well past the default per-test budget.
+  // Three browser contexts, a lobby, a round start and the slot's own
+  // countdown put this well past the default per-test budget.
   test.setTimeout(120_000);
 
   // The bank is what makes the round startable at all: checkContentReady
@@ -37,21 +37,9 @@ test("a trivia round deals a card and scores an answer", async ({
   // carries no questions of its own.
   await seedTriviaQuestions();
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-trivia-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-trivia-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-trivia-p2+${stamp}@test.example.com`;
-
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
-  await promoteToAdmin(hostEmail);
-  await host.reload();
+  const { page: host, context: hostContext } = await signedIn("admin");
+  const { page: alpha, email: alphaEmail } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
 
   // The host is on no team, so it stays on the board rather than being pulled
   // into a match of its own.
@@ -67,11 +55,9 @@ test("a trivia round deals a card and scores an answer", async ({
   const code = (await host.getByTestId("game-code").textContent())?.trim();
   expect(code).toBeTruthy();
 
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code as string);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code as string);
   await createAndReadyTeam(bravo, "Bravo");
 
@@ -134,8 +120,4 @@ test("a trivia round deals a card and scores an answer", async ({
 
   // The match surface is played phone in hand.
   await expectNoHorizontalOverflow(alpha, "/t/[id]/m/[matchId] (trivia)");
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
 });

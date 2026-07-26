@@ -5,6 +5,19 @@
  */
 import { describe, expect, it } from "vitest";
 import { eligiblePool } from "./eligible";
+import { poolFor } from "./registry";
+
+describe("poolFor", () => {
+  it("admits every registered kind under the test pool", () => {
+    // E2E must be able to draw trivia — the play surface has no other coverage.
+    expect(poolFor("test")).toContain("trivia");
+    expect(poolFor("test")).toContain("stub");
+  });
+
+  it("still keeps devOnly kinds out of production", () => {
+    expect(poolFor("production")).not.toContain("stub");
+  });
+});
 
 describe("eligiblePool", () => {
   it("keeps kinds that are eligible in this environment", () => {
@@ -15,12 +28,15 @@ describe("eligiblePool", () => {
     expect(eligiblePool(["stub", "trivia"], "production")).toEqual(["trivia"]);
   });
 
-  it("keeps only dev-only kinds under the test pool", () => {
-    expect(eligiblePool(["stub", "trivia"], "test")).toEqual(["stub"]);
+  it("keeps every registered kind under the test pool", () => {
+    expect(eligiblePool(["stub", "trivia"], "test")).toEqual([
+      "stub",
+      "trivia",
+    ]);
   });
 
   it("returns empty when nothing stored is playable here", () => {
-    expect(eligiblePool(["trivia"], "test")).toEqual([]);
+    expect(eligiblePool(["stub"], "production")).toEqual([]);
   });
 
   it("preserves the stored order", () => {

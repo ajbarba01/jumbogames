@@ -26,6 +26,7 @@
  * tests build is what those surfaces need, and it is built here.
  */
 import { test, expect, type Locator, type Page } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 import { matchCountForTeam, teamIdByName } from "./support/db";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
@@ -52,6 +53,9 @@ async function hostGame(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Create a game" }).click();
   await page.waitForURL(/\/create$/);
   await page.getByPlaceholder("Thursday hacknight").fill(name);
+  // MATCH_SLOT_CARD above reads the stub's title off the drawn match, so the
+  // pool has to be pinned to it rather than left to the picker.
+  await pickStubPool(page);
   await page.getByRole("button", { name: "Create game" }).click();
   await page.waitForURL(/\/t\/[^/]+$/);
   // The destination subtree is inert while covered and `.fill()` no-ops

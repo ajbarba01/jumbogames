@@ -12,6 +12,7 @@
  * Runs against the dedicated test Supabase project.
  */
 import { test, expect, type Page } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 import { firstMatchId, profileIdByEmail, teamIdByName } from "./support/db";
 
 const PASSWORD = "password1234";
@@ -47,6 +48,7 @@ test("a non-member reads the board and a match but is never handed the code", as
   await host.getByRole("button", { name: "Create a game" }).click();
   await host.waitForURL(/\/create$/);
   await host.getByPlaceholder("Thursday hacknight").fill("Authz Cup");
+  await pickStubPool(host);
   await host.getByRole("button", { name: "Create game" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
   // Create fires the slam wipe; the destination is inert while covered
@@ -141,6 +143,7 @@ test("the write routes refuse a wrong code and a non-leader kick", async ({
   await host.getByRole("button", { name: "Create a game" }).click();
   await host.waitForURL(/\/create$/);
   await host.getByPlaceholder("Thursday hacknight").fill("Write Guard Cup");
+  await pickStubPool(host);
   await host.getByRole("button", { name: "Create game" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);

@@ -8,28 +8,19 @@
  * finished match's end screen into their new one.
  */
 import { test, expect, type Page } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 import { promoteToAdmin } from "./support/db";
+import { createAndReadyTeam, joinByCode, signUp } from "./support/flows";
 import { expectNoHorizontalOverflow } from "./support/viewport";
-
-const PASSWORD = "password1234";
-
-async function signUp(page: Page, email: string, name: string): Promise<void> {
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill(name);
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
 
 async function hostTournament(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Create a game" }).click();
   await page.waitForURL(/\/create$/);
   await page.getByPlaceholder("Thursday hacknight").fill(name);
-  // Under JUMBO_TEST_MINIGAME_POOL the only eligible kind is the stub, so it
-  // is auto-selected; picking is a no-op here but keeps the spec honest if a
-  // second dev-only kind is ever registered.
+  // Under JUMBO_TEST_MINIGAME_POOL every registered kind is eligible and
+  // nothing is auto-selected, so pin the pool to the deterministic stub — the
+  // assertions below read its match card and run without player input.
+  await pickStubPool(page);
   await page.getByRole("button", { name: "Create game" }).click();
   await page.waitForURL(/\/t\/[^/]+$/);
   // The destination subtree is inert while covered and `.fill()` no-ops
@@ -38,27 +29,6 @@ async function hostTournament(page: Page, name: string): Promise<string> {
   const code = (await page.getByTestId("game-code").textContent())?.trim();
   expect(code).toBeTruthy();
   return code as string;
-}
-
-async function joinByCode(page: Page, code: string): Promise<void> {
-  // The code field is segmented — focus the first cell and type; focus
-  // advances per character.
-  await page
-    .getByRole("group", { name: "Game code" })
-    .getByRole("textbox")
-    .first()
-    .click();
-  await page.keyboard.type(code);
-  await page.getByRole("button", { name: "Join" }).click();
-  await page.waitForURL(/\/t\/[^/]+$/);
-  await expect(page.getByTestId("slam-wipe")).toHaveCount(0);
-}
-
-async function createAndReadyTeam(page: Page, name: string): Promise<void> {
-  await page.getByPlaceholder("Team name").fill(name);
-  await page.getByRole("button", { name: "Create team" }).click();
-  await expect(page.getByText(name)).toBeVisible();
-  await page.getByRole("button", { name: "Ready up" }).click();
 }
 
 // The overview's "up next" slot card carries the drawn game's title, which is

@@ -16,9 +16,11 @@ export function poolFor(
   env: "development" | "test" | "production",
 ): MinigameKind[] {
   const kinds = Object.keys(MINIGAMES) as MinigameKind[];
-  // The test pool only ever draws devOnly kinds — E2E rounds must land on
-  // the deterministic stub, and CI's database carries no question content.
-  if (env === "test") return kinds.filter((kind) => MINIGAMES[kind].devOnly);
+  // The test pool admits every registered kind, devOnly included: E2E picks
+  // the kind it wants explicitly in the create form, so a spec that needs the
+  // deterministic stub says so and the trivia spec can draw a real round. It
+  // stays a widening only — JUMBO_TEST_MINIGAME_POOL is never set in Vercel.
+  if (env === "test") return kinds;
   return kinds.filter(
     (kind) => env !== "production" || !MINIGAMES[kind].devOnly,
   );

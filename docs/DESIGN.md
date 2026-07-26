@@ -281,6 +281,18 @@ arrive already solved; a theme is a token-scale swap by design.
     slice's otherwise reskin-only rule — the mockup drew the control, and shipping it as decoration
     or as a client-side filter would both have been worse than widening the route.
 
+20. **The page ground darkened one step, and that step is the last one available.** `--color-s1` moved
+    from `#18110b` to `#150e08` so the background doodle layer — now boiling, coloured, and at 4.5×
+    its authored opacity — sits on a deeper ground. Contrast was never the constraint: darkening the
+    ground raises every text ratio (s7 3.99 → 4.09, s11 12.79 → 13.09). The binding constraint is the
+    scale's even-ramp rule, which the palette test enforces: the grounds band s1–s6 must step by
+    0.03–0.065 in OKLCH lightness, and s1 now sits 0.062 below s2. A darker ground than this is not a
+    one-token edit — it requires re-spacing s2–s6 as a set, which moves every card and surface ground
+    in the app, and is a theme pass rather than a tweak. The tuning surface on `/showcase` still
+    previews the darker stops, labelled as needing that re-space, so the option stays visible without
+    being reachable by accident. The doodle layer also adopts the 15-colour team palette as its widest
+    mix, a documented exception to the team-colour rule (see UI.md) rather than a new palette.
+
 ## Deferred design (grill before building each)
 
 - Per-game specifics: typing passage source, word-game grid size and word validation dictionary,

@@ -18,9 +18,21 @@ const FRAMES = ["2", "3", "4"] as const;
 const OPACITY = ["1", "1.5", "2", "3", "4.5", "6"] as const;
 const DENSITY = ["0.5", "0.75", "1"] as const;
 const STROKE = ["1", "1.25", "1.5", "2"] as const;
-// Progressively darker grounds against the theme's authored s1 (#18110b).
-const GROUND = ["#18110b", "#140e08", "#100b06", "#0b0704", "#050302"] as const;
-const MIXES: readonly DoodleMix[] = ["cream", "accent", "even"];
+// The ground runs between the theme's two authored near-blacks rather than to
+// invented values: s1 (the ground) down to edge (the sticker border/shadow
+// colour, deliberately darker than s1). The stops between are interpolations.
+// s1 already sits at the floor of the scale's even-ramp rule (its gap to s2 is
+// 0.062 against a 0.065 ceiling), so every darker stop here is a preview of a
+// change that would need s2–s6 re-spaced with it — see DESIGN decision 20.
+const GROUND = ["#150e08", "#130c06", "#100a05", "#0e0703", "#0b0501"] as const;
+const GROUND_LABEL: Record<string, string> = {
+  "#150e08": "s1 — shipped",
+  "#130c06": "darker — needs a ramp re-space",
+  "#100a05": "darker — needs a ramp re-space",
+  "#0e0703": "darker — needs a ramp re-space",
+  "#0b0501": "edge — no ramp, no sticker shadows",
+};
+const MIXES: readonly DoodleMix[] = ["cream", "accent", "even", "teams"];
 
 function Knob({
   label,
@@ -163,7 +175,7 @@ export function BackgroundLab(): React.JSX.Element {
             onChange={setStroke}
           />
         </Knob>
-        <Knob label="Ground" value={ground}>
+        <Knob label="Ground" value={GROUND_LABEL[ground] ?? ground}>
           <StepSlider
             aria-label="Ground darkness"
             stops={GROUND}

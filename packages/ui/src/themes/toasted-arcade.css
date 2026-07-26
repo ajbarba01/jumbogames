@@ -21,8 +21,13 @@
 @theme static {
   /* Warm 12-step scale. Even OKLCH ramp (hue 68°) from near-black ground
    * through mid-tone sticker edges to cream ink. Grounds (1–6) step tight;
-   * text band (7–12) steps wider for legibility hierarchy. */
-  --color-s1: #18110b;
+   * text band (7–12) steps wider for legibility hierarchy.
+   *
+   * s1 was darkened once, to sit the boiling doodle layer on a deeper ground
+   * (DESIGN decision 20). It is now as dark as this ramp allows: the s1→s2
+   * lightness gap is 0.062 against the palette test's 0.065 ceiling, so any
+   * further darkening needs s2–s6 re-spaced with it, not s1 moved alone. */
+  --color-s1: #150e08;
   --color-s2: #241c13;
   --color-s3: #31271c;
   --color-s4: #3e3225;

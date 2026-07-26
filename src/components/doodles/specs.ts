@@ -167,16 +167,32 @@ export const DOODLES: Doodle[] = [
   },
 ];
 
-export type DoodleMix = "cream" | "accent" | "even";
+/** The doodle count, which the team mix maps one-to-one onto. */
+const DOODLE_COUNT = 12;
+
+export type DoodleMix = "cream" | "accent" | "even" | "teams";
 
 const CYCLE = [CREAM, YELLOW, PINK] as const;
 
 /**
+ * The team identity palette, which is the register's only wide-gamut set —
+ * tuned in OKLCH for max-min distinctness, so it carries far more colour than
+ * the two accents without inventing values outside the theme. Decorative here:
+ * docs/UI.md reserves team colour for identity shown beside a team name, and
+ * the background never names a team.
+ */
+const TEAMS = Array.from(
+  { length: DOODLE_COUNT },
+  (_, i) => `var(--color-team-${i + 1})`,
+);
+
+/**
  * How loud the field's colour runs, quietest first: "cream" is the authored
- * assignment, which leans hard on the neutral; "even" gives the three colours
- * an equal share; "accent" leaves only every fourth mark neutral and paints
- * the rest. The three must differ in how much neutral they keep — that is the
- * knob — so they are pinned apart in specs.test.ts.
+ * assignment, which leans hard on the neutral; "even" gives the two accents and
+ * the neutral an equal share; "accent" leaves only every fourth mark neutral;
+ * "teams" drops the neutral entirely and gives every doodle its own hue from
+ * the team palette. Each step must keep less neutral than the last — that is
+ * the knob — so they are pinned apart in specs.test.ts.
  */
 export function strokeFor(
   doodle: Doodle,
@@ -184,6 +200,7 @@ export function strokeFor(
   mix: DoodleMix,
 ): string {
   if (mix === "cream") return doodle.stroke;
+  if (mix === "teams") return TEAMS[index % TEAMS.length]!;
   if (mix === "even") return CYCLE[index % CYCLE.length]!;
   return index % 4 === 0 ? CREAM : CYCLE[(index % 2) + 1]!;
 }

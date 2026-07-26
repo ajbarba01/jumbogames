@@ -16,6 +16,13 @@ describe("strokeFor", () => {
   it("keeps strictly less neutral as the mix gets louder", () => {
     expect(creamCount("cream")).toBeGreaterThan(creamCount("even"));
     expect(creamCount("even")).toBeGreaterThan(creamCount("accent"));
+    expect(creamCount("accent")).toBeGreaterThan(creamCount("teams"));
+    expect(creamCount("teams")).toBe(0);
+  });
+
+  it("gives every doodle its own hue on the teams mix", () => {
+    const used = new Set(DOODLES.map((d, i) => strokeFor(d, i, "teams")));
+    expect(used.size).toBe(DOODLES.length);
   });
 
   it("passes the authored colour through untouched on the cream mix", () => {
@@ -25,7 +32,7 @@ describe("strokeFor", () => {
   });
 
   it("only ever returns a theme token", () => {
-    for (const mix of ["cream", "even", "accent"] as const) {
+    for (const mix of ["cream", "even", "accent", "teams"] as const) {
       DOODLES.forEach((doodle, i) => {
         expect(strokeFor(doodle, i, mix)).toMatch(/^var\(--color-[\w-]+\)$/);
       });

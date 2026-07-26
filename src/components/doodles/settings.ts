@@ -22,11 +22,11 @@ export interface DoodleSettings {
 }
 
 export const DOODLE_SETTINGS: DoodleSettings = {
-  amplitude: 1.2,
+  amplitude: 2,
   frames: 3,
-  fps: 8,
+  fps: 4,
   density: 1,
-  opacity: 1,
+  opacity: 3,
   strokeScale: 1,
-  mix: "cream",
+  mix: "teams",
 };

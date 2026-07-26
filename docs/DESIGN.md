@@ -144,6 +144,14 @@ arrive already solved; a theme is a token-scale swap by design.
    route handlers (Zod-validated, role/membership-checked); clients subscribe to Supabase Realtime
    for state fan-out but never write game state. Hidden information (battleship placements) never
    reaches the wrong client. Spectating is subscribing to the same channel read-only.
+   **Exception, deliberate (Slice 4, 2026-07-25):** trivia's `redact` ships a per-viewer
+   `lastAnswer: { deckIndex; correctIndex } | null` so the client can hold a reveal beat (lit correct
+   choice, shake on a wrong pick) before the next card replaces it. This does not open the hole the
+   invariant guards against: `lastAnswer` is derived from `player.seen.at(-1)`, so its `correctIndex`
+   only ever names a card the viewer has already answered — the viewer's live, unanswered hand
+   (`player.current`) never gains a `correctIndex` on the wire. `TriviaState` and `apply` are
+   untouched; only `redact`'s output shape grew. Full rationale in
+   `superpowers/specs/2026-07-25-slice4-trivia-reskin-design.md` (D2, local artifact).
 2. **Authorization is enforced in route handlers, not RLS.** Prisma connects as the database owner
    and bypasses RLS, so RLS cannot be the enforcement layer.
 3. **Owner via env allowlist + in-app admin promotion.** No manual DB pokes, no bootstrap
@@ -252,6 +260,18 @@ arrive already solved; a theme is a token-scale swap by design.
     rule. Creating a team also now requires the game code, closing a hole where create-team was an
     unguarded way to join a game without one.
 
+18. **Minigame zoom is full-viewport, uniform across every slot phase.** `PlayFrame` renders gate,
+    countdown, playing and scoring full-bleed, rather than only while playing — nothing resizes
+    mid-slot, and the `layoutId` shared element animates the overview card straight to the edges
+    instead of animating into a frame that would then have to un-frame itself. The panel drops its
+    board-sticker chrome with its size cap: a full-bleed surface is in-flow content, which owns the
+    darkest ground (`s1`), rather than something that floats and casts a hard shadow (docs/UI.md's
+    outline vocabulary is for surfaces that float). Landed in Slice 4 (2026-07-25) alongside the
+    trivia reskin, though the change reaches every minigame surface, not just trivia's. Accepted cost:
+    `GatePanel`, `CountdownOverlay`, `ScoringScreen` and the stub surface all inherit the larger stage
+    and read sparse in it until a later pass designs for the room — that pass is follow-up work, not
+    part of Slice 4.
+
 ## Deferred design (grill before building each)
 
 - Per-game specifics: typing passage source, word-game grid size and word validation dictionary,
@@ -264,4 +284,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-25_
+_Last reviewed: 2026-07-26_

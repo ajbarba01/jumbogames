@@ -74,6 +74,22 @@ email. Home self-identity ("Signed in as {email}") and the admin permissions pag
 that's deliberate, not leftover. Spectate-by-link, the other half of M8 (DESIGN decision 16), hasn't
 shipped yet — it's gated on this field, not on top of it.
 
+Slice 4 of the mockup-integration program landed the trivia reskin: the play surface now matches
+the `trivia/` mockup's braided rope, team-washed walls, projector-scale clock and score pop, over
+the same match engine, rope physics and scoring the earlier surface used untouched. `PlayFrame` now
+zooms every minigame to full screen, for every slot phase, not just trivia's — the panel loses its
+board-sticker chrome entirely, since a full-bleed surface is in-flow content rather than something
+that floats; `GatePanel`, `CountdownOverlay`, `ScoringScreen` and the stub surface all inherit the
+larger stage and read sparse in it until a later pass designs for the room. `TeamChip` and `ScorePop`
+joined `@jumbo/ui`, closing the last two motion-and-composition rows in `KIT-GAPS.md`; the trivia
+mockup is retired now that its real surface has shipped, leaving only `admin-questions/` for Slice 5.
+One functional change rode along: `redact` gained a per-viewer `lastAnswer` field so the client can
+hold an answer-reveal beat before the next card replaces it — it carries indices only, never answer
+text, and is suppressed on the deck-exhaustion path where the next deal would otherwise be the same
+card just answered. The surface ships with **no E2E coverage**: CI's minigame pool is stub-only by
+the empty-bank guard (see "Known gaps" below), so a round-start run never draws trivia; it's verified
+by unit tests plus a hand check against a seeded dev server instead.
+
 Milestone 9 is done, closing Slice 3 of the mockup-integration program: the lobby and the projector
 board collapsed into one tabbed game page present at every phase, board/match reads opened to any
 signed-in user, and roster fluidity shipped under the lock rule (mechanics: DESIGN decisions 16, 17).
@@ -154,4 +170,4 @@ what the suite builds — so it is verified by hand against a dev server.
 
 ---
 
-_Last reviewed: 2026-07-25_
+_Last reviewed: 2026-07-26_

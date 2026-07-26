@@ -86,6 +86,33 @@ test("host and admin surfaces fit the floor width", async ({ page }) => {
   await signInAsOwner(page);
   await expectNoHorizontalOverflow(page, "/ (home, owner)");
 
+  // The owner's three peer links must hold one line once the card reaches its
+  // max width, where there is room for them — "Manage permissions" overshot by
+  // ~8px and stranded "Question bank" on a line of its own. Below that the row
+  // still wraps by design, so this is asserted at a desktop width, not at the
+  // floor. Overflow can't see it either way (the row is inside the card), so
+  // the check is that they share a baseline.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const linkRow = [
+    page.getByRole("button", { name: "Log out" }),
+    page.getByRole("link", { name: "Manage users" }),
+    page.getByRole("link", { name: "Question bank" }),
+  ];
+  const tops: number[] = [];
+  for (const link of linkRow) {
+    await expect(link).toBeVisible();
+    const box = await link.boundingBox();
+    expect(
+      box,
+      "every home account link must have a layout box",
+    ).not.toBeNull();
+    tops.push(box!.y);
+  }
+  expect(
+    Math.max(...tops) - Math.min(...tops),
+    "home's account links wrap at the card's full width — they must sit on one line there",
+  ).toBeLessThan(8);
+
   await page.goto("/create");
   await expect(page.getByPlaceholder("Thursday hacknight")).toBeVisible();
   await expectNoHorizontalOverflow(page, "/create");

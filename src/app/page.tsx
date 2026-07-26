@@ -2,7 +2,7 @@
  * Home: the authenticated landing. A game-code hero card takes the code and
  * joins, with "Create a game" shown to every signed-in viewer. A small
  * identity card shows the signed-in account with an editable display name, log
- * out, an owner-only permissions link, and a question-bank link for admins and
+ * out, an owner-only user-management link, and a question-bank link for admins and
  * owners. Logged-out visitors are sent to login.
  */
 import Link from "next/link";
@@ -45,8 +45,10 @@ export default async function Home() {
         <span className="text-sec wrap-anywhere text-s9">
           Signed in as {profile.email}
         </span>
-        {/* Up to three peer links for an owner — more than fits a phone in one
-            line, and peers of equal weight, so the row wraps (docs/UI.md). */}
+        {/* Three peer links of equal weight for an owner, kept short enough to
+            hold one line once the card reaches its max width (guarded in
+            responsive.spec). Narrower than that they wrap, which is the
+            intent — three links of this weight don't fit a phone in one line. */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t-2 border-s6 pt-4">
           <LogoutButton />
           {profile.role === "owner" ? (
@@ -54,7 +56,7 @@ export default async function Home() {
               href="/admin/permissions"
               className="slip text-sec font-bold text-s9 underline-offset-4 hover:text-s11 hover:underline"
             >
-              Manage permissions
+              Manage users
             </Link>
           ) : null}
           {profile.role !== "player" ? (

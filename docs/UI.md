@@ -22,6 +22,15 @@
   asterisks, scribbles, the hand font — live on the background layer or as
   annotations beside content, never on interactive components: controls stay
   straight and clean so the wobble reads as set dressing, not sloppiness.
+  The background layer **boils**: each doodle cycles a few seeded redraws of
+  itself at a low frame rate, so every line quivers like stop-motion
+  animation. It is pure CSS over stacked frames — no JS timer runs behind the
+  app for decoration — and reduced motion pins the authored frame. The layer
+  draws from the 15-colour team palette, the one documented exception to the
+  team-colour rule below: it is the register's only wide-gamut set, the
+  background never names a team, and inventing a second rainbow would put
+  colour outside the theme. Its settings are tuned live on `/showcase`'s
+  background section, which drives the same field the app mounts.
 - **Status vocabulary.** The four status hues (blue running · amber
   needs-you · red critical · green done) are reserved for live state and
   never decorate chrome; the accent pair never marks state. The kit ships no
@@ -32,7 +41,9 @@
 - **Team palette.** Up to 15 tournament identities (`--color-team-1…15`),
   assigned in fixed order and never cycled. Team color is decorative identity,
   always shown beside the team name — it is never part of the status vocabulary
-  and must never be read as state. 15 fully colorblind-safe colors is beyond the
+  and must never be read as state. One exception, recorded in DESIGN decision
+  20: the background doodle layer borrows the palette as pure decoration, where
+  no team is named and nothing is identified. 15 fully colorblind-safe colors is beyond the
   proven ceiling, so the name pairing is load-bearing; the palette is graded for
   maximum normal-vision distinctness with colorblind separation as a tiebreak.
 - **Sentence case.** Every piece of UI copy — headings, labels, buttons,
@@ -82,7 +93,11 @@
   applies — deferrals tracked in [ROADMAP.md](ROADMAP.md) — but it still
   fires only at a beat: everyday chrome (auth links, logout, admin nav)
   never borrows it. Each moment fires once at its beat and collapses under
-  reduced motion.
+  reduced motion. The wipe sweeps **right to left**, and ships **unlabelled**
+  everywhere: the panel is a beat, not a sign, and a destination name flashed
+  for a third of a second is read by nobody while making the cover feel like
+  chrome. The `label` prop stays on the member and stays exercised in the
+  showcase, so a future surface that genuinely wants one has it.
   Confetti was considered and cut.
 - **Focus law.** Keyboard focus draws a thick accent ring OUTSIDE the
   element (offset off its border, the mockup treatment) — on this register
@@ -184,4 +199,4 @@
 
 ---
 
-_Last reviewed: 2026-07-24_
+_Last reviewed: 2026-07-26_

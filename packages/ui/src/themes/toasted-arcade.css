@@ -11,7 +11,14 @@
  * close to `warn` for the indicator law to survive it. Accents are yellow +
  * pink; amber stays unambiguously "needs-you". */
 
-@theme {
+/* `static` is load-bearing, not a style preference. Tailwind v4 tree-shakes
+ * @theme variables that no utility class references, and the team palette is
+ * read only through inline `style={{ background: "var(--color-team-N)" }}` —
+ * invisible to the class scanner. Without it the generated stylesheet shipped
+ * only --color-team-1 and --color-team-15, so teams 2–14 rendered transparent
+ * identity chips. Emitting the whole theme costs a few hundred bytes and keeps
+ * every token the register documents actually resolvable at runtime. */
+@theme static {
   /* Warm 12-step scale. Even OKLCH ramp (hue 68°) from near-black ground
    * through mid-tone sticker edges to cream ink. Grounds (1–6) step tight;
    * text band (7–12) steps wider for legibility hierarchy. */

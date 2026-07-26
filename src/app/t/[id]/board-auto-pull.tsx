@@ -28,7 +28,7 @@ export function BoardAutoPull({
     if (wasMatchEntered(viewerMatchId)) return;
     markMatchEntered(viewerMatchId);
 
-    navigate(`/t/${tournamentId}/m/${viewerMatchId}`, { label: "Your match" });
+    navigate(`/t/${tournamentId}/m/${viewerMatchId}`);
   }, [tournamentId, viewerMatchId, navigate]);
 
   return null;

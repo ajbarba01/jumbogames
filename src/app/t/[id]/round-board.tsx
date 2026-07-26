@@ -179,7 +179,6 @@ export function RoundBoard({ board }: { board: BoardDTO }) {
                     {match.live ? (
                       <WipeLink
                         href={`/t/${board.id}/m/${match.id}`}
-                        wipeLabel="Spectate"
                         className="slip ml-auto shrink-0 cursor-pointer text-sec font-bold text-accent"
                       >
                         Spectate

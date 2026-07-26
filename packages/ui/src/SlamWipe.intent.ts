@@ -15,11 +15,11 @@ export const slamWipeIntent: ComponentIntent = assertIntent({
     "Anything the component itself should time or route — SlamWipe is presentational only, it never owns a timer or a navigation.",
   ],
   anatomy:
-    "A motion.div pinned fixed inset-0 on the --z-wipe layer, painted bg-accent-2, sliding between off-screen-left, covering, and off-screen-right on WIPE_EASE/WIPE_DUR; an optional uppercase destination label centered in it, and an optional Spinner cue pinned near the bottom for loads that outlast the cover.",
+    "A motion.div pinned fixed inset-0 on the --z-wipe layer, painted bg-accent-2, sliding between off-screen-right, covering, and off-screen-left on WIPE_EASE/WIPE_DUR; an optional uppercase destination label centered in it, and an optional Spinner cue pinned near the bottom for loads that outlast the cover.",
   variantsStates: [
-    'phase="in" (sweeping from off-screen-left to covering)',
+    'phase="in" (sweeping from off-screen-right to covering)',
     'phase="covered" (resting, fully covering)',
-    'phase="out" (sweeping from covering to off-screen-right)',
+    'phase="out" (sweeping from covering to off-screen-left)',
     "labeled (destination label shown) vs unlabeled",
     "showCue (still-loading cue shown) vs quiet",
     "reduced-motion (sweep collapses to an instant cut)",

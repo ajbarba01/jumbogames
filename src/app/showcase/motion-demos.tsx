@@ -125,8 +125,8 @@ function WipeDemo() {
         Round 1
       </motion.span>
       <motion.div
-        initial={{ x: "-102%" }}
-        animate={{ x: ["-102%", "0%", "0%", "102%"] }}
+        initial={{ x: "102%" }}
+        animate={{ x: ["102%", "0%", "0%", "-102%"] }}
         transition={{ ...frames, ease: WIPE_EASE }}
         className="absolute inset-0 bg-accent-2"
       />

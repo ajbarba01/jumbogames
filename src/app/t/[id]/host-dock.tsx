@@ -62,7 +62,7 @@ export function HostDock({
       // the refresh out of the transition and reveal the panel early.
       // The network wait is therefore uncovered; only the swap is covered.
       if (res.ok) {
-        cover(() => router.refresh(), { label: `Round ${ordinal}` });
+        cover(() => router.refresh());
         return;
       }
       const data = await res.json().catch(() => null);

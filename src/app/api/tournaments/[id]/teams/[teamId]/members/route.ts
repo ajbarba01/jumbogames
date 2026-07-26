@@ -1,17 +1,24 @@
 /**
- * Route handlers for team membership in the lobby. POST joins the caller to a
- * team; DELETE removes the caller, reassigning leadership to the oldest
- * remaining member and deleting the team when it empties. A player is on at
- * most one team per tournament.
+ * Route handlers for team membership. POST joins the caller to a team; the
+ * code must match the game's (DESIGN decision 16: link = read, code = write).
+ * DELETE is self-leave. Both are open only while the team has no live match —
+ * the lobby, or between rounds (DESIGN decision 17) — via requireRosterOpen.
+ * Leaving reassigns leadership to the oldest remaining member and, pre-start
+ * only, deletes the team when it empties; see remove-member.ts for why that
+ * changes after the game starts. A player is on at most one team per
+ * tournament.
  */
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/profile";
 import { prisma, isUniqueConstraintError } from "@/lib/prisma";
-import { requireLobby } from "@/lib/tournament/access";
+import { requireRosterOpen } from "@/lib/tournament/access";
+import { removeTeamMember } from "@/lib/tournament/remove-member";
+import { joinTeamSchema } from "@/lib/schemas/tournament";
+import { parseJsonBody } from "@/lib/http";
 import { broadcastTournamentChange } from "@/lib/realtime/broadcast";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   ctx: { params: Promise<{ id: string; teamId: string }> },
 ) {
   const auth = await requireUser();
@@ -22,18 +29,22 @@ export async function POST(
     );
   }
 
-  const { id, teamId } = await ctx.params;
-  const lobby = await requireLobby(id);
-  if (!lobby.ok) {
-    return NextResponse.json({ error: lobby.error }, { status: lobby.status });
+  const parsed = joinTeamSchema.safeParse(await parseJsonBody(request));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid code" }, { status: 400 });
   }
 
-  const team = await prisma.team.findFirst({
-    where: { id: teamId, tournamentId: id },
-    select: { id: true },
-  });
-  if (!team) {
-    return NextResponse.json({ error: "No such team" }, { status: 404 });
+  const { id, teamId } = await ctx.params;
+  const guard = await requireRosterOpen(id, teamId);
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
+  }
+
+  if (parsed.data.code !== guard.tournament.code) {
+    return NextResponse.json(
+      { error: "That code doesn't match this game." },
+      { status: 403 },
+    );
   }
 
   const existing = await prisma.teamMember.findUnique({
@@ -50,9 +61,22 @@ export async function POST(
   }
 
   try {
-    await prisma.teamMember.create({
-      data: { tournamentId: id, teamId, profileId: auth.profile.id },
-    });
+    const memberCount = await prisma.teamMember.count({ where: { teamId } });
+    if (memberCount === 0) {
+      await prisma.$transaction([
+        prisma.teamMember.create({
+          data: { tournamentId: id, teamId, profileId: auth.profile.id },
+        }),
+        prisma.team.update({
+          where: { id: teamId },
+          data: { leaderId: auth.profile.id, readyAt: null },
+        }),
+      ]);
+    } else {
+      await prisma.teamMember.create({
+        data: { tournamentId: id, teamId, profileId: auth.profile.id },
+      });
+    }
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       return NextResponse.json(
@@ -80,9 +104,9 @@ export async function DELETE(
   }
 
   const { id, teamId } = await ctx.params;
-  const lobby = await requireLobby(id);
-  if (!lobby.ok) {
-    return NextResponse.json({ error: lobby.error }, { status: lobby.status });
+  const guard = await requireRosterOpen(id, teamId);
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
 
   const membership = await prisma.teamMember.findUnique({
@@ -98,36 +122,11 @@ export async function DELETE(
     );
   }
 
-  const team = await prisma.team.findUnique({
-    where: { id: teamId },
-    select: {
-      leaderId: true,
-      members: { orderBy: { joinedAt: "asc" }, select: { profileId: true } },
-    },
+  await removeTeamMember({
+    teamId,
+    profileId: auth.profile.id,
+    deleteWhenEmpty: guard.tournament.phase === "lobby",
   });
-  if (!team) {
-    return NextResponse.json({ error: "No such team" }, { status: 404 });
-  }
-
-  const remaining = team.members.filter(
-    (member) => member.profileId !== auth.profile.id,
-  );
-
-  // Decide the writes up front so the transaction stays a single-shot batch
-  // (the pooler runs in transaction mode; interactive transactions are unsafe).
-  if (remaining.length === 0) {
-    await prisma.team.delete({ where: { id: teamId } }); // cascades the member
-  } else if (team.leaderId === auth.profile.id) {
-    await prisma.$transaction([
-      prisma.teamMember.delete({ where: { id: membership.id } }),
-      prisma.team.update({
-        where: { id: teamId },
-        data: { leaderId: remaining[0].profileId, readyAt: null },
-      }),
-    ]);
-  } else {
-    await prisma.teamMember.delete({ where: { id: membership.id } });
-  }
 
   await broadcastTournamentChange(id);
   return NextResponse.json({ ok: true });

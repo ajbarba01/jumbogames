@@ -48,6 +48,17 @@ export const joinTournamentSchema = z.object({
     .transform((value) => value.trim().toUpperCase()),
 });
 
+// Joining a team is the write that needs the code (DESIGN decision 16: link =
+// read, code = write). Same normalization as joinTournamentSchema so a code
+// typed at the picker and one carried in a link compare equal.
+export const joinTeamSchema = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(12)
+    .transform((value) => value.trim().toUpperCase()),
+});
+
 export const createTeamSchema = z.object({
   name: z.string().trim().min(1).max(30),
 });

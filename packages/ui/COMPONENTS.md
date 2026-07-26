@@ -6,12 +6,12 @@ _Generated from each component's intent declaration. Do not edit by hand._
 
 ### Button
 
-The six-variant action vocabulary — primary/quiet/outline/block/ghost/text pick the weight, icon swaps text padding for square icon geometry.
+The seven-variant action vocabulary — primary/second/quiet/outline/block/ghost/text pick the weight, icon swaps text padding for square icon geometry.
 
-- **Use it when:** Any clickable control that commits an action: submit, confirm, deny, run, start, or trigger a menu. primary for the one accent action per view · quiet for the workhorse confirm · outline for secondary/deny · block for raised square utilities · ghost for chrome-adjacent icons · text for ink-only toolbar controls.
+- **Use it when:** Any clickable control that commits an action: submit, confirm, deny, run, start, or trigger a menu. primary for the one accent action per view · second for the accent-2 CTA that seconds it · quiet for the workhorse confirm · outline for secondary/deny · block for raised square utilities · ghost for chrome-adjacent icons · text for ink-only toolbar controls.
 - **Don't use it when:** The control navigates to another location rather than committing an action. The control needs a loading state — this vocabulary has none; callers disable instead.
 - **Anatomy:** A native <button> whose face (color/border/hover/press) and geometry (text padding or icon square) are selected per variant; disabled swaps to the off face with no hover, no press, no pointer.
-- **Variants & states:** primary, quiet, outline, block, ghost, text, default · hover (sticker lift) · focus-visible (global accent ring) · active (drop onto shadow) · disabled (no hover, no pointer)
+- **Variants & states:** primary, second, quiet, outline, block, ghost, text, default · hover (sticker lift) · focus-visible (global accent ring) · active (drop onto shadow) · disabled (no hover, no pointer)
 - **Accessibility:** Native <button> semantics (Enter/Space activate); type defaults to button; icon-only callers must pass aria-label; loading is not applicable in this vocabulary — callers disable instead.
 - **Related:** Spinner
 

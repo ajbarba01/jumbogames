@@ -33,6 +33,7 @@ describe("Button", () => {
   it("every variant renders enabled and disabled without leaking the other state", () => {
     for (const variant of [
       "primary",
+      "second",
       "quiet",
       "outline",
       "block",
@@ -54,6 +55,13 @@ describe("Button", () => {
       );
       d.unmount();
     }
+  });
+
+  it("second wears accent-2, the scale's secondary-CTA colour", () => {
+    render(<Button variant="second">x</Button>);
+    expect(screen.getByRole("button", { name: "x" }).className).toContain(
+      "bg-accent-2",
+    );
   });
 
   it("merges a caller className", () => {

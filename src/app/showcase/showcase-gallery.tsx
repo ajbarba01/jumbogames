@@ -88,6 +88,7 @@ function Specimen({
 
 const BUTTON_VARIANTS = [
   "primary",
+  "second",
   "quiet",
   "outline",
   "block",

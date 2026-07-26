@@ -44,3 +44,59 @@ body {
 .focus-quiet:focus-visible {
   outline: none;
 }
+
+/* The background doodle boil: each doodle renders N stacked frames and this
+ * keyframe shows exactly one of them at a time, with a negative per-frame
+ * delay staggering them into a cycle. One keyframe per supported frame count,
+ * because a keyframe's stop percentages cannot read a custom property. */
+.doodle-frame {
+  opacity: 0;
+  animation-duration: var(--doodle-cycle);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.doodle-frame:first-child {
+  opacity: 1;
+}
+
+@keyframes doodle-boil-2 {
+  0%,
+  49.99% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes doodle-boil-3 {
+  0%,
+  33.32% {
+    opacity: 1;
+  }
+  33.33%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes doodle-boil-4 {
+  0%,
+  24.99% {
+    opacity: 1;
+  }
+  25%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion (docs/UI.md): drop the animation and the base rules above
+ * leave frame zero — the path exactly as authored — showing alone. */
+@media (prefers-reduced-motion: reduce) {
+  .doodle-frame {
+    animation: none;
+  }
+}

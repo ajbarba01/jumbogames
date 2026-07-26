@@ -13,6 +13,7 @@ import {
   Card,
   Field,
   OptionCard,
+  SLIP_SHAKE,
   Spinner,
   StepSlider,
   TextField,
@@ -22,7 +23,6 @@ import type { MinigameKind } from "@/generated/prisma/client";
 import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 
 const K_STOPS = ["1", "2", "3", "4"] as const;
-const SHAKE_KEYFRAMES = [0, -9, 8, -6, 5, -3, 0];
 
 export interface AvailableMinigame {
   kind: MinigameKind;
@@ -85,7 +85,7 @@ export function CreateForm({
         key={shakes}
         onSubmit={onSubmit}
         noValidate
-        animate={shakes > 0 ? { x: SHAKE_KEYFRAMES } : undefined}
+        animate={shakes > 0 ? { x: [...SLIP_SHAKE] } : undefined}
         transition={{ duration: 0.4 }}
         className="flex flex-col gap-6"
       >

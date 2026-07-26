@@ -15,6 +15,12 @@ export { cx } from "./cx";
 export { SLIP_DUR, SLIP_EASE, SLIP_SHAKE, WIPE_DUR, WIPE_EASE } from "./motion";
 export { SlamWipe, type SlamWipeProps, type WipeVisualPhase } from "./SlamWipe";
 export { DialogSearchHead, SettingRow, TocRail } from "./frame/SettingsFrame";
+export { Tabs, type TabsProps, type TabSpec } from "./frame/Tabs";
+export {
+  StatusLine,
+  type StatusLineProps,
+  type StatusTone,
+} from "./frame/StatusLine";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export {
   useDismissLayer,

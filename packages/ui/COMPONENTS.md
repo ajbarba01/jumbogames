@@ -96,6 +96,30 @@ The loading circle — quiet s-scale ring for content that is genuinely not ther
 - **Accessibility:** role=status with a required label; the rotation is aria-hidden decoration.
 - **Related:** Button
 
+## Frame
+
+### StatusLine
+
+One quiet line stating a status or predictive notice, docked to the surface it concerns.
+
+- **Use it when:** A control is unavailable and the reason is worth saying, e.g. a team in a live match. A surface is waiting on something outside the viewer's control. A recoverable failure needs a line plus a retry.
+- **Don't use it when:** The message must interrupt (use ConfirmDialog). The text belongs to a single form field (use Field's error slot). The state is permanent decoration rather than a status.
+- **Anatomy:** A dot in the status hue, the message, and an optional trailing action.
+- **Variants & states:** info (quiet) · warn · ok · crit · run, static · live (announced)
+- **Accessibility:** The dot is decorative and aria-hidden, so the hue never carries meaning alone. Live mode adds role=status so a change is announced without stealing focus.
+- **Related:** Field, ConfirmDialog, Tabs
+
+### Tabs
+
+A segmented bar that switches between two or three peer views of the same surface.
+
+- **Use it when:** One surface holds peer views a viewer moves between freely, like a game's board and team room. A view is not available yet and its absence needs explaining rather than hiding.
+- **Don't use it when:** The destinations are separate routes (use links). There are more than about four views, or their labels do not fit the floor width. The choice submits a value (use Select or OptionCard).
+- **Anatomy:** A tablist of sticker-faced buttons; the selected one takes the pressed face and a tint, a disabled one dims but stays present.
+- **Variants & states:** unselected · selected (pressed face + tint) · hover · focus · disabled (dimmed, announced, not activatable)
+- **Accessibility:** role=tablist with an aria-label; each tab is role=tab with aria-selected and aria-controls pointing at the consumer's panel id. Only the selected tab is in the tab order; Left and Right move selection and skip disabled tabs. Disabled tabs use aria-disabled rather than the disabled attribute, so they stay reachable and announced.
+- **Related:** Button, StatusLine, Select
+
 ## Inputs
 
 ### CodeInput

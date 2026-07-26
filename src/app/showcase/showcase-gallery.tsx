@@ -36,6 +36,8 @@ import {
   Kbd,
   type Keybind,
   ShortcutsOverlay,
+  StatusLine,
+  Tabs,
 } from "@jumbo/ui";
 import { MotionDemos } from "./motion-demos";
 import { SlamWipeDemo } from "./slam-wipe-demo";
@@ -394,12 +396,12 @@ function OverlaySection() {
         </ModalShell>
       </Specimen>
       <Specimen label="ConfirmDialog — gates a consequential action (copy carries weight, not color)">
-        <Button onClick={() => setConfirmOpen(true)}>End tournament</Button>
+        <Button onClick={() => setConfirmOpen(true)}>End game</Button>
         <ConfirmDialog
           open={confirmOpen}
-          title="End tournament?"
+          title="End game?"
           description="Standings freeze and the board shows the final result for everyone."
-          confirmLabel="End tournament"
+          confirmLabel="End game"
           onConfirm={() => setConfirmOpen(false)}
           onClose={() => setConfirmOpen(false)}
         />
@@ -466,6 +468,7 @@ function FrameSection() {
   const [activeId, setActiveId] = useState<string | null>("appearance");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [density, setDensity] = useState("comfortable");
+  const [showcaseTab, setShowcaseTab] = useState("board");
 
   return (
     <Section title="Frame">
@@ -522,6 +525,38 @@ function FrameSection() {
               </SettingRow>
             </div>
           </div>
+        </div>
+      </Specimen>
+      <Specimen label="Tabs — selected, unselected, disabled">
+        <Tabs
+          label="Showcase views"
+          active={showcaseTab}
+          onSelect={setShowcaseTab}
+          tabs={[
+            { id: "board", label: "Board" },
+            { id: "team", label: "My team" },
+            { id: "locked", label: "Locked", disabled: true },
+          ]}
+        />
+      </Specimen>
+      <Specimen label="StatusLine — every tone, and one with an action">
+        <div className="flex flex-col gap-2">
+          <StatusLine>Waiting for the host to start the game</StatusLine>
+          <StatusLine tone="warn">
+            In a match — opens after this round
+          </StatusLine>
+          <StatusLine tone="ok">All teams are ready</StatusLine>
+          <StatusLine tone="run">Round 2 in play</StatusLine>
+          <StatusLine
+            tone="crit"
+            action={
+              <Button variant="text" onClick={() => {}}>
+                Retry
+              </Button>
+            }
+          >
+            Could not reach the server
+          </StatusLine>
         </div>
       </Specimen>
     </Section>

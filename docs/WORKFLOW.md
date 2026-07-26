@@ -56,6 +56,13 @@ and gates still apply. The test is "does this need design to get right?", not "i
   the repo. `.env.example` documents every variable without values.
 - CI/Playwright targets the **dedicated test Supabase project** ([DESIGN.md](DESIGN.md) decision 4)
   with dedicated test users — never production data.
+- **A hand-run production build points at production unless you say otherwise.** `.env.local` holds
+  the production Supabase URL and anon key, and a build runs at `NODE_ENV=production`, where Next
+  loads `.env.production.local` and `.env.local` but never `.env.test.local` at all — so a bare
+  `npm run build && npm run start` bakes production's public keys into the bundle — the page you
+  eyeball on localhost is then talking to the real project. `playwright.config.ts` scopes the env of
+  the server _it_ spawns, so `npx playwright test` is safe; nothing guards a build you run by hand.
+  Prefix both commands with `npx dotenv -e .env.test.local --` when building to look at something.
 - Never edit a migration after it has been applied — it changes the checksum and drifts the database.
   Create a new migration instead.
 
@@ -66,4 +73,4 @@ design; a gate can't pass; anything security- or data-loss-shaped appears.
 
 ---
 
-_Last reviewed: 2026-07-14_
+_Last reviewed: 2026-07-26_

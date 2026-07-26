@@ -60,11 +60,14 @@ before a state ever reaches a client (trivia hides each player's own current que
 and everyone's correct answers pre-reveal); and `init` now accepts route-supplied context, fetched at
 the IO edge and awaited in the same mutate seam that gates a match into its next phase, so a pure
 reducer never touches Prisma directly. `poolFor("production")` is no longer empty — trivia is the
-first non-`devOnly` minigame, so production rounds can draw it — but the test pool flipped the other
-way, to devOnly kinds only: E2E's database carries no question content, so a trivia draw in CI would
-either 409 on the new empty-bank guard or need seeding on every run, and the stub still exercises
-every board/match mechanic the suite checks. E2E stays stub-only by that guard, not because trivia is
-unverified in CI.
+first non-`devOnly` minigame, so production rounds can draw it — and the test pool admits every
+registered kind, so nothing is auto-selected and each spec pins its own pool through
+`e2e/support/create.ts`. The board/match specs all pin `stub`, which exercises every board and match
+mechanic the suite checks without a content dependency; `e2e/trivia.spec.ts` pins trivia and seeds
+the bank itself. A round draw that lands on trivia needs that bank populated: `checkContentReady`
+(`round-draw.ts`) 409s a round start closed, before any mutation, if it is empty, so an unseeded
+production deploy blocks starting a round rather than committing one with an unplayable slot —
+`npm run seed:trivia` (OpenTDB) is the fix there, not code.
 
 Milestone 8's first half has landed ahead of the rest of the milestone: `displayName` is now a real,
 `NOT NULL`, required-at-signup, user-editable `Profile` field (existing rows backfilled from the email
@@ -79,16 +82,27 @@ the `trivia/` mockup's braided rope, team-washed walls, projector-scale clock an
 the same match engine, rope physics and scoring the earlier surface used untouched. `PlayFrame` now
 zooms every minigame to full screen, for every slot phase, not just trivia's — the panel loses its
 board-sticker chrome entirely, since a full-bleed surface is in-flow content rather than something
-that floats; `GatePanel`, `CountdownOverlay`, `ScoringScreen` and the stub surface all inherit the
-larger stage and read sparse in it until a later pass designs for the room. `TeamChip` and `ScorePop`
+that floats (DESIGN decision 18, whose accepted cost is under "Known gaps"). `TeamChip` and `ScorePop`
 joined `@jumbo/ui`, closing the last two motion-and-composition rows in `KIT-GAPS.md`; the trivia
-mockup is retired now that its real surface has shipped, leaving only `admin-questions/` for Slice 5.
-One functional change rode along: `redact` gained a per-viewer `lastAnswer` field so the client can
-hold an answer-reveal beat before the next card replaces it — it carries indices only, never answer
-text, and is suppressed on the deck-exhaustion path where the next deal would otherwise be the same
-card just answered. The surface ships with **no E2E coverage**: CI's minigame pool is stub-only by
-the empty-bank guard (see "Known gaps" below), so a round-start run never draws trivia; it's verified
-by unit tests plus a hand check against a seeded dev server instead.
+mockup was retired with it. One functional change rode along: `redact` gained a per-viewer
+`lastAnswer` field so the client can hold an answer-reveal beat before the next card replaces it —
+it carries indices only, never answer text, and is suppressed on the deck-exhaustion path where the
+next deal would otherwise be the same card just answered. The surface shipped with no E2E coverage
+at the time; Slice 5 closed that.
+
+Slice 5 landed the admin question-bank reskin and **closed the mockup-integration program** —
+`admin-questions/` was the last mockup standing, and deleting it leaves `src/app/mockup/` holding
+only the permanent `FakeMatchClient` dev harness and `KIT-GAPS.md`, whose every row is now either a
+shipped member or a recorded decision not to build one. Four kit changes carried the surface:
+`Textarea` and `SkeletonRows` joined `@jumbo/ui`, the kit `Select` gained a form-register
+`size="field"` face, and `ConfirmDialog` gained a retryable `error` state so the delete dialog could
+adopt it without losing its failure path. The pagination footer stayed page composition rather than
+becoming a member, on the Slice 3 host-dock precedent — one consumer composes locally, a second one
+promotes. One functional change rode along against the slice's no-functional-change rule, approved
+before it was built: the bank filters by difficulty server-side (DESIGN decision 19). Trivia also
+got its first end-to-end coverage here — `e2e/trivia.spec.ts` deals a card and asserts a correct
+answer scores, made possible by widening the test pool to admit every registered kind so a spec can
+pin trivia (both described under Milestone 5 above).
 
 Milestone 9 is done, closing Slice 3 of the mockup-integration program: the lobby and the projector
 board collapsed into one tabbed game page present at every phase, board/match reads opened to any
@@ -139,17 +153,32 @@ what the suite builds — so it is verified by hand against a dev server.
   `document.body`, outside it. A wipe fired while one is open leaves it focusable/clickable under the
   opaque panel, and the modal's own outside-hiding can silence the wipe's still-loading cue for screen
   readers. Must be solved before any navigation inside a modal opts into the wipe.
-- **Production's only minigame depends on admin-authored content.** `poolFor("production")` is
-  `["trivia"]` now that a non-`devOnly` minigame has landed, but a round draw that lands on trivia
-  still needs the question bank populated: `checkContentReady` (`round-draw.ts`) 409s a round start
-  closed, before any mutation, if the bank is empty, so an unseeded production deploy blocks starting
-  a round rather than committing one with an unplayable slot. `npm run seed:trivia` (OpenTDB) is the
-  fix, not code. E2E doesn't exercise this path — `JUMBO_TEST_MINIGAME_POOL`, set only in
-  `playwright.config.ts`, flips the eligible pool to test mode, which admits only `devOnly` kinds, so
-  the spawned E2E server keeps drawing the deterministic `stub` game instead of trivia. Round start,
-  board auto-pull, spectate entry, byes, and the live-match `beforeunload` guard are all covered
-  against `stub` (see `e2e/round-start.spec.ts`); trivia's own play surface is covered by unit tests
-  and the admin question-bank CRUD spec, not by a round-start E2E run.
+- **Trivia surface follow-ups the reskin didn't take.** On the deck-exhaustion collision path
+  `lastAnswer` is suppressed, so the answered card's choices never light up correct/wrong — the
+  score still pops (both are keyed on the score movement, not on the reveal), but the player is told
+  what they scored without being shown what the answer was. `TriviaView`
+  carries `lastResult` per viewer and the client never reads it — dead payload either way it goes.
+  `WinGlow` renders inside the surface's `overflow-y-auto` container, so it scrolls with the content
+  it is supposed to wash. `decayRope` runs during render off a client clock, which can differ from
+  the server-rendered value and warn on hydration.
+- **The full-viewport minigame stage is sparse.** `GatePanel`, `CountdownOverlay`, `ScoringScreen`
+  and the stub surface all inherit the full-bleed stage from DESIGN decision 18 without being
+  designed for it — an accepted cost recorded there, still waiting on a pass that designs for the
+  room.
+- **`TeamChip`'s `colorIndex` is unbounded.** Nothing clamps it to the 15-color palette, so an index
+  past `MAX_TEAMS` renders an undefined custom property (an invisible chip) rather than failing.
+  Trivia's `TICKER_LENGTH` is likewise coupled to the ticker's hand-tuned reserved height by a
+  comment rather than by code — the constant's own docblock says to change both together, which is
+  the honest version of a link that isn't there.
+- **The questions PATCH route can't null a nullable field.** `triviaQuestionUpdateSchema` is
+  `.partial()` and the editor omits the keys it means to clear, so an admin can set a question's
+  difficulty or category but never unset one — the save reports success and the old value stays.
+  The fix is `z.null()` in the update schema plus a client that sends `null` rather than dropping
+  the key. The editor's "no difficulty" option is honest on create and a no-op on edit until then.
+- **CI races two runs against one Supabase project.** The workflow triggers on
+  `on: [push, pull_request]`, so a pushed PR branch runs the whole E2E suite twice, concurrently,
+  against the single shared test project. Cross-run interference is a live source of confusing red
+  builds, and it makes any non-atomic fixture (the trivia bank seed, for one) a first-run race.
 - **A round start's network wait is uncovered.** `BoardRoundStart` awaits the round-start POST before
   opening the wipe, so only the board swap plays covered. Awaiting inside `cover()` would be worse:
   React drops post-await updates out of the transition, so `isPending` — the machine's `committed`

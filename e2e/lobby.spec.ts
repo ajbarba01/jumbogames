@@ -16,6 +16,7 @@
  * theirs, or from the board after the start.
  */
 import { test, expect, type Page } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 import { promoteToAdmin } from "./support/db";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
@@ -51,9 +52,9 @@ test("admin hosts, player joins, teams ready up, and the host starts", async ({
   await host.getByRole("button", { name: "Create a game" }).click();
   await host.waitForURL(/\/create$/);
   await host.getByPlaceholder("Thursday hacknight").fill("E2E Cup");
-  // Under JUMBO_TEST_MINIGAME_POOL the only eligible kind is the stub, so it
-  // is auto-selected; picking is a no-op here but keeps the spec honest if a
-  // second dev-only kind is ever registered.
+  // Under JUMBO_TEST_MINIGAME_POOL every registered kind is eligible and
+  // nothing is auto-selected, so the pool has to be picked explicitly.
+  await pickStubPool(host);
   await host.getByRole("button", { name: "Create game" }).click();
   await host.waitForURL(/\/t\/[^/]+$/);
   // Create-and-host now fires the slam wipe (a game-beat crossing into the

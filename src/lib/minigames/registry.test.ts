@@ -23,9 +23,11 @@ describe("registry", () => {
     expect(poolFor("production")).not.toContain("stub");
   });
 
-  it("includes non-devOnly games everywhere except the deterministic test pool", () => {
+  it("includes non-devOnly games in every environment", () => {
     expect(poolFor("development")).toContain("trivia");
     expect(poolFor("production")).toContain("trivia");
-    expect(poolFor("test")).not.toContain("trivia");
+    // The test pool is a widening: E2E picks its kind in the create form
+    // rather than relying on the pool to narrow the draw for it.
+    expect(poolFor("test")).toContain("trivia");
   });
 });

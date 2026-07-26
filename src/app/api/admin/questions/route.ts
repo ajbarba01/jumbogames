@@ -1,6 +1,6 @@
 /**
  * Route handler: the trivia question bank. GET lists questions with a
- * prompt search and pagination; POST creates a question. Admin/owner only.
+ * prompt search, a difficulty filter, and pagination; POST creates a question. Admin/owner only.
  */
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/profile";
@@ -26,10 +26,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
 
-  const { q, page } = parsed.data;
-  const where = q
-    ? { prompt: { contains: q, mode: "insensitive" as const } }
-    : {};
+  const { q, page, difficulty } = parsed.data;
+  const where = {
+    ...(q ? { prompt: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(difficulty ? { difficulty } : {}),
+  };
 
   const [questions, total] = await Promise.all([
     prisma.triviaQuestion.findMany({

@@ -1,8 +1,8 @@
 /**
  * Question-bank CRUD E2E (graded flow): the allowlisted owner signs in (or
  * signs up on first run) and drives /admin/questions through create, search,
- * edit, and delete; a second test proves a plain player's session is refused
- * by the underlying admin API, not just hidden by the UI.
+ * difficulty filter, edit, and delete; a second test proves a plain player's
+ * session is refused by the underlying admin API, not just hidden by the UI.
  */
 import { test, expect, type Page } from "@playwright/test";
 
@@ -66,8 +66,19 @@ test("admin creates, reads, edits, and deletes a question", async ({
   const row = page.locator("li", { hasText: prompt });
   await expect(row).toBeVisible();
 
+  // Filter (the only end-to-end proof the difficulty param reaches the
+  // database). The created question carries no difficulty, so filtering to a
+  // level must drop it from the list, and clearing the filter brings it back.
+  // The kit's Select is a Base UI trigger, so it is a combobox, not a button.
+  await page.getByRole("combobox", { name: "Filter by difficulty" }).click();
+  await page.getByRole("option", { name: "hard" }).click();
+  await expect(row).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Filter by difficulty" }).click();
+  await page.getByRole("option", { name: "any difficulty" }).click();
+  await expect(row).toBeVisible();
+
   // Update.
-  await row.getByRole("button", { name: "Edit" }).click();
+  await row.getByRole("button", { name: `Edit: ${prompt}` }).click();
   const editDialog = page.getByRole("dialog");
   await expect(
     editDialog.getByRole("heading", { name: "Edit question" }),
@@ -81,7 +92,9 @@ test("admin creates, reads, edits, and deletes a question", async ({
   await expect(editedRow).toBeVisible();
 
   // Delete.
-  await editedRow.getByRole("button", { name: "Delete" }).click();
+  await editedRow
+    .getByRole("button", { name: `Delete: ${editedPrompt}` })
+    .click();
   const deleteDialog = page.getByRole("dialog");
   await expect(
     deleteDialog.getByRole("heading", { name: "Delete question?" }),
@@ -90,7 +103,7 @@ test("admin creates, reads, edits, and deletes a question", async ({
   await expect(deleteDialog).toBeHidden();
 
   await page.getByLabel("Search questions").fill(prompt);
-  await expect(page.getByText("No questions match.")).toBeVisible();
+  await expect(page.getByText(/No questions match/)).toBeVisible();
 });
 
 test("a plain player is refused by the questions API", async ({ page }) => {

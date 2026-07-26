@@ -272,6 +272,15 @@ arrive already solved; a theme is a token-scale swap by design.
     and read sparse in it until a later pass designs for the room — that pass is follow-up work, not
     part of Slice 4.
 
+19. **The admin question bank filters by difficulty server-side.** The list route takes difficulty as
+    an optional enum query param and filters in the query, so paging and the total count describe the
+    filtered set rather than a page the client then thins out — a bank that grows past one page would
+    otherwise show a filter that appears to lose questions. "Any difficulty" is a client-side
+    sentinel: it is the picker's default and is never sent, so an absent param means unfiltered on
+    both sides. Landed in Slice 5 (2026-07-26) as a deliberate, pre-approved exception to that
+    slice's otherwise reskin-only rule — the mockup drew the control, and shipping it as decoration
+    or as a client-side filter would both have been worse than widening the route.
+
 ## Deferred design (grill before building each)
 
 - Per-game specifics: typing passage source, word-game grid size and word validation dictionary,

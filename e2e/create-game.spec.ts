@@ -7,6 +7,7 @@
  * what the API already allows via isGameHost.
  */
 import { test, expect, type Page } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 import { promoteToAdmin } from "./support/db";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
@@ -31,13 +32,12 @@ test("a player creates a game and lands in its lobby with a code", async ({
   await page.getByRole("button", { name: "Create a game" }).click();
   await page.waitForURL(/\/create$/);
 
-  // The pool picker offers only registered, environment-eligible kinds; under
-  // JUMBO_TEST_MINIGAME_POOL that is the stub alone, so it arrives selected.
-  // The stub's registry title is "Button Masher" (see
-  // src/lib/minigames/stub/server.ts), not "Stub" — matched against that.
-  await expect(
-    page.getByRole("button", { name: /Button Masher/i }),
-  ).toHaveAttribute("aria-pressed", "true");
+  // The pool picker offers every registered, environment-eligible kind; under
+  // JUMBO_TEST_MINIGAME_POOL that is all of them, so nothing arrives selected
+  // and the spec picks its own. The stub's registry title is "Button Masher"
+  // (see src/lib/minigames/stub/server.ts), not "Stub" — the helper matches
+  // against that.
+  await pickStubPool(page);
   await expectNoHorizontalOverflow(page, "/create");
 
   await page.getByPlaceholder("Thursday hacknight").fill("Player's Game");
@@ -64,8 +64,11 @@ test("the create form rejects a game with no name", async ({ page }) => {
   await signUp(page, email, "Grace");
 
   await page.goto("/create");
+  // Deliberately no pickStubPool here: submitting the untouched form is the
+  // point, and with nothing auto-selected it now fails on both fields.
   await page.getByRole("button", { name: "Create game" }).click();
   await expect(page.getByText("Required")).toBeVisible();
+  await expect(page.getByText("Pick at least one minigame.")).toBeVisible();
   await expect(page).toHaveURL(/\/create$/);
 });
 
@@ -87,6 +90,7 @@ test("a non-creator admin sees and can use host controls, as a rescue path", asy
   await creator.getByRole("button", { name: "Create a game" }).click();
   await creator.waitForURL(/\/create$/);
   await creator.getByPlaceholder("Thursday hacknight").fill("Rescue Cup");
+  await pickStubPool(creator);
   await creator.getByRole("button", { name: "Create game" }).click();
   await creator.waitForURL(/\/t\/[^/]+$/);
   await expect(creator.getByTestId("slam-wipe")).toHaveCount(0);

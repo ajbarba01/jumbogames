@@ -73,4 +73,20 @@ describe("ConfirmDialog", () => {
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("announces a failed confirmation and keeps the actions live", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="Delete question?"
+        error="Could not delete question."
+        onConfirm={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Could not delete question.",
+    );
+    expect(screen.getByRole("button", { name: "Confirm" })).toBeEnabled();
+  });
 });

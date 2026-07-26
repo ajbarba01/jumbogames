@@ -11,6 +11,7 @@
  * that the E2E server's minigame pool is non-empty (see playwright.config.ts).
  */
 import { test, expect, type Page } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 
 const PASSWORD = "password1234";
 
@@ -28,6 +29,7 @@ async function hostTournament(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Create a game" }).click();
   await page.waitForURL(/\/create$/);
   await page.getByPlaceholder("Thursday hacknight").fill(name);
+  await pickStubPool(page);
   await page.getByRole("button", { name: "Create game" }).click();
   await page.waitForURL(/\/t\/[^/]+$/);
   // The destination subtree is inert while covered and `.fill()` no-ops

@@ -9,6 +9,7 @@
  * left genuinely interactive, not just painted.
  */
 import { test, expect } from "@playwright/test";
+import { pickStubPool } from "./support/create";
 
 test("a wipe-covered nav into the tournament surface plays, clears, and leaves the destination interactive", async ({
   page,
@@ -27,6 +28,7 @@ test("a wipe-covered nav into the tournament surface plays, clears, and leaves t
   await page.getByRole("button", { name: "Create a game" }).click();
   await page.waitForURL(/\/create$/);
   await page.getByPlaceholder("Thursday hacknight").fill("Wipe E2E Cup");
+  await pickStubPool(page);
 
   // 1. Submitting the create form fires a real useWipeNav() adopter, crossing
   // into the tournament surface. The panel stays attached from navStart

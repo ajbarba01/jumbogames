@@ -3,7 +3,8 @@
  * scripted bot opponents — the /mockup event source. Swapping this class for
  * the Realtime-backed client is the entire backend integration seam.
  */
-import { MINIGAMES, poolFor } from "@/lib/minigames/registry";
+import { MINIGAMES } from "@/lib/minigames/registry";
+import type { MinigameKind } from "@/lib/minigames/types";
 import type { MatchClient, MatchView, ViewerRole } from "./client";
 import { derivePhase } from "./derive";
 import { applyMatchEvent, createMatch } from "./lifecycle";
@@ -11,6 +12,13 @@ import { drawRoundGames } from "./round-draw";
 import type { MatchEvent, MatchState } from "./types";
 
 const TICK_MS = 150;
+// The mock plays only dev-only games; real games need server content it has
+// no way to fetch. This used to lean on poolFor("test"), which no longer says
+// that — the test pool now admits every kind so E2E can draw trivia — so the
+// mock states its own requirement directly.
+const MOCK_POOL = (Object.keys(MINIGAMES) as MinigameKind[]).filter(
+  (kind) => MINIGAMES[kind].devOnly,
+);
 const BOT_READY_STAGGER_MS = 400;
 const BOT_NAMES = [
   "Ada",
@@ -68,8 +76,7 @@ export class FakeMatchClient implements MatchClient {
         colorIndex: 2,
         members: membersB,
       },
-      // The mock plays only dev-only games; real games need server content.
-      kinds: drawRoundGames(poolFor("test"), config.k, "mock-round"),
+      kinds: drawRoundGames(MOCK_POOL, config.k, "mock-round"),
     });
     this.view = this.buildView();
     this.timer = setInterval(() => this.tick(), TICK_MS);

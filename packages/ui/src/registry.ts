@@ -4,6 +4,7 @@ import { buttonIntent } from "./actions/Button.intent";
 import { copyCodeIntent } from "./actions/CopyCode.intent";
 import { brandMarkIntent } from "./brand/BrandMark.intent";
 import { cardIntent } from "./surface/Card.intent";
+import { skeletonRowsIntent } from "./surface/SkeletonRows.intent";
 import { teamChipIntent } from "./surface/TeamChip.intent";
 import { scorePopIntent } from "./surface/ScorePop.intent";
 import type { ComponentIntent } from "./lib/intent";
@@ -36,6 +37,7 @@ import { fieldIntent } from "./inputs/Field.intent";
 import { optionCardIntent } from "./inputs/OptionCard.intent";
 import { selectIntent } from "./inputs/Select.intent";
 import { stepSliderIntent } from "./inputs/StepSlider.intent";
+import { textareaIntent } from "./inputs/Textarea.intent";
 import { textFieldIntent } from "./inputs/TextField.intent";
 import { toggleIntent } from "./inputs/Toggle.intent";
 import { zoomIntent } from "./zoom.intent";
@@ -59,6 +61,7 @@ export const allIntents: ComponentIntent[] = [
   selectIntent,
   toggleIntent,
   textFieldIntent,
+  textareaIntent,
   codeInputIntent,
   stepSliderIntent,
   modalShellIntent,
@@ -74,4 +77,5 @@ export const allIntents: ComponentIntent[] = [
   statusLineIntent,
   teamChipIntent,
   scorePopIntent,
+  skeletonRowsIntent,
 ];

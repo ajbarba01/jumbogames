@@ -159,10 +159,10 @@ A sticker card that toggles on press, for picking several options out of a small
 
 Pick one value from a flat list: an accent sticker chip that grows a positioned paper option popup.
 
-- **Use it when:** Settings rows and toolbars choosing one of a few named values (theme, density).
+- **Use it when:** Settings rows and toolbars choosing one of a few named values (theme, density). Beside an inline field in a form row, where the control must hold a constant footprint.
 - **Don't use it when:** Rich option rows with glyphs or descriptions — PopoverCard + MenuItem. Two states — Toggle. Free text — a text input.
-- **Anatomy:** Controlled Base UI Select (Root/Trigger/Value/Portal/Positioner/Popup/Item); the popup wears menuSurface below the trigger; the selected item carries the trailing check.
-- **Variants & states:** closed, open (trigger holds the pressed face), item hover/highlighted (accent sweep), item selected (tint + check), focus-visible (global accent ring)
+- **Anatomy:** Controlled Base UI Select (Root/Trigger/Value/Portal/Positioner/Popup/Item); the popup wears menuSurface below the trigger; the selected item carries the trailing check. The field variant takes its width from the caller's className — it declares none of its own.
+- **Variants & states:** chip (default) · field · open · selected (tint + check) · disabled, item hover/highlighted (accent sweep), focus-visible (global accent ring)
 - **Accessibility:** Base UI combobox/listbox semantics with typeahead and keyboard selection; Escape runs through the kit dismiss-layer stack; selection mirrored by aria-selected.
 - **Related:** PopoverCard, MenuItem, Toggle
 
@@ -176,6 +176,17 @@ A discrete slider over a small ordered set of named levels, with a boxy thumb an
 - **Variants & states:** per-stop positions, drag/click (Base UI pointer mechanics), keyboard arrows/Home/End (native range input), focus-visible (global accent ring)
 - **Accessibility:** A native range input carries the slider semantics; aria-valuetext speaks the stop name, not the index.
 - **Related:** Toggle, Select
+
+### Textarea
+
+Multi-line free-text entry: TextField's paper face over several rows.
+
+- **Use it when:** Prose that routinely outgrows one line — a trivia prompt, a description. A field whose content the author needs to read back in full while editing.
+- **Don't use it when:** One-line values (use TextField). A fixed-length code entry (use CodeInput).
+- **Anatomy:** A paper-sticker textarea with the register's entry padding, vertical-only resize, and the caller's own row count.
+- **Variants & states:** default · hover · focus-visible · invalid · disabled
+- **Accessibility:** No label of its own — the caller supplies aria-label or wraps it in Field and names the control; focus draws the global accent ring.
+- **Related:** TextField, Field, CodeInput
 
 ### TextField
 
@@ -243,8 +254,8 @@ A titled modal that gates a consequential action behind an explicit confirm.
 - **Use it when:** An action is destructive or hard to reverse (end a tournament, remove a team). A single stray click should not trigger the outcome.
 - **Don't use it when:** The action is cheap and reversible (just do it, offer undo instead). A rich, multi-field flow is needed (compose ModalShell directly).
 - **Anatomy:** ModalShell wrapping a display title, an optional description line, and a cancel/confirm button pair; cancel is first so the focus trap lands there.
-- **Variants & states:** default · busy (both actions disabled while the request runs) · closed (renders nothing)
-- **Accessibility:** Inherits ModalShell's labelled dialog, focus trap, and Escape/scrim dismissal (which cancel); weight is in the copy, not color, per the status-vocabulary law.
+- **Variants & states:** default · busy (both actions disabled while the request runs) · error (confirmation failed; buttons stay enabled for retry) · closed (renders nothing)
+- **Accessibility:** Inherits ModalShell's labelled dialog, focus trap, and Escape/scrim dismissal (which cancel); weight is in the copy, not color, per the status-vocabulary law. A failed confirmation is announced through a live region (role=status) rather than signalled by color alone.
 - **Related:** ModalShell, Button
 
 ### MenuCard
@@ -360,6 +371,17 @@ The springy ±N annotation that fires once as a point lands on a game surface.
 - **Variants & states:** gain (done hue, tilts right) · loss (critical hue, tilts left), idle (renders nothing until the first beat)
 - **Accessibility:** Decorative and aria-hidden — the value it annotates is already on screen as live text, so announcing the pop would double-report it. Collapses to no motion under an ancestor MotionConfig reducedMotion='user', which every game surface mounts.
 - **Related:** StatusLine, TeamChip
+
+### SkeletonRows
+
+Holds a list's shape while its rows load, instead of a spinner in a collapsed container.
+
+- **Use it when:** A paginated or fixed-height list is fetching its first page. The loading container would otherwise resize when the data lands.
+- **Don't use it when:** The wait is for one value or an action's result (use Spinner). The list is already populated and is only refreshing in place.
+- **Anatomy:** A divided list of rows, each a wide title bar over a short meta bar, pulsing together.
+- **Variants & states:** default (pulsing) · reduced motion (static)
+- **Accessibility:** aria-hidden — purely decorative; the arriving content is what assistive tech reads.
+- **Related:** Spinner, Card
 
 ### TeamChip
 

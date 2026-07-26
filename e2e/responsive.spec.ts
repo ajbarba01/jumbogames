@@ -2,9 +2,11 @@
  * Floor-width sweep E2E: every non-game route renders at 375px without the
  * page scrolling sideways (docs/UI.md, fluid law). Players join by phone at a
  * hacknight, so the join path in particular has to hold. The game surfaces
- * (lobby, round board, match) are guarded inside the specs that already build
- * a started tournament, since the setup is theirs; the dev-only `/showcase`
- * cannot be guarded here at all (see the note at the foot of this file).
+ * (lobby, board with the host dock, team picker and team room, match) are
+ * guarded inside the specs that already build a game in the right phase, since
+ * the setup is theirs — lobby.spec, round-start.spec and team-room.spec; the
+ * dev-only `/showcase` cannot be guarded here at all (see the note at the foot
+ * of this file).
  */
 import { test, expect, type Page } from "@playwright/test";
 import { expectNoHorizontalOverflow } from "./support/viewport";

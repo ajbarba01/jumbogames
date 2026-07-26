@@ -104,8 +104,11 @@ test("a non-creator admin sees and can use host controls, as a rescue path", asy
   await promoteToAdmin(adminEmail);
   await admin.goto(tournamentUrl);
 
+  // Host controls now live in the floating dock rather than a headed card, so
+  // the dock's own lobby control is what proves the rescue path is open to
+  // them; the per-team Remove below is the one they actually exercise.
   await expect(
-    admin.getByRole("heading", { name: "Host controls" }),
+    admin.getByRole("button", { name: "Start anyway" }),
   ).toBeVisible();
   const removeButton = admin.getByRole("button", { name: "Remove" });
   await expect(removeButton).toBeVisible();

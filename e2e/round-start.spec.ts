@@ -109,11 +109,9 @@ test("board auto-pull carries players into their match while the host stays on t
   await createAndReadyTeam(bravo, "Bravo");
 
   await expect(host.getByText("Bravo")).toBeVisible();
-  const startTournament = host.getByRole("button", {
-    name: "Start tournament",
-  });
-  await expect(startTournament).toBeEnabled();
-  await startTournament.click();
+  const startGame = host.getByRole("button", { name: "Start game" });
+  await expect(startGame).toBeEnabled();
+  await startGame.click();
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   const startRound = host.getByRole("button", { name: "Start round 1" });
@@ -171,11 +169,9 @@ test("the host sees a spectate link into a live match and it opens the match", a
   await createAndReadyTeam(bravo, "Bravo");
 
   await expect(host.getByText("Bravo")).toBeVisible();
-  const startTournament = host.getByRole("button", {
-    name: "Start tournament",
-  });
-  await expect(startTournament).toBeEnabled();
-  await startTournament.click();
+  const startGame = host.getByRole("button", { name: "Start game" });
+  await expect(startGame).toBeEnabled();
+  await startGame.click();
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   await host.getByRole("button", { name: "Start round 1" }).click();
@@ -244,11 +240,9 @@ test("a sitting-out team's player sees the board's bye card", async ({
   await createAndReadyTeam(charlie, "Charlie");
 
   await expect(host.getByText("Charlie")).toBeVisible();
-  const startTournament = host.getByRole("button", {
-    name: "Start tournament",
-  });
-  await expect(startTournament).toBeEnabled();
-  await startTournament.click();
+  const startGame = host.getByRole("button", { name: "Start game" });
+  await expect(startGame).toBeEnabled();
+  await startGame.click();
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   await host.getByRole("button", { name: "Start round 1" }).click();
@@ -354,11 +348,9 @@ test("starting the next round force-yields players off their finished match's en
   await createAndReadyTeam(delta, "Delta");
 
   await expect(host.getByText("Delta")).toBeVisible();
-  const startTournament = host.getByRole("button", {
-    name: "Start tournament",
-  });
-  await expect(startTournament).toBeEnabled();
-  await startTournament.click();
+  const startGame = host.getByRole("button", { name: "Start game" });
+  await expect(startGame).toBeEnabled();
+  await startGame.click();
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
 
   await host.getByRole("button", { name: "Start round 1" }).click();

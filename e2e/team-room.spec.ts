@@ -25,12 +25,12 @@
  * responsive.spec, which sweeps non-game routes only: the started game these
  * tests build is what those surfaces need, and it is built here.
  */
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { type Locator, type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
 import { matchCountForTeam, teamIdByName } from "./support/db";
+import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
-const PASSWORD = "password1234";
 const CODE_LENGTH = 6;
 const LOCK_MESSAGE = "In a match — opens after this round";
 
@@ -38,16 +38,6 @@ const LOCK_MESSAGE = "In a match — opens after this round";
 // only ever rendered on a mounted match container — a match-page-only signal
 // rather than an invented test id (same rationale as round-start.spec).
 const MATCH_SLOT_CARD = { name: /Button Masher/ };
-
-async function signUp(page: Page, email: string, name: string): Promise<void> {
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill(name);
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
 
 async function hostGame(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Create a game" }).click();
@@ -81,7 +71,9 @@ async function joinByCode(page: Page, code: string): Promise<void> {
     .first()
     .click();
   await page.keyboard.type(code);
-  await page.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await page.getByRole("button", { name: "Join", exact: true }).click();
   await page.waitForURL(/\/t\/[^/]+/);
   await expect(page.getByTestId("slam-wipe")).toHaveCount(0);
 }
@@ -151,31 +143,23 @@ async function reloadUntil(
 }
 
 test("a player joins, leaves and is kicked between rounds", async ({
-  browser,
+  signedIn,
 }) => {
-  // Three signups and a full lobby setup already sit near the default budget,
-  // and three passive-client retry loops need room that is genuinely their own
-  // rather than whatever the per-test timeout has left.
+  // Three browser contexts and a full lobby setup already sit near the default
+  // budget, and three passive-client retry loops need room that is genuinely
+  // their own rather than whatever the per-test timeout has left.
   test.setTimeout(150_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-roster-host+${stamp}@test.example.com`;
-  const leaderEmail = `e2e-roster-leader+${stamp}@test.example.com`;
-  const joinerEmail = `e2e-roster-joiner+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("host");
+  const { page: leader } = await signedIn("p1");
+  // The joiner is the persona named Nora — the kick controls below address
+  // them by that display name.
+  const { page: joiner } = await signedIn("p3");
 
-  const hostContext = await browser.newContext();
-  const leaderContext = await browser.newContext();
-  const joinerContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const leader = await leaderContext.newPage();
-  const joiner = await joinerContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
   const code = await hostGame(host, "Roster Cup");
   const gameId = gameIdOf(host);
   await createAndReadyTeam(host, "Alpha");
 
-  await signUp(leader, leaderEmail, "Grace");
   await joinByCode(leader, code);
   await createAndReadyTeam(leader, "Bravo");
 
@@ -189,7 +173,6 @@ test("a player joins, leaves and is kicked between rounds", async ({
 
   // The joiner arrives by BARE link, so they hold no code and the picker must
   // ask for it inline rather than joining on the first tap.
-  await signUp(joiner, joinerEmail, "Nora");
   await joiner.goto(`/t/${gameId}`);
   await joiner.getByRole("tab", { name: "Join a team" }).click();
 
@@ -255,33 +238,21 @@ test("a player joins, leaves and is kicked between rounds", async ({
       timeout: 2_000,
     });
   });
-
-  await hostContext.close();
-  await leaderContext.close();
-  await joinerContext.close();
 });
 
 test("the last member leaving after the start forfeits the team without deleting its matches", async ({
-  browser,
+  signedIn,
 }) => {
   test.setTimeout(120_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-forfeit-host+${stamp}@test.example.com`;
-  const soloEmail = `e2e-forfeit-solo+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("host");
+  const { page: solo } = await signedIn("p1");
 
-  const hostContext = await browser.newContext();
-  const soloContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const solo = await soloContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
   const code = await hostGame(host, "Forfeit Cup");
   const gameId = gameIdOf(host);
   await createAndReadyTeam(host, "Alpha");
 
   // Bravo has exactly one member — the branch a two-member team never reaches.
-  await signUp(solo, soloEmail, "Grace");
   await joinByCode(solo, code);
   await createAndReadyTeam(solo, "Bravo");
 
@@ -322,31 +293,20 @@ test("the last member leaving after the start forfeits the team without deleting
   // Cascade, so a team wrongly deleted here takes its scheduled matches with
   // it and raises nothing at all.
   expect(await matchCountForTeam(bravoId)).toBeGreaterThan(0);
-
-  await hostContext.close();
-  await soloContext.close();
 });
 
 test("the last member leaving before the start deletes the team", async ({
-  browser,
+  signedIn,
 }) => {
   test.setTimeout(120_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-empty-host+${stamp}@test.example.com`;
-  const soloEmail = `e2e-empty-solo+${stamp}@test.example.com`;
-
-  const hostContext = await browser.newContext();
-  const soloContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const solo = await soloContext.newPage();
+  const { page: host } = await signedIn("host");
+  const { page: solo } = await signedIn("p1");
 
   // The host makes no team of their own, so they stay on the picker and can
   // actually see another team come and go.
-  await signUp(host, hostEmail, "Ada");
   const code = await hostGame(host, "Empty Team Cup");
 
-  await signUp(solo, soloEmail, "Grace");
   await joinByCode(solo, code);
   await solo.getByPlaceholder("Team name").fill("Bravo");
   await solo.getByRole("button", { name: "Create team" }).click();
@@ -372,42 +332,26 @@ test("the last member leaving before the start deletes the team", async ({
     ).toBeVisible({ timeout: 2_000 });
     await expect(host.getByText("Bravo")).toHaveCount(0);
   });
-
-  await hostContext.close();
-  await soloContext.close();
 });
 
 test("a team in a live match is closed to roster changes", async ({
-  browser,
+  signedIn,
 }) => {
   test.setTimeout(150_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-lock-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-lock-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-lock-p2+${stamp}@test.example.com`;
-  const joinerEmail = `e2e-lock-joiner+${stamp}@test.example.com`;
-
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const joinerContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-  const joiner = await joinerContext.newPage();
+  const { page: host } = await signedIn("host");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+  const { page: joiner } = await signedIn("p3");
 
   // The host joins no team, so starting the round leaves them on the board
   // with the dock instead of pulling them into a match.
-  await signUp(host, hostEmail, "Ada");
   const code = await hostGame(host, "Lock Cup");
   const gameId = gameIdOf(host);
 
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
@@ -423,7 +367,6 @@ test("a team in a live match is closed to roster changes", async ({
 
   // The joiner holds the code (they joined the game with it) and is on no
   // team, so nothing but the lock itself stands between them and a roster.
-  await signUp(joiner, joinerEmail, "Nora");
   await joinByCode(joiner, code);
   await joiner.getByRole("tab", { name: "Join a team" }).click();
 
@@ -446,51 +389,30 @@ test("a team in a live match is closed to roster changes", async ({
     { data: { code } },
   );
   expect(refused.status()).toBe(409);
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
-  await joinerContext.close();
 });
 
 test("a signed-in stranger spectates by link, then joins with the code", async ({
-  browser,
+  signedIn,
 }) => {
   test.setTimeout(180_000);
 
-  const stamp = Date.now();
-  const hostEmail = `e2e-spec-host+${stamp}@test.example.com`;
-  const alphaEmail = `e2e-spec-p1+${stamp}@test.example.com`;
-  const bravoEmail = `e2e-spec-p2+${stamp}@test.example.com`;
-  const charlieEmail = `e2e-spec-p3+${stamp}@test.example.com`;
-  const strangerEmail = `e2e-spec-stranger+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("host");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+  const { page: charlie } = await signedIn("p3");
+  const { page: stranger } = await signedIn("p4");
 
-  const hostContext = await browser.newContext();
-  const alphaContext = await browser.newContext();
-  const bravoContext = await browser.newContext();
-  const charlieContext = await browser.newContext();
-  const strangerContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const alpha = await alphaContext.newPage();
-  const bravo = await bravoContext.newPage();
-  const charlie = await charlieContext.newPage();
-  const stranger = await strangerContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
   const code = await hostGame(host, "Spectator Cup");
   const gameId = gameIdOf(host);
 
   // Three teams so round 1 schedules one match and one bye: the bye team is
   // the roster the stranger can still join while a match is live.
-  await signUp(alpha, alphaEmail, "Grace");
   await joinByCode(alpha, code);
   await createAndReadyTeam(alpha, "Alpha");
 
-  await signUp(bravo, bravoEmail, "Ivy");
   await joinByCode(bravo, code);
   await createAndReadyTeam(bravo, "Bravo");
 
-  await signUp(charlie, charlieEmail, "Mia");
   await joinByCode(charlie, code);
   await createAndReadyTeam(charlie, "Charlie");
 
@@ -503,9 +425,8 @@ test("a signed-in stranger spectates by link, then joins with the code", async (
   await host.getByRole("button", { name: "Start round 1" }).click();
   await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
 
-  // A fresh account that has never touched this game opens the bare link.
-  // Before this slice the same request returned 404.
-  await signUp(stranger, strangerEmail, "Nora");
+  // An account that has never touched this game opens the bare link. Before
+  // this slice the same request returned 404.
   const response = await stranger.goto(`/t/${gameId}`);
   expect(response?.status()).toBe(200);
   await expect(
@@ -563,10 +484,4 @@ test("a signed-in stranger spectates by link, then joins with the code", async (
   await clearCodeInCard(stranger, openCard);
   await submitCodeInCard(stranger, openCard, code);
   await expect(stranger.getByRole("tab", { name: "My team" })).toBeVisible();
-
-  await hostContext.close();
-  await alphaContext.close();
-  await bravoContext.close();
-  await charlieContext.close();
-  await strangerContext.close();
 });

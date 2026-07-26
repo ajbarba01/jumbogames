@@ -19,6 +19,15 @@ loadEnv({ path: ".env.test.local" });
 
 const E2E_PORT = 3100;
 
+/**
+ * Personas are provisioned per worker (see e2e/support/personas.ts), so every
+ * extra worker is another set of sign-ins against a test project that accepts
+ * thirty auth requests per five minutes per IP. Left to the default (half the
+ * machine's cores — eleven on the development machine) a cold run would spend
+ * the whole window on setup. CI runs one worker and pays six.
+ */
+const LOCAL_WORKERS = 4;
+
 // Only these test-project variables are forwarded to the spawned server, so
 // it can only ever run against the test Supabase project, never production.
 const webServerEnv: Record<string, string> = {};
@@ -44,7 +53,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : LOCAL_WORKERS,
   reporter: "html",
   // Most assertions here wait on state that propagates across separate browser
   // contexts over Supabase Realtime (a team readying up, a round starting, a

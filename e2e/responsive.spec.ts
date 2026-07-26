@@ -8,45 +8,8 @@
  * dev-only `/showcase` cannot be guarded here at all (see the note at the foot
  * of this file).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
-
-const PASSWORD = "password1234";
-const OWNER_EMAIL = "owner@test.example.com";
-
-async function signUp(page: Page, email: string): Promise<void> {
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill("Ada Lovelace");
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
-
-// Mirrors question-crud.spec: the allowlisted owner signs in, or signs up on
-// the first run against a fresh test project.
-async function signInAsOwner(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByPlaceholder("Email").fill(OWNER_EMAIL);
-  await page.getByPlaceholder("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Log in" }).click();
-
-  const signedIn = page.getByText(`Signed in as ${OWNER_EMAIL}`);
-  const loginError = page.getByText("Invalid email or password.");
-  await expect(signedIn.or(loginError)).toBeVisible();
-
-  if (await loginError.isVisible().catch(() => false)) {
-    await page.goto("/signup");
-    await page.getByPlaceholder("Email").fill(OWNER_EMAIL);
-    await page.getByPlaceholder("Display name").fill("Owner");
-    await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-    await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-    await page.getByRole("button", { name: "Sign up" }).click();
-  }
-
-  await expect(signedIn).toBeVisible();
-}
 
 test("auth surfaces fit the floor width", async ({ page }) => {
   await page.goto("/login");
@@ -59,12 +22,11 @@ test("auth surfaces fit the floor width", async ({ page }) => {
 });
 
 test("home fits the floor width, with a code entered and an error showing", async ({
-  page,
+  signedIn,
 }) => {
-  // A long address is the worst case for the identity card: it has no break
+  // The identity card renders the signed-in address, which has no break
   // opportunity and once pushed the card past the viewport on its own.
-  const email = `e2e-floor-home+${Date.now()}@test.example.com`;
-  await signUp(page, email);
+  const { page } = await signedIn("p2");
   await expectNoHorizontalOverflow(page, "/ (home, empty code)");
 
   // The filled and rejected states are what a player actually sees while
@@ -77,13 +39,15 @@ test("home fits the floor width, with a code entered and an error showing", asyn
   await page.keyboard.type("ZZZZZZ");
   await expectNoHorizontalOverflow(page, "/ (home, code filled)");
 
-  await page.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await page.getByRole("button", { name: "Join", exact: true }).click();
   await expect(page.getByText("No tournament with that code")).toBeVisible();
   await expectNoHorizontalOverflow(page, "/ (home, rejected code)");
 });
 
-test("host and admin surfaces fit the floor width", async ({ page }) => {
-  await signInAsOwner(page);
+test("host and admin surfaces fit the floor width", async ({ signedIn }) => {
+  const { page } = await signedIn("owner");
   await expectNoHorizontalOverflow(page, "/ (home, owner)");
 
   // The owner's three peer links must hold one line once the card reaches its

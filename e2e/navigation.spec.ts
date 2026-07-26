@@ -10,20 +10,9 @@
  * Match entry's own wipe is covered separately, in round-start.spec.ts, now
  * that the E2E server's minigame pool is non-empty (see playwright.config.ts).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
-
-const PASSWORD = "password1234";
-
-async function signUp(page: Page, email: string, name: string): Promise<void> {
-  await page.goto("/signup");
-  await page.getByPlaceholder("Email").fill(email);
-  await page.getByPlaceholder("Display name").fill(name);
-  await page.getByPlaceholder("Password (8+ characters)").fill(PASSWORD);
-  await page.getByPlaceholder("Confirm password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await expect(page.getByText(`Signed in as ${email}`)).toBeVisible();
-}
+import { test, expect } from "./support/personas";
 
 async function hostTournament(page: Page, name: string): Promise<string> {
   await page.getByRole("button", { name: "Create a game" }).click();
@@ -49,27 +38,21 @@ async function joinByCode(page: Page, code: string): Promise<void> {
     .first()
     .click();
   await page.keyboard.type(code);
-  await page.getByRole("button", { name: "Join" }).click();
+  // Exact: home also carries a "Rejoin <game>" button whenever the account is
+  // already in a live game, and personas usually are.
+  await page.getByRole("button", { name: "Join", exact: true }).click();
   await page.waitForURL(/\/t\/[^/]+$/);
   await expect(page.getByTestId("slam-wipe")).toHaveCount(0);
 }
 
 test("a lobby restored by browser back shows a team created while it was away", async ({
-  browser,
+  signedIn,
 }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-back-host+${stamp}@test.example.com`;
-  const playerEmail = `e2e-back-player+${stamp}@test.example.com`;
+  const { page: host } = await signedIn("host");
+  const { page: player } = await signedIn("p1");
 
-  const hostContext = await browser.newContext();
-  const playerContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const player = await playerContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
   const code = await hostTournament(host, "Back Nav Cup");
 
-  await signUp(player, playerEmail, "Grace");
   await joinByCode(player, code);
   await expect(player.getByPlaceholder("Team name")).toBeVisible();
 
@@ -79,7 +62,11 @@ test("a lobby restored by browser back shows a team created while it was away", 
   // in-app link is a client-side navigation, so the return trip is a client
   // router cache restore rather than a fresh document fetch.
   await host.getByRole("link", { name: "← Home" }).click();
-  await expect(host.getByRole("button", { name: "Rejoin" })).toBeVisible();
+  // Named rather than bare "Rejoin": the account carries games from earlier
+  // specs, so only this game's own rejoin proves the host actually left.
+  await expect(
+    host.getByRole("button", { name: "Rejoin Back Nav Cup" }),
+  ).toBeVisible();
 
   await player.getByPlaceholder("Team name").fill("Bravo");
   await player.getByRole("button", { name: "Create team" }).click();
@@ -91,22 +78,12 @@ test("a lobby restored by browser back shows a team created while it was away", 
   await host.goBack();
   await host.waitForURL(/\/t\/[^/]+$/);
   await expect(host.getByText("Bravo")).toBeVisible();
-
-  await hostContext.close();
-  await playerContext.close();
 });
 
-test("the host round-start beat plays the wipe", async ({ browser }) => {
-  const stamp = Date.now();
-  const hostEmail = `e2e-beat-host+${stamp}@test.example.com`;
-  const playerEmail = `e2e-beat-player+${stamp}@test.example.com`;
+test("the host round-start beat plays the wipe", async ({ signedIn }) => {
+  const { page: host } = await signedIn("host");
+  const { page: player } = await signedIn("p1");
 
-  const hostContext = await browser.newContext();
-  const playerContext = await browser.newContext();
-  const host = await hostContext.newPage();
-  const player = await playerContext.newPage();
-
-  await signUp(host, hostEmail, "Ada");
   const code = await hostTournament(host, "Beat Wipe Cup");
 
   await host.getByPlaceholder("Team name").fill("Alpha");
@@ -114,7 +91,6 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   await expect(host.getByText("Alpha")).toBeVisible();
   await host.getByRole("button", { name: "Ready up" }).click();
 
-  await signUp(player, playerEmail, "Grace");
   await joinByCode(player, code);
   await player.getByPlaceholder("Team name").fill("Bravo");
   await player.getByRole("button", { name: "Create team" }).click();
@@ -151,7 +127,4 @@ test("the host round-start beat plays the wipe", async ({ browser }) => {
   await expect(
     host.getByRole("button", { name: /Button Masher/ }),
   ).toBeVisible();
-
-  await hostContext.close();
-  await playerContext.close();
 });

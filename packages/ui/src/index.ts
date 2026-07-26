@@ -24,6 +24,7 @@ export {
   POP_TILT,
   SLIP_DUR,
   SLIP_EASE,
+  SLIP_EASE_OUT,
   SLIP_SHAKE,
   WIPE_DUR,
   WIPE_EASE,

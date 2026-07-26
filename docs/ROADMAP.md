@@ -104,6 +104,31 @@ got its first end-to-end coverage here — `e2e/trivia.spec.ts` deals a card and
 answer scores, made possible by widening the test pool to admit every registered kind so a spec can
 pin trivia (both described under Milestone 5 above).
 
+A short UI touch-up branch followed the mockup program's close. The background doodle layer now
+**boils** — twelve authored paths, each cycling seeded redraws of itself in pure CSS (no JS timer
+behind the app for decoration), staggered so the field never ticks in lockstep, coloured from the
+15-hue team palette, and pinned to the authored frame under reduced motion. The seeding is
+deterministic precisely because the layer renders on both server and client. It is tuned on a new
+permanent Background section of `/showcase` that drives the same `DoodleField` the app mounts, so the
+tuned result is the shipped one; `--color-s1` darkened one step under it, which is the last step the
+scale's even-ramp rule allows (DESIGN decision 20). Three contained fixes rode along: home's account
+links were shortened to hold one line at the card's full width — guarded in `responsive.spec` by a
+shared-baseline assertion, since a wrap inside a card is invisible to the overflow guard, and the
+guard runs at a desktop width because at the 375px floor those three links wrap by design; the rejoin
+control became a named, full-width accent-2 action above the join hero, with `Join` and `Create a
+game` squared to one width, which added a `second` variant to the kit `Button` rather than letting a
+page style itself; and the minigame zoom lost its elastic edges — `SLIP_EASE_OUT` joined the kit as
+the JS twin of the `--ease-slip` token, and the shared-element layout animation takes it, because a
+rect whose target is the viewport edge has nothing to settle into past full screen. That last one was
+measured rather than eyeballed: the old curve overshot the settled size by ~11px at t=191ms. The slam
+wipe also reversed — it now sweeps right to left — and ships unlabelled at every call site; the
+`label` prop and its showcase specimen stay, so the variant is preserved rather than deleted. Last,
+the team tab gained an `OtherTeams` card under the viewer's own room: every other team's colour, name,
+size and pre-start ready state, name-only by design. Joining a team used to _cost_ a player that
+information — the ready column lived in the picker, which only an unassigned viewer sees — so a player
+on a roster could not tell who was holding up the start. It needed no server change; the lobby DTO
+already carried every team.
+
 Milestone 9 is done, closing Slice 3 of the mockup-integration program: the lobby and the projector
 board collapsed into one tabbed game page present at every phase, board/match reads opened to any
 signed-in user, and roster fluidity shipped under the lock rule (mechanics: DESIGN decisions 16, 17).

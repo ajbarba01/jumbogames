@@ -17,7 +17,6 @@ export function EnterMatchLink({
   return (
     <WipeLink
       href={`/t/${tournamentId}/m/${matchId}`}
-      wipeLabel="Your match"
       className="slip sticker sticker-hover sticker-press cursor-pointer rounded-r2 bg-accent px-4 py-1.5 text-sec font-bold text-edge"
     >
       Enter your match

@@ -6,12 +6,12 @@ _Generated from each component's intent declaration. Do not edit by hand._
 
 ### Button
 
-The six-variant action vocabulary — primary/quiet/outline/block/ghost/text pick the weight, icon swaps text padding for square icon geometry.
+The seven-variant action vocabulary — primary/second/quiet/outline/block/ghost/text pick the weight, icon swaps text padding for square icon geometry.
 
-- **Use it when:** Any clickable control that commits an action: submit, confirm, deny, run, start, or trigger a menu. primary for the one accent action per view · quiet for the workhorse confirm · outline for secondary/deny · block for raised square utilities · ghost for chrome-adjacent icons · text for ink-only toolbar controls.
+- **Use it when:** Any clickable control that commits an action: submit, confirm, deny, run, start, or trigger a menu. primary for the one accent action per view · second for the accent-2 CTA that seconds it · quiet for the workhorse confirm · outline for secondary/deny · block for raised square utilities · ghost for chrome-adjacent icons · text for ink-only toolbar controls.
 - **Don't use it when:** The control navigates to another location rather than committing an action. The control needs a loading state — this vocabulary has none; callers disable instead.
 - **Anatomy:** A native <button> whose face (color/border/hover/press) and geometry (text padding or icon square) are selected per variant; disabled swaps to the off face with no hover, no press, no pointer.
-- **Variants & states:** primary, quiet, outline, block, ghost, text, default · hover (sticker lift) · focus-visible (global accent ring) · active (drop onto shadow) · disabled (no hover, no pointer)
+- **Variants & states:** primary, second, quiet, outline, block, ghost, text, default · hover (sticker lift) · focus-visible (global accent ring) · active (drop onto shadow) · disabled (no hover, no pointer)
 - **Accessibility:** Native <button> semantics (Enter/Space activate); type defaults to button; icon-only callers must pass aria-label; loading is not applicable in this vocabulary — callers disable instead.
 - **Related:** Spinner
 
@@ -80,8 +80,8 @@ The full-viewport accent panel that slaps in, holds, and slaps away — the app-
 
 - **Use it when:** An app-wide navigation is swapping the visible surface and needs a moment to cover the seam. A parent state machine is driving the wipe's cover/hold/uncover choreography (route transitions, forced full-screen loads).
 - **Don't use it when:** A local loading state inside an existing surface — reach for Spinner instead. Anything the component itself should time or route — SlamWipe is presentational only, it never owns a timer or a navigation.
-- **Anatomy:** A motion.div pinned fixed inset-0 on the --z-wipe layer, painted bg-accent-2, sliding between off-screen-left, covering, and off-screen-right on WIPE_EASE/WIPE_DUR; an optional uppercase destination label centered in it, and an optional Spinner cue pinned near the bottom for loads that outlast the cover.
-- **Variants & states:** phase="in" (sweeping from off-screen-left to covering), phase="covered" (resting, fully covering), phase="out" (sweeping from covering to off-screen-right), labeled (destination label shown) vs unlabeled, showCue (still-loading cue shown) vs quiet, reduced-motion (sweep collapses to an instant cut)
+- **Anatomy:** A motion.div pinned fixed inset-0 on the --z-wipe layer, painted bg-accent-2, sliding between off-screen-right, covering, and off-screen-left on WIPE_EASE/WIPE_DUR; an optional uppercase destination label centered in it, and an optional Spinner cue pinned near the bottom for loads that outlast the cover.
+- **Variants & states:** phase="in" (sweeping from off-screen-right to covering), phase="covered" (resting, fully covering), phase="out" (sweeping from covering to off-screen-left), labeled (destination label shown) vs unlabeled, showCue (still-loading cue shown) vs quiet, reduced-motion (sweep collapses to an instant cut)
 - **Accessibility:** The destination label is plain visible text, not announced separately. The still-loading cue delegates its role=status/aria-label entirely to Spinner (labelled 'Still loading') rather than nesting a second status role, and it is not aria-hidden so assistive tech can still reach it.
 - **Related:** Spinner
 

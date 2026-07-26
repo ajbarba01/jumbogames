@@ -23,8 +23,8 @@ export interface SlamWipeProps {
   onUncovered?: () => void;
 }
 
-// Panel rests fully covering at 0%; enters from the left edge, exits past the
-// right. 102% keeps the edge off-screen through the whole sweep.
+// Panel rests fully covering at 0%; enters from the right edge, exits past the
+// left. 102% keeps the edge off-screen through the whole sweep.
 const OFFSCREEN_LEFT = "-102%";
 const COVERING = "0%";
 const OFFSCREEN_RIGHT = "102%";
@@ -37,8 +37,8 @@ export function SlamWipe({
   onUncovered,
 }: SlamWipeProps): React.JSX.Element {
   const reduce = useReducedMotion();
-  const initialX = phase === "in" ? OFFSCREEN_LEFT : COVERING;
-  const animateX = phase === "out" ? OFFSCREEN_RIGHT : COVERING;
+  const initialX = phase === "in" ? OFFSCREEN_RIGHT : COVERING;
+  const animateX = phase === "out" ? OFFSCREEN_LEFT : COVERING;
   const dur = phase === "out" ? WIPE_DUR.out : WIPE_DUR.in;
 
   return (

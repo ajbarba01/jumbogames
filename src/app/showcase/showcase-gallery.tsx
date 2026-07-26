@@ -42,6 +42,7 @@ import {
   Tabs,
   TeamChip,
 } from "@jumbo/ui";
+import { BackgroundLab } from "./background-lab";
 import { MotionDemos } from "./motion-demos";
 import { SlamWipeDemo } from "./slam-wipe-demo";
 import { ZoomDemo } from "./zoom-demo";
@@ -88,6 +89,7 @@ function Specimen({
 
 const BUTTON_VARIANTS = [
   "primary",
+  "second",
   "quiet",
   "outline",
   "block",
@@ -654,6 +656,14 @@ function MotionSection() {
   );
 }
 
+function BackgroundSection() {
+  return (
+    <Section title="Background">
+      <BackgroundLab />
+    </Section>
+  );
+}
+
 /* ---------- brand ---------- */
 
 const PATHS_MARK: BrandMarkSpec = {
@@ -824,6 +834,7 @@ export function ShowcaseGallery(): React.JSX.Element {
           <KeysSection />
           <FrameSection />
           <MotionSection />
+          <BackgroundSection />
           <BrandSection />
           <TypeTokensSection />
         </div>

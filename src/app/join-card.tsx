@@ -1,8 +1,9 @@
 /**
  * Home join hero: a signed-in viewer enters a game code to join; the card
  * shakes on a rejected code (the register's form-error affordance, SLIP_SHAKE).
- * Carries the rejoin row when the viewer is already in a game, and a
- * "Create a game" action shown to everyone. The server re-validates the code,
+ * Carries a full-width "Create a game" action below the divider, shown to
+ * everyone — the two actions are peers of equal width, distinguished by variant
+ * weight rather than by size. The server re-validates the code,
  * and the code it returns rides the link so the game page can offer the writes
  * that need it (DESIGN decision 16: link = read, code = write).
  */
@@ -12,17 +13,12 @@ import { useState } from "react";
 import { motion, MotionConfig, useAnimationControls } from "motion/react";
 import { Button, Card, CodeInput, SLIP_SHAKE, Spinner } from "@jumbo/ui";
 import { useWipeNav } from "@/components/wipe/use-wipe-nav";
-import { RejoinButton } from "./rejoin-button";
 import { CreateTournamentButton } from "./create-tournament-button";
 
 // Mirrors JOIN_CODE_LENGTH; the server is the authority and re-validates.
 const CODE_LENGTH = 6;
 
-export function JoinCard({
-  current,
-}: {
-  current: { id: string; name: string } | null;
-}) {
+export function JoinCard() {
   const { navigate } = useWipeNav();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -92,15 +88,7 @@ export function JoinCard({
               {pending ? "Joining…" : "Join"}
             </Button>
           </form>
-          {current ? (
-            <div className="flex items-center justify-between gap-3 border-t-2 border-s6 pt-4">
-              <span className="min-w-0 truncate text-sec text-s9">
-                You&rsquo;re in {current.name}.
-              </span>
-              <RejoinButton tournamentId={current.id} />
-            </div>
-          ) : null}
-          <div className="flex justify-center border-t-2 border-s6 pt-4">
+          <div className="border-t-2 border-s6 pt-4">
             <CreateTournamentButton />
           </div>
         </motion.div>

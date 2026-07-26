@@ -1,7 +1,8 @@
 /**
  * The single client surface for a game, serving every phase: the header, the
  * viewer-personal match/bye strip, a two-tab body (the board, and either the
- * team room or the team picker), and the host's floating dock. It owns the
+ * team room over a name-only list of the other teams, or the team picker), and
+ * the host's floating dock. It owns the
  * page's one Realtime subscription, the tab state, the roster-lock set derived
  * from the board, and the mutation seam every panel writes through — the panels
  * themselves render the state handed to them and never fetch on their own. It
@@ -32,6 +33,7 @@ import { EnterMatchLink } from "./enter-match-link";
 import { HostDock } from "./host-dock";
 import { TeamPicker } from "./team-picker";
 import { TeamRoom } from "./team-room";
+import { OtherTeams } from "./other-teams";
 
 export interface GameViewProps {
   tournament: LobbyDTO;
@@ -334,16 +336,23 @@ export function GameView({
           {active === "board" ? (
             <BoardPanel board={board} />
           ) : myTeam ? (
-            <TeamRoom
-              tournamentId={tournament.id}
-              team={myTeam}
-              viewerId={viewerId}
-              locked={myTeamLocked}
-              matchupLine={describeMatchup(board, myTeam.id, myTeamLocked)}
-              inLobby={inLobby}
-              busy={busy}
-              act={act}
-            />
+            <>
+              <TeamRoom
+                tournamentId={tournament.id}
+                team={myTeam}
+                viewerId={viewerId}
+                locked={myTeamLocked}
+                matchupLine={describeMatchup(board, myTeam.id, myTeamLocked)}
+                inLobby={inLobby}
+                busy={busy}
+                act={act}
+              />
+              <OtherTeams
+                teams={tournament.teams}
+                myTeamId={myTeam.id}
+                inLobby={inLobby}
+              />
+            </>
           ) : (
             <TeamPicker
               tournamentId={tournament.id}

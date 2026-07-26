@@ -103,12 +103,10 @@ export function MatchClientView({
       // too, backing out to the board doesn't let auto-pull yank the
       // player back in — see nav-marker.ts.
       markMatchEntered(placement.matchId);
-      navigate(`/t/${tournamentId}/m/${placement.matchId}`, {
-        label: "Your match",
-      });
+      navigate(`/t/${tournamentId}/m/${placement.matchId}`);
       return;
     }
-    navigate(`/t/${tournamentId}`, { label: "Board" });
+    navigate(`/t/${tournamentId}`);
   }, [tournamentId, matchId, navigate]);
 
   useEffect(() => {

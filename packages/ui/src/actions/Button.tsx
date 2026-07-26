@@ -1,15 +1,16 @@
 /**
- * The kit's action control: six variants (primary/quiet/outline/block/ghost/
- * text), an icon-geometry mode, and a disabled face that carries no hover or
- * press affordance.
+ * The kit's action control: seven variants (primary/second/quiet/outline/
+ * block/ghost/text), an icon-geometry mode, and a disabled face that carries
+ * no hover or press affordance.
  */
 import { cx } from "../cx";
 
 export type ButtonVariant =
-  "primary" | "quiet" | "outline" | "block" | "ghost" | "text";
+  "primary" | "second" | "quiet" | "outline" | "block" | "ghost" | "text";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** primary: the accent action (one per view at most) · quiet: the solid workhorse ·
+  /** primary: the accent action (one per view at most) · second: the accent-2
+   *  CTA that seconds it · quiet: the solid workhorse ·
    *  outline: secondary/deny · block: raised square utility · ghost: chrome-adjacent icon ·
    *  text: ink-only toolbar control. */
   variant?: ButtonVariant;
@@ -24,6 +25,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const FACE: Record<ButtonVariant, { on: string; off: string }> = {
   primary: {
     on: "slip sticker sticker-hover sticker-press cursor-pointer rounded-r2 bg-accent font-bold text-edge",
+    off: "cursor-default rounded-r2 border-2 border-s4 font-bold text-s6",
+  },
+  // The theme reserves accent-2 for secondary CTAs and celebratory chrome, so
+  // this is the loud action that appears *beside* the primary one, not a
+  // second primary competing with it.
+  second: {
+    on: "slip sticker sticker-hover sticker-press cursor-pointer rounded-r2 bg-accent-2 font-bold text-edge",
     off: "cursor-default rounded-r2 border-2 border-s4 font-bold text-s6",
   },
   quiet: {
@@ -53,6 +61,10 @@ const FACE: Record<ButtonVariant, { on: string; off: string }> = {
 
 const GEOM: Record<ButtonVariant, { text: string; icon: string }> = {
   primary: {
+    text: "px-4 py-1.5 text-sec",
+    icon: "flex h-7 w-7 items-center justify-center text-body",
+  },
+  second: {
     text: "px-4 py-1.5 text-sec",
     icon: "flex h-7 w-7 items-center justify-center text-body",
   },

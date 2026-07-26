@@ -11,7 +11,11 @@ import { Button } from "@jumbo/ui";
 export function CreateTournamentButton() {
   const router = useRouter();
   return (
-    <Button variant="outline" onClick={() => router.push("/create")}>
+    <Button
+      variant="outline"
+      className="w-full"
+      onClick={() => router.push("/create")}
+    >
       Create a game
     </Button>
   );

@@ -7,7 +7,13 @@
 
 import { useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
-import { Button, SLIP_DUR, SLIP_EASE, useDismissLayer } from "@jumbo/ui";
+import {
+  Button,
+  SLIP_DUR,
+  SLIP_EASE,
+  SLIP_EASE_OUT,
+  useDismissLayer,
+} from "@jumbo/ui";
 
 const TRANSITION = { duration: SLIP_DUR.move, ease: SLIP_EASE };
 
@@ -43,6 +49,9 @@ export function ZoomDemo(): React.JSX.Element {
           >
             <motion.div
               layoutId={`zoom-card-${open}`}
+              transition={{
+                layout: { duration: SLIP_DUR.move, ease: SLIP_EASE_OUT },
+              }}
               className="sticker flex h-full max-h-96 w-full max-w-2xl flex-col items-center justify-center gap-4 rounded-r4 border-s11 bg-s2 shadow-modal"
               onClick={(e) => e.stopPropagation()}
             >

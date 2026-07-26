@@ -7,7 +7,7 @@ import type { MatchView } from "@/lib/match/client";
 import type { SlotState } from "@/lib/match/types";
 import type { MinigameKind } from "@/lib/minigames/types";
 import { StubPlay } from "./StubPlay";
-import { TriviaPlay } from "./TriviaPlay";
+import { TriviaPlay } from "./trivia/TriviaPlay";
 
 export interface MinigamePlayProps {
   view: MatchView;

@@ -152,6 +152,9 @@ export const triviaGame: MinigameServer<TriviaState, TriviaAction> = {
     const player = viewerId !== null ? state.players[viewerId] : undefined;
     const card =
       player && player.current !== null ? state.deck[player.current] : null;
+    const answered = player?.seen.at(-1);
+    const answeredCard =
+      answered !== undefined ? state.deck[answered] : undefined;
     return {
       rope: state.rope,
       pinned: state.pinned,
@@ -164,6 +167,10 @@ export const triviaGame: MinigameServer<TriviaState, TriviaAction> = {
           }
         : null,
       lastResult: player ? player.lastResult : null,
+      lastAnswer:
+        answered !== undefined && answeredCard && answered !== player?.current
+          ? { deckIndex: answered, correctIndex: answeredCard.correctIndex }
+          : null,
     };
   },
 };

@@ -36,3 +36,13 @@ export const WIPE_DUR = {
   minCovered: 0.3,
   maxCovered: 3,
 } as const;
+
+/**
+ * The score-pop moment (docs/UI.md): a hand-written ±N that rises, tilts and
+ * fades once as a point lands. Seconds and pixels, consumed by the motion
+ * library — longer than any chrome duration because a moment is meant to be
+ * watched, not absorbed. Crossed by constant, not copied number.
+ */
+export const POP_DUR = 0.7;
+export const POP_RISE = -22;
+export const POP_TILT = 6;

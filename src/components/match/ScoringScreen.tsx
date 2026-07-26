@@ -6,7 +6,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { SLIP_DUR, SLIP_EASE } from "@jumbo/ui";
+import { SLIP_DUR, SLIP_EASE, TeamChip } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
 import type { SlotState } from "@/lib/match/types";
 
@@ -37,22 +37,20 @@ export function ScoringScreen({
           duration: SLIP_DUR.move,
           ease: SLIP_EASE,
         }}
-        className="sticker rounded-r2 border-s11 bg-s2 px-8 py-4"
+        className="sticker max-w-full rounded-r2 border-s11 bg-s2 px-8 py-4"
       >
-        <span className="flex items-center gap-3 font-display text-4xl text-s12">
+        <span className="flex min-w-0 items-center gap-3 font-display text-4xl text-s12">
           {winnerTeam ? (
             <>
-              <span
-                className="h-5 w-5 rounded-r1"
-                style={{
-                  background: `var(--color-team-${winnerTeam.colorIndex})`,
-                }}
-                aria-hidden
+              <TeamChip
+                colorIndex={winnerTeam.colorIndex}
+                name={winnerTeam.name}
+                size="lg"
               />
-              {winnerTeam.name} wins
+              wins
             </>
           ) : (
-            "TIE"
+            "Tie"
           )}
         </span>
       </motion.div>

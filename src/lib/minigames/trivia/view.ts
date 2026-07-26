@@ -15,4 +15,11 @@ export interface TriviaView {
     choices: [string, string, string, string];
   } | null;
   lastResult: "correct" | "wrong" | null;
+  /**
+   * The correct choice for the card this viewer most recently answered, so a
+   * client can hold a reveal beat before showing the next card. It only ever
+   * describes a card this viewer has already answered — never their live
+   * hand, and never another player's.
+   */
+  lastAnswer: { deckIndex: number; correctIndex: number } | null;
 }

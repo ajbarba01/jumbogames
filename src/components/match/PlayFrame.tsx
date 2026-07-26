@@ -1,7 +1,11 @@
 /**
  * The zoomed minigame frame: a shared-element overlay (layoutId from the
- * overview card) whose inner panel follows the slot phase — gate, countdown,
- * play surface, scoring. Leaving is only possible at the gate.
+ * overview card) that fills the viewport and whose inner panel follows the
+ * slot phase — gate, countdown, play surface, scoring. Leaving is only
+ * possible at the gate. The panel wears no sticker chrome: a full-bleed
+ * surface is in-flow content, which owns the darkest ground and casts no
+ * shadow (docs/UI.md's outline vocabulary — board stickers are for game
+ * surfaces that float).
  */
 "use client";
 
@@ -56,12 +60,12 @@ export function PlayFrame({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-(--z-modal) flex items-center justify-center bg-scrim p-8"
+      className="fixed inset-0 z-(--z-modal) flex items-center justify-center bg-scrim"
     >
       <motion.div
         layoutId={`slot-card-${slot.ordinal}`}
         onLayoutAnimationComplete={onZoomDone}
-        className="sticker relative flex h-full max-h-168 w-full max-w-4xl flex-col rounded-r4 border-s11 bg-s2 shadow-modal"
+        className="relative flex h-full w-full flex-col overflow-hidden bg-s1"
       >
         <AnimatePresence mode="wait">
           {slot.phase === "gate" && (

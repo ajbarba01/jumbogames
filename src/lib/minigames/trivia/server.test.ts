@@ -183,4 +183,93 @@ describe("trivia server", () => {
     expect(s.players.b1!.current).not.toBeNull();
     expect(seenIndexes.has(s.players.b1!.current!)).toBe(true);
   });
+
+  it("suppresses lastAnswer when the newly dealt card coincides with the just-answered card (deck exhaustion)", () => {
+    // When a solo player exhausts a tiny deck, dealNext falls back to the raw
+    // cursor position, which can coincide with the card just answered. The view
+    // must suppress lastAnswer in that case to uphold the guarantee that it
+    // never describes the viewer's live hand.
+    const tinyBank: BankQuestion[] = Array.from({ length: 3 }, (_, i) => ({
+      id: `t${i}`,
+      prompt: `tiny ${i}`,
+      correctAnswer: `tcorrect${i}`,
+      incorrectAnswers: [`ta${i}`, `tb${i}`, `tc${i}`],
+    }));
+    // Solo player to trigger the fall-through case in dealNext.
+    const soloSnapshot = { teamA: ["b1"], teamB: [] };
+    const baseState = triviaGame.init(soloSnapshot, "solo-seed", tinyBank);
+
+    // Directly construct a collision state: player has seen all three cards
+    // with the last answered card matching the newly dealt current card.
+    // This simulates exhausting the deck when cursor % 3 equals the last-seen index.
+    const collisionState: TriviaState = {
+      ...baseState,
+      cursorA: 4, // Next deal: 4 % 3 = 1
+      players: {
+        ...baseState.players,
+        b1: {
+          current: 1, // The collision: current === last-seen card
+          seen: [0, 2, 1], // All three cards exhausted; 1 is last
+          score: baseState.players.b1!.score,
+          lastResult: baseState.players.b1!.lastResult,
+        },
+      },
+    };
+
+    // Verify the collision condition in the state.
+    expect(collisionState.players.b1!.current).toBe(
+      collisionState.players.b1!.seen.at(-1),
+    );
+
+    // The critical security property: lastAnswer must be null when it would
+    // collide with the live card, even though the card has been seen before.
+    const view = triviaGame.redact!(collisionState, "b1") as TriviaView;
+    expect(view.question!.deckIndex).toBe(1);
+    expect(view.lastAnswer).toBeNull();
+  });
+
+  it("reports no last answer before the first one", () => {
+    const s = initGame();
+    const view = triviaGame.redact!(s, "a1") as TriviaView;
+    expect(view.lastAnswer).toBeNull();
+  });
+
+  it("reports the correct choice for the card just answered, right or wrong", () => {
+    const s = initGame();
+    const answered = s.players.a1!.current!;
+    const card = s.deck[answered]!;
+    const wrongChoice = (card.correctIndex + 1) % 4;
+
+    const afterWrong = triviaGame.apply(
+      s,
+      "a1",
+      { type: "answer", deckIndex: answered, choiceIndex: wrongChoice },
+      1_000,
+    );
+    const view = triviaGame.redact!(afterWrong, "a1") as TriviaView;
+    expect(view.lastAnswer).toEqual({
+      deckIndex: answered,
+      correctIndex: card.correctIndex,
+    });
+    // The card just answered is no longer the viewer's hand — it describes
+    // history, never the live question.
+    expect(view.question!.deckIndex).not.toBe(answered);
+  });
+
+  it("keeps last answer per viewer", () => {
+    const s = initGame();
+    const answered = s.players.a1!.current!;
+    const after = triviaGame.apply(
+      s,
+      "a1",
+      { type: "answer", deckIndex: answered, choiceIndex: 0 },
+      1_000,
+    );
+    expect(
+      (triviaGame.redact!(after, "a2") as TriviaView).lastAnswer,
+    ).toBeNull();
+    expect(
+      (triviaGame.redact!(after, null) as TriviaView).lastAnswer,
+    ).toBeNull();
+  });
 });

@@ -11,8 +11,23 @@ export {
   type BrandPath,
 } from "./brand/BrandMark";
 export { Card, type CardProps } from "./surface/Card";
+export {
+  TeamChip,
+  type TeamChipProps,
+  type TeamChipSize,
+} from "./surface/TeamChip";
 export { cx } from "./cx";
-export { SLIP_DUR, SLIP_EASE, SLIP_SHAKE, WIPE_DUR, WIPE_EASE } from "./motion";
+export {
+  POP_DUR,
+  POP_RISE,
+  POP_TILT,
+  SLIP_DUR,
+  SLIP_EASE,
+  SLIP_SHAKE,
+  WIPE_DUR,
+  WIPE_EASE,
+} from "./motion";
+export { ScorePop, type ScorePopProps } from "./surface/ScorePop";
 export { SlamWipe, type SlamWipeProps, type WipeVisualPhase } from "./SlamWipe";
 export { DialogSearchHead, SettingRow, TocRail } from "./frame/SettingsFrame";
 export { Tabs, type TabsProps, type TabSpec } from "./frame/Tabs";

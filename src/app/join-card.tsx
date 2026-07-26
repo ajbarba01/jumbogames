@@ -1,8 +1,10 @@
 /**
- * Home join hero: a signed-in viewer enters an event code to join; the card
+ * Home join hero: a signed-in viewer enters a game code to join; the card
  * shakes on a rejected code (the register's form-error affordance, SLIP_SHAKE).
- * Carries the rejoin row when the viewer is already in an event, and a
- * "Create an event" action shown to everyone. The server re-validates the code.
+ * Carries the rejoin row when the viewer is already in a game, and a
+ * "Create a game" action shown to everyone. The server re-validates the code,
+ * and the code it returns rides the link so the game page can offer the writes
+ * that need it (DESIGN decision 16: link = read, code = write).
  */
 "use client";
 
@@ -38,7 +40,7 @@ export function JoinCard({
     });
     const data = await res.json().catch(() => null);
     if (res.ok && data?.tournamentId) {
-      navigate(`/t/${data.tournamentId}`);
+      navigate(`/t/${data.tournamentId}?c=${data.code}`);
       return;
     }
     setPending(false);
@@ -55,7 +57,7 @@ export function JoinCard({
           className="flex flex-col gap-4"
         >
           <h2 className="font-display text-xl uppercase text-s12">
-            Join an event
+            Join a game
           </h2>
           <form
             onSubmit={(event) => {

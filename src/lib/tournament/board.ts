@@ -28,6 +28,9 @@ export interface BoardStandingRow extends BoardTeamRef {
   minigamesWon: number;
   cumulativeNormalized: number;
   movement: number;
+  // Derived from an empty roster at read time — never stored — so a team a
+  // player left mid-tournament still shows as forfeited on the board.
+  forfeited: boolean;
 }
 
 export interface BoardMatch {
@@ -68,7 +71,12 @@ export async function getBoardState(
       minigamesPerMatch: true,
       teams: {
         orderBy: { createdAt: "asc" },
-        select: { id: true, name: true, colorIndex: true },
+        select: {
+          id: true,
+          name: true,
+          colorIndex: true,
+          _count: { select: { members: true } },
+        },
       },
       rounds: {
         orderBy: { ordinal: "asc" },
@@ -90,7 +98,13 @@ export async function getBoardState(
   if (!tournament) return null;
 
   const teamById = new Map<string, BoardTeamRef>(
-    tournament.teams.map((team) => [team.id, team]),
+    tournament.teams.map((team) => [
+      team.id,
+      { id: team.id, name: team.name, colorIndex: team.colorIndex },
+    ]),
+  );
+  const memberCountById = new Map<string, number>(
+    tournament.teams.map((team) => [team.id, team._count.members]),
   );
 
   const byeRounds: ByeRound[] = tournament.rounds.map((round) => ({
@@ -114,6 +128,7 @@ export async function getBoardState(
     minigamesWon: row.minigamesWon,
     cumulativeNormalized: row.cumulativeNormalized,
     movement: row.movement,
+    forfeited: (memberCountById.get(row.team) ?? 0) === 0,
   }));
 
   const rounds: BoardRound[] = tournament.rounds.map((round) => ({

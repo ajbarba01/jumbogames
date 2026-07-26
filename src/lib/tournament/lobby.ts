@@ -62,7 +62,11 @@ export interface LobbyTeamDTO {
 
 export interface LobbyDTO {
   id: string;
-  code: string;
+  // The write credential (DESIGN.md decision 16: "link = read, code =
+  // write"). Null when the caller determined this viewer does not already
+  // hold it — see holdsGameCode in viewer.ts, the single source for that
+  // rule.
+  code: string | null;
   name: string;
   phase: TournamentPhase;
   minigamesPerMatch: number;
@@ -71,10 +75,16 @@ export interface LobbyDTO {
   teams: LobbyTeamDTO[];
 }
 
-export function toLobbyDTO(state: TournamentState): LobbyDTO {
+// `includeCode` defaults to false: the code is a write credential, so a caller
+// that forgets the argument withholds it rather than leaks it. Pass true only
+// after checking holdsGameCode (viewer.ts owns that rule).
+export function toLobbyDTO(
+  state: TournamentState,
+  includeCode = false,
+): LobbyDTO {
   return {
     id: state.id,
-    code: state.code,
+    code: includeCode ? state.code : null,
     name: state.name,
     phase: state.phase,
     minigamesPerMatch: state.minigamesPerMatch,
@@ -96,14 +106,14 @@ export function toLobbyDTO(state: TournamentState): LobbyDTO {
 
 export interface GatedTournament {
   state: TournamentState;
-  relation: Extract<ViewerRelation, { allowed: true }>;
+  relation: ViewerRelation;
 }
 
-// IO seam: load a tournament and admit the viewer through resolveViewer in one
-// step. Returns null both when the tournament is missing and when the viewer is
-// refused, so callers cannot tell "no such tournament" from "not yours" — the
-// 404-everywhere decision made structural. Uses getTournamentState's existing
-// selection (hostId + team members), so it adds no query.
+// IO seam: load a tournament and resolve the viewer's relation through
+// resolveViewer in one step. Returns null only when the tournament does not
+// exist — every signed-in viewer is admitted as at least a guest (decision 16,
+// spectate by link). Uses getTournamentState's existing selection (hostId +
+// team members), so it adds no query.
 export async function gateTournamentRead(
   id: string,
   viewer: { viewerId: string; viewerRole: Role },
@@ -118,11 +128,6 @@ export async function gateTournamentRead(
     viewerRole: viewer.viewerRole,
     hostId: state.hostId,
     memberIds,
-    // The lobby admits players by code, and join persists no row, so any
-    // signed-in user may read a lobby-phase tournament. Once it locks, only
-    // host/member/admin get in.
-    joinable: state.phase === "lobby",
   });
-  if (!relation.allowed) return null;
   return { state, relation };
 }

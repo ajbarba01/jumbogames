@@ -1,25 +1,26 @@
 /**
- * Unit tests for resolveViewer: the pure access predicate deciding whether a
- * viewer may read a tournament, and in what relation (host / member / admin /
- * guest), plus the orthogonal `canHost` (may exercise host controls, shared
- * with isGameHost). Guest admission is gated on `joinable` — the lobby-open
- * phase.
+ * Unit tests for resolveViewer and holdsGameCode: the pure access predicates
+ * behind tournament reads. resolveViewer decides a viewer's relation to a
+ * tournament (host / member / admin / guest) and the orthogonal `canHost`
+ * (may exercise host controls, shared with isGameHost) — every viewer is
+ * admitted, since reads are open to any signed-in user (DESIGN.md decision
+ * 16, spectate by link). holdsGameCode decides the separate question of
+ * whether that viewer may also see the game's write credential (the code).
  */
 import { describe, it, expect } from "vitest";
-import { resolveViewer } from "./viewer";
+import { resolveViewer, holdsGameCode } from "./viewer";
 
 const HOST = "host-id";
 const MEMBER = "member-id";
 const STRANGER = "stranger-id";
 
-// A started tournament: no longer joinable by code, so the strict gate applies.
-const LOCKED = { hostId: HOST, memberIds: [MEMBER], joinable: false } as const;
+const BASE = { hostId: HOST, memberIds: [MEMBER] } as const;
 
 describe("resolveViewer", () => {
   it("admits the host, who holds no member row", () => {
     expect(
-      resolveViewer({ ...LOCKED, viewerId: HOST, viewerRole: "player" }),
-    ).toEqual({ allowed: true, as: "host", canHost: true });
+      resolveViewer({ ...BASE, viewerId: HOST, viewerRole: "player" }),
+    ).toEqual({ as: "host", canHost: true });
   });
 
   it("resolves a host who also joined a team as host, not member", () => {
@@ -29,86 +30,111 @@ describe("resolveViewer", () => {
         viewerRole: "player",
         hostId: HOST,
         memberIds: [HOST, MEMBER],
-        joinable: false,
       }),
-    ).toEqual({ allowed: true, as: "host", canHost: true });
+    ).toEqual({ as: "host", canHost: true });
   });
 
   it("admits a tournament member", () => {
     expect(
-      resolveViewer({ ...LOCKED, viewerId: MEMBER, viewerRole: "player" }),
-    ).toEqual({ allowed: true, as: "member", canHost: false });
+      resolveViewer({ ...BASE, viewerId: MEMBER, viewerRole: "player" }),
+    ).toEqual({ as: "member", canHost: false });
   });
 
   it("admits a non-host admin as admin, and lets them host as a rescue path", () => {
     expect(
-      resolveViewer({ ...LOCKED, viewerId: STRANGER, viewerRole: "admin" }),
-    ).toEqual({ allowed: true, as: "admin", canHost: true });
+      resolveViewer({ ...BASE, viewerId: STRANGER, viewerRole: "admin" }),
+    ).toEqual({ as: "admin", canHost: true });
   });
 
   it("admits an owner as admin, and lets them host as a rescue path", () => {
     expect(
-      resolveViewer({ ...LOCKED, viewerId: STRANGER, viewerRole: "owner" }),
-    ).toEqual({ allowed: true, as: "admin", canHost: true });
+      resolveViewer({ ...BASE, viewerId: STRANGER, viewerRole: "owner" }),
+    ).toEqual({ as: "admin", canHost: true });
   });
 
   it("resolves an admin who is also a member as member (more specific), but still lets them host", () => {
     expect(
-      resolveViewer({ ...LOCKED, viewerId: MEMBER, viewerRole: "admin" }),
-    ).toEqual({ allowed: true, as: "member", canHost: true });
+      resolveViewer({ ...BASE, viewerId: MEMBER, viewerRole: "admin" }),
+    ).toEqual({ as: "member", canHost: true });
   });
 
-  it("refuses a signed-in player with no tie once the tournament is locked", () => {
-    expect(
-      resolveViewer({ ...LOCKED, viewerId: STRANGER, viewerRole: "player" }),
-    ).toEqual({ allowed: false });
+  it("admits a stranger as a guest once the lobby has closed", () => {
+    const relation = resolveViewer({
+      viewerId: "stranger",
+      viewerRole: "player",
+      hostId: "host",
+      memberIds: ["m1"],
+    });
+    expect(relation).toEqual({ as: "guest", canHost: false });
   });
 
-  it("refuses a plain player against an empty locked roster", () => {
-    expect(
-      resolveViewer({
-        viewerId: STRANGER,
-        viewerRole: "player",
-        hostId: HOST,
-        memberIds: [],
-        joinable: false,
-      }),
-    ).toEqual({ allowed: false });
+  it("keeps host precedence over membership for the creator", () => {
+    const relation = resolveViewer({
+      viewerId: "host",
+      viewerRole: "player",
+      hostId: "host",
+      memberIds: ["host"],
+    });
+    expect(relation).toEqual({ as: "host", canHost: true });
   });
 
-  it("admits any signed-in user as guest while the lobby is joinable", () => {
-    expect(
-      resolveViewer({
-        viewerId: STRANGER,
-        viewerRole: "player",
-        hostId: HOST,
-        memberIds: [MEMBER],
-        joinable: true,
-      }),
-    ).toEqual({ allowed: true, as: "guest", canHost: false });
+  it("still reports canHost for an admin who is only a spectator", () => {
+    const relation = resolveViewer({
+      viewerId: "staff",
+      viewerRole: "admin",
+      hostId: "host",
+      memberIds: [],
+    });
+    expect(relation).toEqual({ as: "admin", canHost: true });
+  });
+});
+
+describe("holdsGameCode", () => {
+  const GAME_CODE = "ABC234";
+
+  it("lets the host see the code without presenting it", () => {
+    expect(holdsGameCode({ as: "host", canHost: true }, GAME_CODE, null)).toBe(
+      true,
+    );
   });
 
-  it("still resolves the host as host in a joinable lobby, not guest", () => {
+  it("lets a member see the code without presenting it", () => {
     expect(
-      resolveViewer({
-        viewerId: HOST,
-        viewerRole: "player",
-        hostId: HOST,
-        memberIds: [],
-        joinable: true,
-      }),
-    ).toEqual({ allowed: true, as: "host", canHost: true });
+      holdsGameCode({ as: "member", canHost: false }, GAME_CODE, null),
+    ).toBe(true);
   });
 
-  it("still resolves a member as member in a joinable lobby, not guest", () => {
+  it("lets an admin who can host see the code without presenting it", () => {
+    expect(holdsGameCode({ as: "admin", canHost: true }, GAME_CODE, null)).toBe(
+      true,
+    );
+  });
+
+  it("refuses a stranger who presents no code", () => {
     expect(
-      resolveViewer({
-        viewerId: MEMBER,
-        viewerRole: "player",
-        hostId: HOST,
-        memberIds: [MEMBER],
-        joinable: true,
-      }),
-    ).toEqual({ allowed: true, as: "member", canHost: false });
+      holdsGameCode({ as: "guest", canHost: false }, GAME_CODE, null),
+    ).toBe(false);
+  });
+
+  it("admits a stranger who presents the right code", () => {
+    expect(
+      holdsGameCode({ as: "guest", canHost: false }, GAME_CODE, GAME_CODE),
+    ).toBe(true);
+  });
+
+  it("refuses a stranger who presents the wrong code", () => {
+    expect(
+      holdsGameCode({ as: "guest", canHost: false }, GAME_CODE, "ZZZ999"),
+    ).toBe(false);
+  });
+
+  it("admits a stranger who presents the right code in a different case", () => {
+    expect(
+      holdsGameCode(
+        { as: "guest", canHost: false },
+        GAME_CODE,
+        GAME_CODE.toLowerCase(),
+      ),
+    ).toBe(true);
   });
 });

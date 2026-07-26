@@ -55,4 +55,7 @@ export const triviaQuestionUpdateSchema = z
 export const questionListQuerySchema = z.object({
   q: z.string().max(200).default(""),
   page: z.coerce.number().int().min(1).default(1),
+  // Absent means "every level" — the client omits the param rather than
+  // sending a sentinel, so the three real levels are the only valid values.
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
 });

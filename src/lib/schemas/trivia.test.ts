@@ -129,4 +129,21 @@ describe("questionListQuerySchema", () => {
       expect(parsed.data.page).toBe(3);
     }
   });
+
+  it("defaults an absent query to page 1, no search, no difficulty", () => {
+    const parsed = questionListQuerySchema.parse({});
+    expect(parsed).toEqual({ q: "", page: 1 });
+  });
+
+  it("accepts a difficulty level", () => {
+    expect(
+      questionListQuerySchema.parse({ difficulty: "hard" }).difficulty,
+    ).toBe("hard");
+  });
+
+  it("rejects a difficulty outside the three levels", () => {
+    expect(
+      questionListQuerySchema.safeParse({ difficulty: "any" }).success,
+    ).toBe(false);
+  });
 });

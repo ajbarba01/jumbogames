@@ -38,6 +38,7 @@ import {
   ShortcutsOverlay,
   StatusLine,
   Tabs,
+  TeamChip,
 } from "@jumbo/ui";
 import { MotionDemos } from "./motion-demos";
 import { SlamWipeDemo } from "./slam-wipe-demo";
@@ -557,6 +558,19 @@ function FrameSection() {
           >
             Could not reach the server
           </StatusLine>
+        </div>
+      </Specimen>
+      <Specimen label="TeamChip — every size, and a reversed right-hand end">
+        <div className="flex flex-col gap-2 text-s12">
+          <TeamChip colorIndex={1} name="Rocketeers" size="xs" />
+          <TeamChip colorIndex={2} name="Segfaults" size="sm" />
+          <TeamChip colorIndex={3} name="Null pointers" size="md" />
+          <TeamChip colorIndex={4} name="Off by one" size="lg" />
+          <TeamChip
+            colorIndex={5}
+            name="A team with a very long name indeed"
+            reverse
+          />
         </div>
       </Specimen>
     </Section>

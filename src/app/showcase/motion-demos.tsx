@@ -2,11 +2,11 @@
  * Showcase spec previews for the register's motion vocabulary (docs/UI.md):
  * the Thunk baseline every piece of chrome rides (via the SLIP constants),
  * plus the five moment choreographies — wipe, stamp, odometer, pop, shake.
- * The wipe has graduated into the SlamWipe kit member, so its preview here
- * derives its timing/curve from WIPE_DUR/WIPE_EASE rather than hard-coded
- * values, so it can't drift from the shipped component (see the live
- * specimen in slam-wipe-demo.tsx). The other four moments remain spec
- * values recorded here until they land.
+ * The wipe has graduated into the SlamWipe kit member and the pop into the
+ * ScorePop kit member, so their previews here render the shipped components
+ * rather than hard-coded values, so neither can drift from what ships (see
+ * the live specimen in slam-wipe-demo.tsx). The other three moments — stamp,
+ * odometer, shake — remain spec values recorded here until they land.
  */
 "use client";
 
@@ -14,6 +14,7 @@ import { useState } from "react";
 import { MotionConfig, motion } from "motion/react";
 import {
   Button,
+  ScorePop,
   SLIP_DUR,
   SLIP_EASE,
   SLIP_SHAKE,
@@ -200,10 +201,15 @@ function OdometerDemo() {
   );
 }
 
-/** Moment: the springy pop — a point lands with overshoot, as a reward. */
+/**
+ * Moment: the springy pop — a point lands with overshoot, as a reward. Both
+ * signs mount here (the kit member's two visual states) plus a labelled
+ * empty slot for the idle state, so the living spec can't drift into
+ * showing only the gain case.
+ */
 function PopDemo() {
   return (
-    <>
+    <div className="flex flex-col items-center gap-3">
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -216,15 +222,27 @@ function PopDemo() {
       >
         2–1
       </motion.div>
-      <motion.span
-        initial={{ opacity: 0, y: 16, rotate: -8 }}
-        animate={{ opacity: [0, 1, 1], y: -34, rotate: 4 }}
-        transition={{ duration: 0.7, ease: SLIP_EASE, delay: 0.8 }}
-        className="absolute font-hand text-2xl text-ok"
-      >
-        +1!!
-      </motion.span>
-    </>
+      <div className="flex gap-8">
+        <div className="flex flex-col items-center gap-1">
+          <div className="relative h-6 w-10">
+            <ScorePop popKey={1} delta={1} />
+          </div>
+          <span className="text-meta text-s7">Gain</span>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <div className="relative h-6 w-10">
+            <ScorePop popKey={1} delta={-1} />
+          </div>
+          <span className="text-meta text-s7">Loss</span>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <div className="relative h-6 w-10 border border-dashed border-s6">
+            <ScorePop popKey={0} delta={0} />
+          </div>
+          <span className="text-meta text-s7">Idle (renders nothing)</span>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -4,6 +4,8 @@ import { buttonIntent } from "./actions/Button.intent";
 import { copyCodeIntent } from "./actions/CopyCode.intent";
 import { brandMarkIntent } from "./brand/BrandMark.intent";
 import { cardIntent } from "./surface/Card.intent";
+import { teamChipIntent } from "./surface/TeamChip.intent";
+import { scorePopIntent } from "./surface/ScorePop.intent";
 import type { ComponentIntent } from "./lib/intent";
 import { spinnerIntent } from "./Spinner.intent";
 import { slamWipeIntent } from "./SlamWipe.intent";
@@ -70,4 +72,6 @@ export const allIntents: ComponentIntent[] = [
   optionCardIntent,
   tabsIntent,
   statusLineIntent,
+  teamChipIntent,
+  scorePopIntent,
 ];

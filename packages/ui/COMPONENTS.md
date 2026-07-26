@@ -349,3 +349,25 @@ A raised content surface — the board sticker for framing a block of content.
 - **Variants & states:** default (a static raised surface; the grid, border, and shadow are theme-owned).
 - **Accessibility:** A presentational container; the caller supplies the landmark or heading semantics for its content.
 - **Related:** ModalShell, MenuCard, PopoverCard
+
+### ScorePop
+
+The springy ±N annotation that fires once as a point lands on a game surface.
+
+- **Use it when:** A score the viewer owns changes at a game beat and the change deserves to be felt. A gain and a loss need to read differently at a glance.
+- **Don't use it when:** The number is chrome rather than a game beat — everyday values change without ceremony. The change is continuous rather than a discrete beat.
+- **Anatomy:** An absolutely-positioned hand-voice ±N that rises off the value it annotates, tilting with the sign.
+- **Variants & states:** gain (done hue, tilts right) · loss (critical hue, tilts left), idle (renders nothing until the first beat)
+- **Accessibility:** Decorative and aria-hidden — the value it annotates is already on screen as live text, so announcing the pop would double-report it. Collapses to no motion under an ancestor MotionConfig reducedMotion='user', which every game surface mounts.
+- **Related:** StatusLine, TeamChip
+
+### TeamChip
+
+One team's identity — its palette swatch bound to its name — wherever a team is named on screen.
+
+- **Use it when:** A roster, standings row, scoreboard end, or verdict names a team. A log or event line attributes something to a team.
+- **Don't use it when:** The colour would stand alone without the name — the pairing is the law, not a default. The hue is meant to report state (use the status vocabulary; team colour is identity only).
+- **Anatomy:** A palette swatch and the team name in one row, reversible so the swatch can sit outboard on a right-aligned end.
+- **Variants & states:** xs (log rows) · sm (rosters) · md (default) · lg (verdict stamp), default · reversed
+- **Accessibility:** The swatch is aria-hidden, so colour never carries meaning alone; the name is the accessible content. The name truncates and the swatch never shrinks, but the truncation only engages when an ancestor supplies a bounded width — `truncate` implies `white-space: nowrap`, so a call site without a width-constrained parent (a `min-w-0` chain up to something with a definite or capped width) lets a long name overflow instead of clipping.
+- **Related:** Card, StatusLine

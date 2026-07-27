@@ -19,8 +19,12 @@ import type { PersistResponse } from "@jumbo/protocol";
 // Derived, not restated: adding a minigame kind widens MinigameKind, and a
 // hand-written enum here would still typecheck while 400ing the new kind at
 // runtime — finished matches silently failing to archive.
+// hasOwnProperty, not `in`: `in` walks the prototype chain, so "constructor"
+// and every other Object.prototype key would pass as a kind.
 const kindSchema = z.custom<MinigameKind>(
-  (value) => typeof value === "string" && value in MINIGAMES,
+  (value) =>
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(MINIGAMES, value),
 );
 
 // SlotPhase has no runtime counterpart in the engine, so this table is the

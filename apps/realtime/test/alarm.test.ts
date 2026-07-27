@@ -78,3 +78,30 @@ describe("alarm-driven advance", () => {
     });
   });
 });
+
+describe("alarm chain", () => {
+  it("arms the play deadline after the countdown advances, not the elapsed countdown", async () => {
+    const id = env.MATCH_ROOM.idFromName("alarm-chain");
+    const stub = env.MATCH_ROOM.get(id);
+
+    await runInDurableObject(stub, async (_instance, ctx) => {
+      saveRoom(ctx, countdownRoom(Date.now() - 1));
+      await ctx.storage.setAlarm(Date.now() + 60_000);
+    });
+
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
+
+    await runInDurableObject(stub, async (_instance, ctx) => {
+      const room = await loadRoom(ctx);
+      expect(room?.state.slots[0].phase).toBe("playing");
+
+      // The whole point of a self-driving room: having advanced into play, it
+      // must now be waiting on the PLAY deadline. countdownEndsAt is still set
+      // and now in the past — arming that instead burns the alarm on a no-op
+      // and the slot never finalizes, scores, or persists.
+      const deadline = room?.state.slots[0].deadline ?? null;
+      expect(deadline).not.toBeNull();
+      expect(await ctx.storage.getAlarm()).toBe(deadline);
+    });
+  });
+});

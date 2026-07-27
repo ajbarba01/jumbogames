@@ -40,8 +40,9 @@ for (const key of [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "OWNER_EMAILS",
-  // Required even with the socket transport off: the match snapshot route
-  // mints a connect ticket on every read and throws without these.
+  // The socket transport reads these; the snapshot route and match page mint
+  // a ticket only when NEXT_PUBLIC_REALTIME_WS is "1", so the Supabase path
+  // runs without them.
   "REALTIME_SHARED_SECRET",
   "NEXT_PUBLIC_REALTIME_URL",
   "NEXT_PUBLIC_REALTIME_WS",

@@ -147,8 +147,12 @@ export class WebSocketMatchClient implements MatchClient {
       return;
     }
     if (frame.type === "error") {
-      // A typed refusal is terminal for this socket; the reconnect path fetches
-      // a fresh ticket, which is the recoverable case (an expired ticket).
+      // "unauthorized" is the recoverable one — almost always an expired
+      // ticket — so let the close handler reconnect with a fresh one. The
+      // rest are terminal for this viewer: retrying a match that does not
+      // exist, or an origin that cannot hydrate, just loops forever at the
+      // backoff ceiling. Stop and leave the seeded view on screen.
+      if (frame.reason !== "unauthorized") this.stopped = true;
       return;
     }
     // Frames can arrive out of order across a reconnect; older ones are stale.

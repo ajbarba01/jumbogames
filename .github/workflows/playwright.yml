@@ -22,10 +22,10 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
-      # The match snapshot route mints a socket ticket on every read, so these
-      # are required even with the socket transport switched off — without them
-      # every match page 500s. Locally they come from .env.test.local, which
-      # does not exist here.
+      # Needed by the socket transport. A ticket is minted only when
+      # NEXT_PUBLIC_REALTIME_WS is "1", so the main suite below runs without
+      # them; the flag=1 step at the end does not. Locally these come from
+      # .env.test.local, which does not exist here.
       REALTIME_SHARED_SECRET: ${{ secrets.REALTIME_SHARED_SECRET }}
       NEXT_PUBLIC_REALTIME_URL: http://localhost:8787
       # The main suite runs the Supabase path, which is still the shipping one.

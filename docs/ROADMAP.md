@@ -205,6 +205,40 @@ sign-up budget. Not fixed, and out of scope by decision: the signup route collap
 `supabase.auth.signUp` failure into one opaque 400, which is what made this take two days to see —
 worth its own change, since it is a production auth path under the no-leaky-logs floor.
 
+## Milestone 6.5 — realtime over Durable Objects (landed dark, behind a flag)
+
+Match authority moved off Next route handlers + Supabase Realtime onto one Cloudflare Durable Object
+per match. The pure core was extracted to `packages/engine` (`@jumbo/engine`) and the wire contract to
+`packages/protocol`, so the Next app and the new `apps/realtime` Worker drive a match through the same
+reducer. During a slot the DO is authoritative: state lives in `ctx.storage`, sockets hibernate, slot
+timers run on DO alarms, and Postgres is a write-behind archive reached only through two
+secret-authenticated internal routes. Optimistic UI is two-tiered — trivia gets acknowledgement-only
+feedback because it redacts the correct answer and a client cannot predict its own result.
+
+**Status: complete but not enabled.** `NEXT_PUBLIC_REALTIME_WS` defaults to `0`; the Supabase path is
+still the shipping one. The cutover (deploy the Worker, flip the flag, delete the old transport) is
+its own task and has not been done.
+
+Known gaps carried out of this milestone, all of which the cutover must address:
+
+- **The full E2E suite cannot run with the flag on yet.** `trivia.spec.ts` and `round-start.spec.ts`
+  drive a match by POSTing the legacy `/slots/:ordinal/force-start` route; with the socket transport
+  on, the DO is authoritative and never sees that write. CI therefore runs the main suite at flag `0`
+  plus a dedicated flag `1` step for `e2e/realtime.spec.ts`. The cutover deletes those routes and must
+  rewrite both specs to drive through the UI.
+- **One secret serves two purposes.** `REALTIME_SHARED_SECRET` is both the ticket-signing HMAC key and
+  the bearer credential on Worker→Next calls. Disclosure of the bearer would allow forging a ticket for
+  any player on any match. Split before enabling in production.
+- **The roster is frozen at hydrate.** The DO never re-hydrates and never applies the engine's
+  `rosterChanged` event, so a player kicked mid-match keeps acting — and because persist overwrites
+  wholesale, a roster change made through the Next path is reverted.
+- **`NEXT_PUBLIC_REALTIME_WS` is a whole-environment switch.** Two deployments at different flag values
+  must never share a database: at flag `1` the DO overwrites all slots from its own lineage, so any
+  legacy write in between is erased.
+- **The tier-2 prediction stack is unreachable.** No shipped minigame declares `predict`, so
+  `canPredict` is always false and `predictSlot`'s main path never runs. Either delete it or land it
+  with the first game that needs it.
+
 ## Known gaps (carry into the next branches)
 
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
@@ -254,4 +288,4 @@ worth its own change, since it is a production auth path under the no-leaky-logs
 
 ---
 
-_Last reviewed: 2026-07-26_
+_Last reviewed: 2026-07-27_

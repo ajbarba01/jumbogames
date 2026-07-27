@@ -7,22 +7,31 @@
  * any time between messages.
  */
 import { clientMessageSchema, verifyTicket } from "@jumbo/protocol";
-import type { ServerErrorFrame, ServerFrame } from "@jumbo/protocol";
+import type {
+  ServerErrorFrame,
+  ServerFrame,
+  ServerStateFrame,
+} from "@jumbo/protocol";
 import {
   actionSchemaFor,
   applyMatchEvent,
   MINIGAMES,
+  derivePhase,
   pendingAdvance,
 } from "@jumbo/engine";
 import type { Env } from "./env";
 import { loadRoom, saveRoom, type RoomState } from "./state";
 import { fetchHydrate, postPersist } from "./origin";
-import { broadcast } from "./broadcast";
+import { broadcast, viewFor } from "./broadcast";
 
 export interface Attachment {
   profileId: string;
   isPlayer: boolean;
 }
+
+/** Persist retry budget. Beyond this the slot waits for the next deadline. */
+const PERSIST_MAX_RETRIES = 5;
+const PERSIST_RETRY_MS = 5_000;
 
 export class MatchRoom implements DurableObject {
   constructor(
@@ -60,6 +69,19 @@ export class MatchRoom implements DurableObject {
     // live here or a rehydrated object cannot tell who a socket belongs to.
     server.serializeAttachment(attachment);
     this.ctx.acceptWebSocket(server);
+
+    // Seed this socket immediately. Frames are otherwise only sent when
+    // somebody acts, so a client that connects (or reconnects) mid-slot would
+    // render whatever it last knew — indefinitely, since this transport has no
+    // heartbeat — and a reconnecting client keeps its pre-drop authoritative
+    // view, which may be arbitrarily stale.
+    const frame: ServerStateFrame = {
+      type: "state",
+      seq: room.seq,
+      serverNow: Date.now(),
+      view: viewFor(room, attachment),
+    };
+    server.send(JSON.stringify(frame));
 
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -193,17 +215,39 @@ export class MatchRoom implements DurableObject {
    * match progresses with no client connected at all.
    */
   private async scheduleNext(room: RoomState): Promise<void> {
-    const next = room.state.slots.reduce<number | null>((soonest, slot) => {
-      const candidates = [
-        slot.countdownEndsAt,
-        slot.deadline,
-        slot.scoringEndsAt,
-      ].filter((t): t is number => typeof t === "number");
-      for (const t of candidates) {
-        if (soonest === null || t < soonest) soonest = t;
-      }
-      return soonest;
-    }, null);
+    const now = Date.now();
+
+    // Something is already due (an elapsed deadline, or a game that finished
+    // early on its own terms — a trivia rope pin has no timestamp at all).
+    // Arm immediately rather than computing a future instant that would leave
+    // it unprocessed.
+    if (pendingAdvance(room.state, now)) {
+      await this.ctx.storage.setAlarm(now);
+      return;
+    }
+
+    // Only the ACTIVE slot's phase-relevant timestamp counts. The reducer does
+    // not clear a timestamp once its phase has passed — a slot in `playing`
+    // still carries the countdownEndsAt it advanced through — so reducing over
+    // every timestamp on every slot arms an instant in the past, workerd fires
+    // it at once, pendingAdvance finds nothing due, and the handler returns
+    // without re-arming. That leaves the real deadline unarmed and the match
+    // wedged in `playing` forever.
+    const phase = derivePhase(room.state);
+    if (phase.kind === "complete") {
+      await this.ctx.storage.deleteAlarm();
+      return;
+    }
+
+    const slot = phase.slot;
+    const next =
+      slot.phase === "countdown"
+        ? slot.countdownEndsAt
+        : slot.phase === "playing"
+          ? slot.deadline
+          : slot.phase === "scoring"
+            ? slot.scoringEndsAt
+            : null;
 
     if (next === null) {
       await this.ctx.storage.deleteAlarm();
@@ -247,7 +291,11 @@ export class MatchRoom implements DurableObject {
     broadcast(this.ctx, updated, now);
 
     await this.persistFinished(updated);
-    await this.scheduleNext(updated);
+    // persistFinished awaits a fetch, during which a client message can land
+    // and move the room on. Arm from what storage actually holds now, not from
+    // the snapshot this handler started with.
+    const settled = (await loadRoom(this.ctx)) ?? updated;
+    await this.scheduleNext(settled);
   }
 
   /**
@@ -271,13 +319,35 @@ export class MatchRoom implements DurableObject {
       room.state,
       highest,
     );
+
+    // Re-read before writing. Cloudflare's input gates defer incoming events
+    // only while a STORAGE operation is outstanding — they do not cover fetch.
+    // A player's message can therefore be delivered during the request above,
+    // bump seq, and be written; writing back the pre-fetch snapshot would
+    // rewind seq and silently discard that action, and every client (which
+    // already holds the higher seq) would drop frames until the room caught
+    // back up.
+    const current = await loadRoom(this.ctx);
+    if (!current) return;
+
     if (!ok) {
-      // Retry on the next alarm; re-arm soon so a transient origin failure does
-      // not strand a finished slot until the next natural deadline.
-      await this.ctx.storage.setAlarm(Date.now() + 5000);
+      // Bounded retry: an origin that is durably down (rotated secret, 500s)
+      // must not make every live match hammer /persist forever with no client
+      // connected. Back off, then give up and leave the slot for the next
+      // natural deadline — Postgres still holds the last completed state.
+      const failures = (current.persistFailures ?? 0) + 1;
+      saveRoom(this.ctx, { ...current, persistFailures: failures });
+      if (failures <= PERSIST_MAX_RETRIES) {
+        const backoff = PERSIST_RETRY_MS * 2 ** (failures - 1);
+        await this.ctx.storage.setAlarm(Date.now() + backoff);
+      }
       return;
     }
-    saveRoom(this.ctx, { ...room, lastPersistedOrdinal: highest });
+    saveRoom(this.ctx, {
+      ...current,
+      lastPersistedOrdinal: highest,
+      persistFailures: 0,
+    });
   }
 
   private reject(ws: WebSocket, reason: ServerErrorFrame["reason"]): void {

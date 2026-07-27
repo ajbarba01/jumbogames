@@ -101,6 +101,13 @@ export async function POST(
     })),
   };
 
+  // The slot values come from the body but the rows are keyed by the URL's
+  // matchId, so a Worker addressing the wrong room would write one match's
+  // play into another. MatchState carries its own id; make them agree.
+  if (state.matchId !== matchId) {
+    return NextResponse.json({ error: "Match id mismatch" }, { status: 400 });
+  }
+
   const loaded = await loadMatchRows(matchId);
   if (!loaded || loaded.rows.teamB === null) {
     return NextResponse.json({ error: "No such match" }, { status: 404 });

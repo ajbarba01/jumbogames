@@ -26,6 +26,13 @@ export interface RoomState {
   seq: number;
   /** Highest ordinal already persisted to Postgres, so replays are no-ops. */
   lastPersistedOrdinal: number;
+  /**
+   * Consecutive persist failures, bounding the retry so a durably-failing
+   * origin cannot make every live match hammer the persist route forever.
+   * Optional because rooms written before this field existed are still in
+   * storage; absent reads as zero.
+   */
+  persistFailures?: number;
 }
 
 export async function loadRoom(

@@ -11,6 +11,7 @@ export * from "./match/normalize";
 export * from "./match/timers";
 export * from "./match/round-draw";
 export * from "./match/presentation";
+export * from "./match/prediction";
 export * from "./match/view";
 export * from "./minigames/types";
 export * from "./minigames/registry";

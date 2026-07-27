@@ -6,7 +6,7 @@
  */
 
 export function isInternalCaller(request: Request): boolean {
-  const expected = process.env.REALTIME_SHARED_SECRET;
+  const expected = process.env.REALTIME_INTERNAL_SECRET;
   if (!expected) return false;
   const presented = request.headers.get("x-internal-auth");
   if (presented === null) return false;

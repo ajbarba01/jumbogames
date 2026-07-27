@@ -9,7 +9,7 @@ const SECRET = "test-secret-at-least-32-bytes-long-000";
 
 describe("isInternalCaller", () => {
   beforeEach(() => {
-    process.env.REALTIME_SHARED_SECRET = SECRET;
+    process.env.REALTIME_INTERNAL_SECRET = SECRET;
   });
 
   const withHeader = (value: string | null) =>
@@ -30,7 +30,7 @@ describe("isInternalCaller", () => {
   });
 
   it("rejects when the server has no secret configured", () => {
-    delete process.env.REALTIME_SHARED_SECRET;
+    delete process.env.REALTIME_INTERNAL_SECRET;
     expect(isInternalCaller(withHeader(SECRET))).toBe(false);
   });
 });

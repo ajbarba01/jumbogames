@@ -226,15 +226,17 @@ Known gaps carried out of this milestone, all of which the cutover must address:
   on, the DO is authoritative and never sees that write. CI therefore runs the main suite at flag `0`
   plus a dedicated flag `1` step for `e2e/realtime.spec.ts`. The cutover deletes those routes and must
   rewrite both specs to drive through the UI.
-- **One secret serves two purposes.** `REALTIME_SHARED_SECRET` is both the ticket-signing HMAC key and
-  the bearer credential on Worker→Next calls. Disclosure of the bearer would allow forging a ticket for
-  any player on any match. Split before enabling in production.
-- **The roster is frozen at hydrate.** The DO never re-hydrates and never applies the engine's
-  `rosterChanged` event, so a player kicked mid-match keeps acting — and because persist overwrites
-  wholesale, a roster change made through the Next path is reverted.
-- **`NEXT_PUBLIC_REALTIME_WS` is a whole-environment switch.** Two deployments at different flag values
-  must never share a database: at flag `1` the DO overwrites all slots from its own lineage, so any
-  legacy write in between is erased.
+- ~~**One secret serves two purposes.**~~ Resolved: split into `REALTIME_TICKET_KEY` (HMAC signing,
+  never transmitted) and `REALTIME_INTERNAL_SECRET` (bearer on Worker→Next calls). Both must be set
+  in Vercel, in `wrangler secret put`, and as GitHub Actions secrets before the flag goes to `1`.
+- ~~**The roster is frozen at hydrate.**~~ Resolved as a documentation gap, not a code one: the
+  reviewed scenario cannot occur, because join, leave and kick all pass `requireRosterOpen`, which
+  refuses for exactly the window in which a `MatchRoom` exists (DESIGN decision 17). The freeze is
+  correct; what was missing was any statement of the coupling. `MatchRoom.room()` and
+  `roster-lock.ts` now each name the other, so relaxing the lock surfaces the Worker's dependency
+  and `rosterChanged` as its prerequisite.
+- ~~**`NEXT_PUBLIC_REALTIME_WS` is a whole-environment switch.**~~ Resolved: the rule that two
+  deployments at different flag values must never share a database is recorded in README Deployment.
 - **The tier-2 prediction stack is unreachable.** No shipped minigame declares `predict`, so
   `canPredict` is always false and `predictSlot`'s main path never runs. Either delete it or land it
   with the first game that needs it.

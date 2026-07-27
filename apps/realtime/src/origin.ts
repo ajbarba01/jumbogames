@@ -14,7 +14,7 @@ export async function fetchHydrate(
   try {
     const res = await fetch(
       `${env.ORIGIN_URL}/api/internal/matches/${matchId}/hydrate`,
-      { headers: { "x-internal-auth": env.REALTIME_SHARED_SECRET } },
+      { headers: { "x-internal-auth": env.REALTIME_INTERNAL_SECRET } },
     );
     if (!res.ok) return null;
     return (await res.json()) as HydrateResponse;
@@ -36,7 +36,7 @@ export async function postPersist(
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-internal-auth": env.REALTIME_SHARED_SECRET,
+          "x-internal-auth": env.REALTIME_INTERNAL_SECRET,
         },
         body: JSON.stringify({
           state,

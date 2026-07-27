@@ -16,7 +16,7 @@ import { signTicket } from "@jumbo/protocol";
 import { saveRoom, type RoomState } from "../src/state";
 import { matchState, slot } from "./support/fixtures";
 
-const SECRET = "test-secret-at-least-32-bytes-000";
+const SECRET = "test-ticket-key-at-least-32-bytes-0";
 const MATCH = "hibernation-match";
 
 // Seeded directly into storage so the connect path finds an existing room and

@@ -26,7 +26,8 @@ jobs:
       # NEXT_PUBLIC_REALTIME_WS is "1", so the main suite below runs without
       # them; the flag=1 step at the end does not. Locally these come from
       # .env.test.local, which does not exist here.
-      REALTIME_SHARED_SECRET: ${{ secrets.REALTIME_SHARED_SECRET }}
+      REALTIME_TICKET_KEY: ${{ secrets.REALTIME_TICKET_KEY }}
+      REALTIME_INTERNAL_SECRET: ${{ secrets.REALTIME_INTERNAL_SECRET }}
       NEXT_PUBLIC_REALTIME_URL: http://localhost:8787
       # The main suite runs the Supabase path, which is still the shipping one.
       # Two specs (trivia, round-start) drive a match by POSTing the legacy
@@ -52,7 +53,9 @@ jobs:
       # wrangler dev reads its secrets from this gitignored file, not from the
       # job env, so it has to be materialized before Playwright boots the Worker.
       - name: Provide worker dev secrets
-        run: printf 'REALTIME_SHARED_SECRET=%s\n' "$REALTIME_SHARED_SECRET" > apps/realtime/.dev.vars
+        run: |
+          printf 'REALTIME_TICKET_KEY=%s\nREALTIME_INTERNAL_SECRET=%s\n' \
+            "$REALTIME_TICKET_KEY" "$REALTIME_INTERNAL_SECRET" > apps/realtime/.dev.vars
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       # The socket path, proven end to end: one player's action reaches a

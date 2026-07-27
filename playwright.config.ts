@@ -43,7 +43,8 @@ for (const key of [
   // The socket transport reads these; the snapshot route and match page mint
   // a ticket only when NEXT_PUBLIC_REALTIME_WS is "1", so the Supabase path
   // runs without them.
-  "REALTIME_SHARED_SECRET",
+  "REALTIME_TICKET_KEY",
+  "REALTIME_INTERNAL_SECRET",
   "NEXT_PUBLIC_REALTIME_URL",
   "NEXT_PUBLIC_REALTIME_WS",
 ] as const) {

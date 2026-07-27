@@ -7,7 +7,7 @@ import { SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { signTicket } from "@jumbo/protocol";
 
-const SECRET = "test-secret-at-least-32-bytes-000";
+const SECRET = "test-ticket-key-at-least-32-bytes-0";
 
 const connect = async (matchId: string, ticket: string | null) => {
   const url = new URL(`https://example.test/room/${matchId}`);

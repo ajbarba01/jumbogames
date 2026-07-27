@@ -7,8 +7,8 @@
 import { signTicket, TICKET_TTL_SECONDS } from "@jumbo/protocol";
 
 function secret(): string {
-  const value = process.env.REALTIME_SHARED_SECRET;
-  if (!value) throw new Error("REALTIME_SHARED_SECRET is not set");
+  const value = process.env.REALTIME_TICKET_KEY;
+  if (!value) throw new Error("REALTIME_TICKET_KEY is not set");
   return value;
 }
 

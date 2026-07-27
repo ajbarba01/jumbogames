@@ -52,7 +52,7 @@ export class MatchRoom implements DurableObject {
     const [client, server] = Object.values(new WebSocketPair());
 
     const claims = ticket
-      ? await verifyTicket(ticket, this.env.REALTIME_SHARED_SECRET)
+      ? await verifyTicket(ticket, this.env.REALTIME_TICKET_KEY)
       : null;
     if (!claims || claims.matchId !== matchId) {
       return this.refuse(client, server, "unauthorized");

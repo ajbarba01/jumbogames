@@ -11,17 +11,17 @@ import { issueTicket, socketUrlFor } from "./ticket";
 const SECRET = "test-secret-at-least-32-bytes-long-000";
 
 describe("issueTicket", () => {
-  const originalSecret = process.env.REALTIME_SHARED_SECRET;
+  const originalSecret = process.env.REALTIME_TICKET_KEY;
 
   beforeEach(() => {
-    process.env.REALTIME_SHARED_SECRET = SECRET;
+    process.env.REALTIME_TICKET_KEY = SECRET;
   });
 
   afterEach(() => {
     if (originalSecret === undefined) {
-      delete process.env.REALTIME_SHARED_SECRET;
+      delete process.env.REALTIME_TICKET_KEY;
     } else {
-      process.env.REALTIME_SHARED_SECRET = originalSecret;
+      process.env.REALTIME_TICKET_KEY = originalSecret;
     }
   });
 
@@ -52,10 +52,10 @@ describe("issueTicket", () => {
     expect(claims).toBeNull();
   });
 
-  it("throws when REALTIME_SHARED_SECRET is not set", async () => {
-    delete process.env.REALTIME_SHARED_SECRET;
+  it("throws when REALTIME_TICKET_KEY is not set", async () => {
+    delete process.env.REALTIME_TICKET_KEY;
     await expect(issueTicket("match-1", "profile-1")).rejects.toThrow(
-      "REALTIME_SHARED_SECRET is not set",
+      "REALTIME_TICKET_KEY is not set",
     );
   });
 });

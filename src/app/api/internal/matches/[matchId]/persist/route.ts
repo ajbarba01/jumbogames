@@ -1,8 +1,10 @@
 /**
- * Internal route: writes a slot the Worker has finished back into Postgres and
- * settles round completion, reusing the same slot-write mapping and completion
- * guard the old mutate seam used. Idempotent — replaying the same completed
- * ordinal is a no-op — because the Worker retries this call on failure.
+ * Internal route: writes the match state the Worker holds back into Postgres
+ * and settles round completion, reusing the same slot-write mapping and
+ * completion guard the old mutate seam used. Every call overwrites all slots
+ * wholesale rather than applying a delta, so a retry — which the Worker does on
+ * failure — converges on the same rows; it is not free, though, as it rewrites
+ * and re-broadcasts. The Worker, not this route, decides when to call.
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -10,8 +12,32 @@ import { isInternalCaller } from "@/lib/realtime/internal-auth";
 import { parseJsonBody } from "@/lib/http";
 import { loadMatchRows } from "@/lib/match/server/load";
 import { persistMatchState } from "@/lib/match/server/persist";
-import type { MatchState } from "@jumbo/engine";
+import { MINIGAMES } from "@jumbo/engine";
+import type { MatchState, MinigameKind, SlotPhase } from "@jumbo/engine";
 import type { PersistResponse } from "@jumbo/protocol";
+
+// Derived, not restated: adding a minigame kind widens MinigameKind, and a
+// hand-written enum here would still typecheck while 400ing the new kind at
+// runtime — finished matches silently failing to archive.
+const kindSchema = z.custom<MinigameKind>(
+  (value) => typeof value === "string" && value in MINIGAMES,
+);
+
+// SlotPhase has no runtime counterpart in the engine, so this table is the
+// nearest equivalent: adding a phase to SlotPhase makes this literal a missing-
+// key type error, which is the build signal a bare z.enum would not give.
+const PHASES: Record<SlotPhase, true> = {
+  upcoming: true,
+  gate: true,
+  countdown: true,
+  playing: true,
+  scoring: true,
+  done: true,
+};
+
+const phaseSchema = z.custom<SlotPhase>(
+  (value) => typeof value === "string" && value in PHASES,
+);
 
 const teamSchema = z.object({
   id: z.string(),
@@ -22,15 +48,8 @@ const teamSchema = z.object({
 
 const slotSchema = z.object({
   ordinal: z.number().int().nonnegative(),
-  kind: z.enum(["stub", "trivia"]),
-  phase: z.enum([
-    "upcoming",
-    "gate",
-    "countdown",
-    "playing",
-    "scoring",
-    "done",
-  ]),
+  kind: kindSchema,
+  phase: phaseSchema,
   ready: z.array(z.string()),
   snapshot: z
     .object({ teamA: z.array(z.string()), teamB: z.array(z.string()) })

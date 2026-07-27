@@ -1,8 +1,10 @@
 /**
- * The single write seam for a match: load rows, apply one typed event through
- * the pure reducer, and — only if state changed — claim the write with a
- * match-level optimistic version bump, persist all slots, settle round
+ * The request-driven write seam for a match: load rows, apply one typed event
+ * through the pure reducer, and — only if state changed — claim the write with
+ * a match-level optimistic version bump, persist all slots, settle round
  * completion, and broadcast. Idempotent events return changed:false with no IO.
+ * The realtime Worker writes through the internal persist route instead; both
+ * bump the same version, so whichever loses the claim retries.
  */
 import { prisma } from "@/lib/prisma";
 import { MINIGAMES } from "@jumbo/engine";

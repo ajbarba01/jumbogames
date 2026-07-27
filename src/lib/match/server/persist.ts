@@ -1,8 +1,8 @@
 /**
  * The Postgres write half of a match: map slot state onto Prisma update data,
- * write every slot, and settle round completion. Shared by the legacy mutate
- * seam and the internal persist route the realtime Worker calls, so the two
- * cannot drift in how a finished slot lands.
+ * write every slot under a version bump, and settle round completion. Shared by
+ * the legacy mutate seam and the internal persist route the realtime Worker
+ * calls, so the two cannot drift in how a finished slot lands.
  */
 import { prisma } from "@/lib/prisma";
 import { derivePhase } from "@jumbo/engine";
@@ -85,6 +85,16 @@ export async function persistMatchState(
   ids: { roundId: string; tournamentId: string },
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
+    // Bump the version in the same transaction as the slot writes. It is the
+    // only column mutateMatch's optimistic claim tests, so without this a
+    // legacy writer holding a pre-persist read would still win its claim and
+    // overwrite these rows with stale state — a lost update with nothing to
+    // signal the conflict. Bumping it makes that claim fail, so the legacy
+    // path retries and re-derives from the rows written here.
+    await tx.match.update({
+      where: { id: matchId },
+      data: { version: { increment: 1 } },
+    });
     await Promise.all(
       state.slots.map((slot) =>
         tx.minigameSlot.update({

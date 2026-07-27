@@ -18,6 +18,9 @@ export default defineConfig({
       miniflare: {
         bindings: {
           REALTIME_SHARED_SECRET: "test-secret-at-least-32-bytes-000",
+          // A guaranteed-dead origin, so hydrate fails the same way whether or
+          // not a dev server happens to be listening on :3000.
+          ORIGIN_URL: "http://127.0.0.1:9",
         },
       },
     }),

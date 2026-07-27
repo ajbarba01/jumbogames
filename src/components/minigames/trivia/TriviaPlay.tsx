@@ -147,8 +147,11 @@ function Ticker({
 }
 
 /** One answer choice. Interactive until the reveal; the reveal marks the
- *  correct choice and shakes a wrong pick. The frame carries the verdict, so
- *  the kit Button underneath keeps its own faces intact. */
+ *  correct choice and shakes a wrong pick. A tapped-but-unresolved choice
+ *  reads as *taken* (tier-1 optimism, DESIGN.md decision 23) — deliberately
+ *  neutral, because trivia redacts the correct answer and the client cannot
+ *  know whether the pick was right until the server says so. The frame carries
+ *  the verdict, so the kit Button underneath keeps its own faces intact. */
 function Choice({
   label,
   disabled,
@@ -157,7 +160,7 @@ function Choice({
 }: {
   label: string;
   disabled: boolean;
-  verdict: "none" | "correct" | "wrong";
+  verdict: "idle" | "pending" | "correct" | "wrong";
   onPick: () => void;
 }): React.JSX.Element {
   return (
@@ -168,7 +171,9 @@ function Choice({
         "rounded-r2 border-2",
         verdict === "correct" && "border-ok",
         verdict === "wrong" && "border-crit",
-        verdict === "none" && "border-transparent",
+        // Held, not scored: the existing neutral rule, no new colour token.
+        verdict === "pending" && "border-s6",
+        verdict === "idle" && "border-transparent",
       )}
     >
       <Button
@@ -176,6 +181,7 @@ function Choice({
         className="w-full"
         disabled={disabled}
         onClick={onPick}
+        data-state={verdict}
       >
         {label}
       </Button>
@@ -346,12 +352,16 @@ export function TriviaPlay({
                       disabled={!canAct || held !== null}
                       verdict={
                         revealed === null
-                          ? "none"
+                          ? // Pre-reveal the only thing that is known is which
+                            // choice this viewer took — never whether it scored.
+                            held !== null && choiceIndex === held.picked
+                            ? "pending"
+                            : "idle"
                           : choiceIndex === revealed.correctIndex
                             ? "correct"
                             : held !== null && choiceIndex === held.picked
                               ? "wrong"
-                              : "none"
+                              : "idle"
                       }
                       onPick={() => pick(choiceIndex)}
                     />

@@ -8,10 +8,15 @@
  */
 import { clientMessageSchema, verifyTicket } from "@jumbo/protocol";
 import type { ServerErrorFrame, ServerFrame } from "@jumbo/protocol";
-import { actionSchemaFor, applyMatchEvent, MINIGAMES } from "@jumbo/engine";
+import {
+  actionSchemaFor,
+  applyMatchEvent,
+  MINIGAMES,
+  pendingAdvance,
+} from "@jumbo/engine";
 import type { Env } from "./env";
 import { loadRoom, saveRoom, type RoomState } from "./state";
-import { fetchHydrate } from "./origin";
+import { fetchHydrate, postPersist } from "./origin";
 import { broadcast } from "./broadcast";
 
 export interface Attachment {
@@ -181,9 +186,97 @@ export class MatchRoom implements DurableObject {
     // Same as close — the runtime removes the socket from getWebSockets().
   }
 
-  /** Arm the alarm for the active slot's next deadline. Implemented with alarms. */
-  private async scheduleNext(_room: RoomState): Promise<void> {
-    return;
+  /**
+   * Arm the alarm for whatever the match is next waiting on — a countdown
+   * ending, a play deadline, or a scoring beat. The DO owns its own clock, so a
+   * match progresses with no client connected at all.
+   */
+  private async scheduleNext(room: RoomState): Promise<void> {
+    const next = room.state.slots.reduce<number | null>((soonest, slot) => {
+      const candidates = [
+        slot.countdownEndsAt,
+        slot.deadline,
+        slot.scoringEndsAt,
+      ].filter((t): t is number => typeof t === "number");
+      for (const t of candidates) {
+        if (soonest === null || t < soonest) soonest = t;
+      }
+      return soonest;
+    }, null);
+
+    if (next === null) {
+      await this.ctx.storage.deleteAlarm();
+      return;
+    }
+    await this.ctx.storage.setAlarm(next);
+  }
+
+  /**
+   * Fires when a slot's deadline passes. Applies every advance the engine says
+   * is due, broadcasts, persists any slot that just finished, and re-arms for
+   * whatever comes next.
+   */
+  async alarm(): Promise<void> {
+    const room = await loadRoom(this.ctx);
+    if (!room) return;
+
+    const now = Date.now();
+    let state = room.state;
+    let seq = room.seq;
+
+    // Several deadlines can be due at once after a hibernation gap; drain them
+    // all rather than advancing one phase per alarm.
+    for (let guard = 0; guard < 8; guard++) {
+      const due = pendingAdvance(state, now);
+      if (!due) break;
+      const next = applyMatchEvent(state, due.event, {
+        now,
+        games: MINIGAMES,
+        initContext: {},
+      });
+      if (next === state) break;
+      state = next;
+      seq += 1;
+    }
+
+    if (seq === room.seq) return;
+
+    const updated: RoomState = { ...room, state, seq };
+    saveRoom(this.ctx, updated);
+    broadcast(this.ctx, updated, now);
+
+    await this.persistFinished(updated);
+    await this.scheduleNext(updated);
+  }
+
+  /**
+   * Write back any slot that has finished since the last persist. Failure is
+   * retried by the next alarm rather than lost; the slot stays replayable from
+   * Postgres's last completed state until it succeeds.
+   */
+  private async persistFinished(room: RoomState): Promise<void> {
+    const done = room.state.slots
+      .filter((slot) => slot.phase === "done")
+      .map((slot) => slot.ordinal);
+    const highest = done.length === 0 ? -1 : Math.max(...done);
+    if (highest <= room.lastPersistedOrdinal) return;
+
+    // MatchState carries its own matchId, so this does not depend on the object
+    // having been addressed by name — ctx.id.name is undefined for an id created
+    // any other way, and that failure would be silent.
+    const ok = await postPersist(
+      this.env,
+      room.state.matchId,
+      room.state,
+      highest,
+    );
+    if (!ok) {
+      // Retry on the next alarm; re-arm soon so a transient origin failure does
+      // not strand a finished slot until the next natural deadline.
+      await this.ctx.storage.setAlarm(Date.now() + 5000);
+      return;
+    }
+    saveRoom(this.ctx, { ...room, lastPersistedOrdinal: highest });
   }
 
   private reject(ws: WebSocket, reason: ServerErrorFrame["reason"]): void {

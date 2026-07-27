@@ -3,16 +3,9 @@
  * (server truth) and the player's few verbs. Implemented by the fake dev
  * client today; the Realtime-backed client swaps in behind this interface.
  */
-import type { MatchState } from "@jumbo/engine";
+import type { MatchView } from "@jumbo/engine";
 
-export type ViewerRole = "player" | "spectator";
-
-export interface MatchView {
-  match: MatchState;
-  viewerId: string | null;
-  role: ViewerRole;
-  playerLabels: Record<string, string>;
-}
+export type { MatchView, ViewerRole } from "@jumbo/engine";
 
 // The match GET returns the view plus the server's wall clock at send time, so
 // the client can estimate its offset from server time and correct countdowns.

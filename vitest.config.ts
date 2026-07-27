@@ -29,6 +29,9 @@ export default defineConfig({
       "@jumbo/engine": fileURLToPath(
         new URL("./packages/engine/src/index.ts", import.meta.url),
       ),
+      "@jumbo/protocol": fileURLToPath(
+        new URL("./packages/protocol/src/index.ts", import.meta.url),
+      ),
     },
   },
 });

@@ -48,6 +48,13 @@ The app deploys to Vercel at https://jumbogames.vercel.app.
   are forward-only ([docs/WORKFLOW.md](docs/WORKFLOW.md)).
 - **Server errors:** the production error page shows a digest, not the message. Find the exception in
   Vercel → the deployment → Logs (or Observability → Runtime Logs) by searching that digest.
+- **`NEXT_PUBLIC_REALTIME_WS` is a whole-environment switch, and two deployments at different values
+  must never share a database.** At `1` a match is owned by its Durable Object, which writes every
+  slot back from its own copy of the state; at `0` the route handlers own the same rows. Point a
+  preview at `1` and production at `0` (or the reverse) against one database and both sides
+  authoritatively overwrite the other's live matches. Being `NEXT_PUBLIC_*` it is inlined at build
+  time, so a deployment's value is fixed until it is rebuilt — it cannot be flipped per request,
+  per user, or per match. Change it in lockstep with the database a deployment points at.
 
 ## Commands
 

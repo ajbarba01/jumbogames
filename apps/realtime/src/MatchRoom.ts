@@ -86,7 +86,18 @@ export class MatchRoom implements DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  /** Load the room, hydrating from the origin the first time it is needed. */
+  /**
+   * Load the room, hydrating from the origin the first time it is needed.
+   *
+   * The roster it captures is never refreshed for the life of the match, and
+   * `isPlayer` is decided from it once per connection and then frozen onto the
+   * socket's attachment. That is only correct because DESIGN decision 17 makes
+   * a roster change impossible while a team has a live match — join, leave and
+   * kick all pass `requireRosterOpen`, which refuses for exactly the window in
+   * which this object exists. Relax that rule and this object becomes wrong
+   * immediately: a removed player keeps `isPlayer` and keeps acting. The engine
+   * already has a `rosterChanged` event for that day; nothing here applies it.
+   */
   private async room(matchId: string): Promise<RoomState | null> {
     const existing = await loadRoom(this.ctx);
     if (existing) return existing;

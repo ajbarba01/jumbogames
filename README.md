@@ -77,6 +77,13 @@ the match reducer, normalization, the round draw, and the minigame registry, wit
 and no IO. Both the Next app and the realtime Worker import it, so a match runs through the same code
 on either side. See [docs/ENGINEERING.md](docs/ENGINEERING.md).
 
+## Realtime worker
+
+`apps/realtime` (`@jumbo/realtime`) is a Cloudflare Worker that hosts one Durable Object per live
+match, authoritative for that match's realtime state once a game starts. It runs separately from the
+Next app — `npm run dev:realtime` starts it locally with `wrangler dev`, and `npm run test:realtime`
+runs its tests inside workerd via the Workers vitest pool. See [docs/ENGINEERING.md](docs/ENGINEERING.md).
+
 ## Testing
 
 Playwright E2E tests live in [e2e/](e2e/) and cover auth and CRUD flows. They run in GitHub Actions

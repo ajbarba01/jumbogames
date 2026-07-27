@@ -1,0 +1,20 @@
+{
+  "name": "@jumbo/realtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jumbo/engine": "*",
+    "@jumbo/protocol": "*"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.18.8",
+    "@cloudflare/workers-types": "^5.20260727.1",
+    "wrangler": "^4.114.0"
+  }
+}

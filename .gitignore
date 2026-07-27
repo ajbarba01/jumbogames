@@ -55,3 +55,12 @@ supabase/.temp/
 docs/superpowers/
 .superpowers/
 /plans/
+
+# Local Worker secrets
+apps/realtime/.dev.vars
+
+# wrangler local dev cache
+.wrangler/
+
+# workspace-local node_modules (miniflare/vite caches; packages hoist to /node_modules)
+apps/*/node_modules/

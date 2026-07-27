@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // Agent scratch space — holds git worktrees whose generated Prisma client
     // and .next output otherwise swamp the repo-wide gates.
     ".claude/**",
+    // wrangler's local dev build cache (apps/realtime), regenerated per run.
+    "**/.wrangler/**",
   ]),
 ]);
 

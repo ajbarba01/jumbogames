@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/auth/profile";
 import { loadMatchRows } from "@/lib/match/server/load";
 import { mutateMatch } from "@/lib/match/server/mutate";
 import { rowsToMatchState } from "@/lib/match/server/snapshot";
-import { pendingAdvance } from "@/lib/match/timers";
+import { pendingAdvance } from "@jumbo/engine";
 
 export async function POST(
   _request: Request,

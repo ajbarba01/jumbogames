@@ -7,8 +7,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOrCreateProfile } from "@/lib/auth/profile";
-import { MINIGAMES, poolFor } from "@/lib/minigames/registry";
-import { eligibleEnv } from "@/lib/minigames/eligible";
+import { MINIGAMES, poolFor } from "@jumbo/engine";
+import { eligibleEnv } from "@jumbo/engine";
 import { CreateForm } from "./create-form";
 
 export default async function CreatePage() {

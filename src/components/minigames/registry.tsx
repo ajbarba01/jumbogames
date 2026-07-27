@@ -4,8 +4,8 @@
  */
 import type { ComponentType } from "react";
 import type { MatchView } from "@/lib/match/client";
-import type { SlotState } from "@/lib/match/types";
-import type { MinigameKind } from "@/lib/minigames/types";
+import type { SlotState } from "@jumbo/engine";
+import type { MinigameKind } from "@jumbo/engine";
 import { StubPlay } from "./StubPlay";
 import { TriviaPlay } from "./trivia/TriviaPlay";
 

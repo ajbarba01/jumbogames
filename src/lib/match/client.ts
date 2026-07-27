@@ -3,7 +3,7 @@
  * (server truth) and the player's few verbs. Implemented by the fake dev
  * client today; the Realtime-backed client swaps in behind this interface.
  */
-import type { MatchState } from "./types";
+import type { MatchState } from "@jumbo/engine";
 
 export type ViewerRole = "player" | "spectator";
 

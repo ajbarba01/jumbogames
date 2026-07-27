@@ -10,9 +10,9 @@ import {
   toMatchView,
   type MatchRows,
 } from "./snapshot";
-import { MINIGAMES } from "@/lib/minigames/registry";
-import type { MinigameKind, MinigameServer } from "@/lib/minigames/types";
-import type { SlotState } from "@/lib/match/types";
+import { MINIGAMES } from "@jumbo/engine";
+import type { MinigameKind, MinigameServer } from "@jumbo/engine";
+import type { SlotState } from "@jumbo/engine";
 
 const rows: MatchRows = {
   id: "match-1",

@@ -6,8 +6,8 @@
  */
 import { z } from "zod";
 import { MinigameKind } from "@/generated/prisma/client";
-import { eligibleEnv } from "@/lib/minigames/eligible";
-import { poolFor } from "@/lib/minigames/registry";
+import { eligibleEnv } from "@jumbo/engine";
+import { poolFor } from "@jumbo/engine";
 
 export const MAX_TEAMS = 15; // matches the kit's 15-color team palette
 export const MIN_TEAMS_TO_START = 2; // a round-robin needs at least one pairing

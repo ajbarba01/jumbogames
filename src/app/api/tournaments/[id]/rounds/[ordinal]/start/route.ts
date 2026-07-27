@@ -12,8 +12,8 @@ import {
   checkContentReady,
   checkRoundDraw,
   drawRoundGames,
-} from "@/lib/match/round-draw";
-import { eligibleEnv, eligiblePool } from "@/lib/minigames/eligible";
+} from "@jumbo/engine";
+import { eligibleEnv, eligiblePool } from "@jumbo/engine";
 import { buildRoundSlots } from "@/lib/match/server/round-slots";
 import { broadcastTournamentChange } from "@/lib/realtime/broadcast";
 

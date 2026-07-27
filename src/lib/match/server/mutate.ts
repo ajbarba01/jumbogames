@@ -5,18 +5,18 @@
  * completion, and broadcast. Idempotent events return changed:false with no IO.
  */
 import { prisma } from "@/lib/prisma";
-import { MINIGAMES } from "@/lib/minigames/registry";
+import { MINIGAMES } from "@jumbo/engine";
 import { INIT_CONTEXT_LOADERS } from "@/lib/minigames/prepare";
-import { applyMatchEvent } from "@/lib/match/lifecycle";
-import { derivePhase } from "@/lib/match/derive";
-import type { MinigameKind } from "@/lib/minigames/types";
-import type { MatchEvent } from "@/lib/match/types";
+import { applyMatchEvent } from "@jumbo/engine";
+import { derivePhase } from "@jumbo/engine";
+import type { MinigameKind } from "@jumbo/engine";
+import type { MatchEvent } from "@jumbo/engine";
 import {
   broadcastMatchChange,
   broadcastTournamentChange,
 } from "@/lib/realtime/broadcast";
 import { Prisma, RoundState } from "@/generated/prisma/client";
-import type { SlotState } from "@/lib/match/types";
+import type { SlotState } from "@jumbo/engine";
 import { loadMatchRows } from "./load";
 import { rowsToMatchState, slotUpdateData } from "./snapshot";
 

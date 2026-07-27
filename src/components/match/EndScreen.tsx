@@ -7,8 +7,8 @@
 
 import { Button } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import { minigamesWon } from "@/lib/match/derive";
-import { MINIGAMES } from "@/lib/minigames/registry";
+import { minigamesWon } from "@jumbo/engine";
+import { MINIGAMES } from "@jumbo/engine";
 
 export function EndScreen({
   view,

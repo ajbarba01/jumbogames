@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Select, StepSlider, Toggle } from "@jumbo/ui";
 import { MatchContainer } from "@/components/match/MatchContainer";
-import { derivePhase } from "@/lib/match/derive";
+import { derivePhase } from "@jumbo/engine";
 import { FakeMatchClient } from "@/lib/match/fake-client";
 import type { ViewerRole } from "@/lib/match/client";
 

@@ -7,11 +7,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  deriveTickerEvents,
-  type TickerEvent,
-} from "@/lib/minigames/trivia/ticker";
-import type { RosterSnapshot } from "@/lib/minigames/types";
+import { deriveTickerEvents, type TickerEvent } from "@jumbo/engine";
+import type { RosterSnapshot } from "@jumbo/engine";
 
 /** Rows kept on screen; the list reserves height for exactly this many via
  *  the hand-tuned `h-24`/`h-28` classes on `Ticker` in `TriviaPlay.tsx` —

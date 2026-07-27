@@ -4,8 +4,8 @@
  * only the kinds actually gating a match before calling the pure reducer.
  */
 import { prisma } from "@/lib/prisma";
-import type { MinigameKind } from "./types";
-import type { BankQuestion } from "./trivia/deal";
+import type { MinigameKind } from "@jumbo/engine";
+import type { BankQuestion } from "@jumbo/engine";
 
 export const INIT_CONTEXT_LOADERS: Partial<
   Record<MinigameKind, () => Promise<unknown>>

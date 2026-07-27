@@ -3,10 +3,10 @@
  * snapshots at countdown, deadline enforcement, scoring, slot advancement.
  */
 import { describe, expect, it } from "vitest";
-import { MINIGAMES } from "@/lib/minigames/registry";
+import { MINIGAMES } from "../minigames/registry";
 import { applyMatchEvent, createMatch, type MatchDeps } from "./lifecycle";
 import { derivePhase } from "./derive";
-import type { MinigameKind, MinigameServer } from "@/lib/minigames/types";
+import type { MinigameKind, MinigameServer } from "../minigames/types";
 import type { MatchState } from "./types";
 
 const T0 = 1_000_000;

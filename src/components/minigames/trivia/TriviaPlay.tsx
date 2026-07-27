@@ -20,15 +20,15 @@ import {
   cx,
 } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import { normalizeTeamScore } from "@/lib/match/normalize";
-import type { MatchTeam, SlotState } from "@/lib/match/types";
-import { decayRope } from "@/lib/minigames/trivia/rope";
-import type { TriviaView } from "@/lib/minigames/trivia/view";
+import { normalizeTeamScore } from "@jumbo/engine";
+import type { MatchTeam, SlotState } from "@jumbo/engine";
+import { decayRope } from "@jumbo/engine";
+import type { TriviaView } from "@jumbo/engine";
 import { useNow } from "@/components/match/use-now";
 import { Rope } from "./Rope";
 import { WinGlow } from "./WinGlow";
 import { useTicker } from "./use-ticker";
-import type { TickerEvent } from "@/lib/minigames/trivia/ticker";
+import type { TickerEvent } from "@jumbo/engine";
 
 /** How long the answered card stays on screen with its reveal. */
 const REVEAL_MS = 1000;

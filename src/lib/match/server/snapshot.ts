@@ -9,13 +9,13 @@ import type {
   SlotPhase,
   SlotState,
   SlotWinner,
-} from "@/lib/match/types";
-import { MINIGAMES } from "@/lib/minigames/registry";
+} from "@jumbo/engine";
+import { MINIGAMES } from "@jumbo/engine";
 import type {
   MinigameKind,
   MinigameServer,
   RosterSnapshot,
-} from "@/lib/minigames/types";
+} from "@jumbo/engine";
 
 export interface SlotRow {
   ordinal: number;

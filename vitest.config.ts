@@ -1,7 +1,8 @@
 /**
  * Vitest configuration for unit tests: pure logic under src/ (node env) and
- * kit component tests under packages/ui (jsdom via per-file pragma). E2E
- * flows live in e2e/ and run under Playwright, excluded here.
+ * workspace package tests under packages/* — the match engine, and the kit's
+ * component tests (jsdom via per-file pragma). E2E flows live in e2e/ and run
+ * under Playwright, excluded here.
  */
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
@@ -13,8 +14,8 @@ export default defineConfig({
     include: [
       "src/**/*.test.ts",
       "src/**/*.test.tsx",
-      "packages/ui/src/**/*.test.ts",
-      "packages/ui/src/**/*.test.tsx",
+      "packages/*/src/**/*.test.ts",
+      "packages/*/src/**/*.test.tsx",
     ],
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
@@ -24,6 +25,9 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
       "@jumbo/ui": fileURLToPath(
         new URL("./packages/ui/src/index.ts", import.meta.url),
+      ),
+      "@jumbo/engine": fileURLToPath(
+        new URL("./packages/engine/src/index.ts", import.meta.url),
       ),
     },
   },

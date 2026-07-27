@@ -13,7 +13,7 @@ const { subscribeToMatch, unsubscribe } = vi.hoisted(() => {
 vi.mock("@/lib/realtime/subscribe", () => ({ subscribeToMatch }));
 
 import { RealtimeMatchClient } from "./realtime-client";
-import { createMatch } from "./lifecycle";
+import { createMatch } from "@jumbo/engine";
 import type { MatchView } from "./client";
 
 const match = createMatch({

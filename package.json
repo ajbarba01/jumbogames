@@ -23,6 +23,7 @@
     "seed:trivia": "dotenv -e .env.test.local -- jiti scripts/seed-trivia.ts"
   },
   "dependencies": {
+    "@jumbo/engine": "*",
     "@jumbo/ui": "*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",

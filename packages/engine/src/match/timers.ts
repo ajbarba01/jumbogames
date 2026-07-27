@@ -5,7 +5,7 @@
  * scoring transitions from persisted deadlines. The reducer re-checks timing.
  */
 import { derivePhase } from "./derive";
-import { MINIGAMES } from "@/lib/minigames/registry";
+import { MINIGAMES } from "../minigames/registry";
 import type { MatchEvent, MatchState } from "./types";
 
 /** The subset of MatchEvent that pendingAdvance can return — all timer-driven,

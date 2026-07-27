@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth/profile";
 import { parseJsonBody } from "@/lib/http";
 import { loadMatchRows } from "@/lib/match/server/load";
 import { mutateMatch } from "@/lib/match/server/mutate";
-import { actionSchemaFor } from "@/lib/minigames/actions";
+import { actionSchemaFor } from "@jumbo/engine";
 
 export async function POST(
   request: Request,

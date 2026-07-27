@@ -14,7 +14,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Button, SLIP_DUR, SLIP_EASE_OUT, useDismissLayer } from "@jumbo/ui";
 import type { MatchClient, MatchView } from "@/lib/match/client";
-import type { SlotState } from "@/lib/match/types";
+import type { SlotState } from "@jumbo/engine";
 import { MINIGAME_SURFACES } from "@/components/minigames/registry";
 import { CountdownOverlay } from "./CountdownOverlay";
 import { GatePanel } from "./GatePanel";

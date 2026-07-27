@@ -3,13 +3,13 @@
  * scripted bot opponents — the /mockup event source. Swapping this class for
  * the Realtime-backed client is the entire backend integration seam.
  */
-import { MINIGAMES } from "@/lib/minigames/registry";
-import type { MinigameKind } from "@/lib/minigames/types";
+import { MINIGAMES } from "@jumbo/engine";
+import type { MinigameKind } from "@jumbo/engine";
 import type { MatchClient, MatchView, ViewerRole } from "./client";
-import { derivePhase } from "./derive";
-import { applyMatchEvent, createMatch } from "./lifecycle";
-import { drawRoundGames } from "./round-draw";
-import type { MatchEvent, MatchState } from "./types";
+import { derivePhase } from "@jumbo/engine";
+import { applyMatchEvent, createMatch } from "@jumbo/engine";
+import { drawRoundGames } from "@jumbo/engine";
+import type { MatchEvent, MatchState } from "@jumbo/engine";
 
 const TICK_MS = 150;
 // The mock plays only dev-only games; real games need server content it has

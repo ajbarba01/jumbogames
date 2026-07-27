@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import { MatchContainer } from "@/components/match/MatchContainer";
 import { RealtimeMatchClient } from "@/lib/match/realtime-client";
 import type { MatchView } from "@/lib/match/client";
-import { derivePhase } from "@/lib/match/derive";
+import { derivePhase } from "@jumbo/engine";
 import { subscribeToTournament } from "@/lib/realtime/subscribe";
 import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 import { useRefreshOnRestore } from "../../use-refresh-on-restore";

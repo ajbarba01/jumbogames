@@ -8,8 +8,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { SLIP_EASE } from "@jumbo/ui";
-import { MINIGAMES } from "@/lib/minigames/registry";
-import type { MinigameKind } from "@/lib/minigames/types";
+import { MINIGAMES } from "@jumbo/engine";
+import type { MinigameKind } from "@jumbo/engine";
 
 const REEL_PASSES = 3;
 const REEL_BASE_SECONDS = 1.2;

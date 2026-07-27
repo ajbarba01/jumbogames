@@ -4,7 +4,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeMatchClient } from "./fake-client";
-import { derivePhase } from "./derive";
+import { derivePhase } from "@jumbo/engine";
 
 const config = {
   k: 1,

@@ -1,7 +1,8 @@
 /**
- * Profile lifecycle and authorization guards. getOrCreateProfile lazily upserts
- * the current auth user's profile (owner when the email is allowlisted).
- * requireUser/requireOwner gate handlers and server components.
+ * Profile lifecycle and authorization guards. getOrCreateProfile verifies the
+ * session's access token locally and reads the current auth user's profile,
+ * writing only on first sight or genuine drift (owner when the email is
+ * allowlisted). requireUser/requireOwner gate handlers and server components.
  */
 import type { Profile } from "@/generated/prisma/client";
 import { Role } from "@/generated/prisma/client";
@@ -9,36 +10,58 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { isOwnerEmail, parseOwnerEmails } from "@/lib/auth/owner-email";
 import { localPartOf } from "@/lib/auth/display-name";
+import { verifyAccessToken } from "./jwt";
 
 export type AuthResult =
   { ok: true; profile: Profile } | { ok: false; status: 401 | 403 };
 
 export async function getOrCreateProfile(): Promise<Profile | null> {
   const supabase = await createClient();
+  // getSession() reads the cookie locally; getUser() would revalidate over the
+  // network. The token's signature is verified below, so the local read is safe.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return null;
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) return null;
 
-  const metaName = user.user_metadata?.display_name;
-  const displayName =
-    typeof metaName === "string" && metaName.trim() !== ""
-      ? metaName.trim()
-      : localPartOf(user.email);
+  const verified = await verifyAccessToken(session.access_token);
+  if (!verified) return null;
+
+  const existing = await prisma.profile.findUnique({
+    where: { id: verified.sub },
+  });
 
   const shouldOwn = isOwnerEmail(
-    user.email,
+    verified.email,
     parseOwnerEmails(process.env.OWNER_EMAILS),
   );
 
-  return prisma.profile.upsert({
-    where: { id: user.id },
-    update: shouldOwn
-      ? { email: user.email, role: Role.owner }
-      : { email: user.email },
-    create: {
-      id: user.id,
-      email: user.email,
+  // The common path is a plain read. Write only when the row is absent, or when
+  // the stored email or owner grant has actually drifted from the token — so a
+  // page load no longer costs a database write (DESIGN.md decision 24).
+  if (existing) {
+    const needsEmail = existing.email !== verified.email;
+    const needsOwner = shouldOwn && existing.role !== Role.owner;
+    if (!needsEmail && !needsOwner) return existing;
+    return prisma.profile.update({
+      where: { id: verified.sub },
+      data: {
+        ...(needsEmail ? { email: verified.email } : {}),
+        ...(needsOwner ? { role: Role.owner } : {}),
+      },
+    });
+  }
+
+  const metaName = session.user.user_metadata?.display_name;
+  const displayName =
+    typeof metaName === "string" && metaName.trim() !== ""
+      ? metaName.trim()
+      : localPartOf(verified.email);
+
+  return prisma.profile.create({
+    data: {
+      id: verified.sub,
+      email: verified.email,
       displayName,
       role: shouldOwn ? Role.owner : Role.player,
     },

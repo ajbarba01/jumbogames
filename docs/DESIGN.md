@@ -293,6 +293,10 @@ arrive already solved; a theme is a token-scale swap by design.
     being reachable by accident. The doodle layer also adopts the 15-colour team palette as its widest
     mix, a documented exception to the team-colour rule (see UI.md) rather than a new palette.
 
+21. **Auth verifies JWTs locally rather than calling `auth.getUser()` per request**, accepting a
+    bounded revocation window in exchange for removing a network hop and a database write from every
+    authenticated request.
+
 ## Deferred design (grill before building each)
 
 - Per-game specifics: typing passage source, word-game grid size and word validation dictionary,

@@ -36,7 +36,15 @@ export class WebSocketMatchClient implements MatchClient {
   private pending: Pending[] = [];
   private socket: WebSocket | null = null;
   private backoff = BACKOFF_MIN_MS;
-  private stopped = false;
+  // Two different reasons to hold no socket, and they must not be conflated.
+  // `active` is the mounted/unmounted axis: destroy() clears it so a close
+  // cannot reconnect behind an unmounted view, but start() may set it again —
+  // React runs an effect's cleanup and setup on one instance across a
+  // StrictMode double-invoke or a soft-navigation remount, and a client that
+  // treated destroy() as final would come back dead. `terminal` is the
+  // give-up axis and is never cleared.
+  private active = false;
+  private terminal = false;
   private ticket: string;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly listeners = new Set<() => void>();
@@ -52,7 +60,8 @@ export class WebSocketMatchClient implements MatchClient {
   }
 
   start(): void {
-    if (this.socket || this.stopped) return;
+    if (this.socket || this.active || this.terminal) return;
+    this.active = true;
     this.open();
   }
 
@@ -114,7 +123,9 @@ export class WebSocketMatchClient implements MatchClient {
   }
 
   destroy(): void {
-    this.stopped = true;
+    // Cleared before the close below, so the onclose it triggers sees an
+    // inactive client and does not schedule a reconnect.
+    this.active = false;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     this.reconnectTimer = null;
     this.socket?.close();
@@ -135,7 +146,7 @@ export class WebSocketMatchClient implements MatchClient {
     };
     socket.onclose = () => {
       this.socket = null;
-      if (!this.stopped) this.scheduleReconnect();
+      if (this.active && !this.terminal) this.scheduleReconnect();
     };
   }
 
@@ -152,7 +163,7 @@ export class WebSocketMatchClient implements MatchClient {
       // rest are terminal for this viewer: retrying a match that does not
       // exist, or an origin that cannot hydrate, just loops forever at the
       // backoff ceiling. Stop and leave the seeded view on screen.
-      if (frame.reason !== "unauthorized") this.stopped = true;
+      if (frame.reason !== "unauthorized") this.terminal = true;
       return;
     }
     // Frames can arrive out of order across a reconnect; older ones are stale.
@@ -184,7 +195,7 @@ export class WebSocketMatchClient implements MatchClient {
   }
 
   private async refreshTicketAndOpen(): Promise<void> {
-    if (this.stopped) return;
+    if (!this.active || this.terminal) return;
     try {
       const res = await fetch(
         `/api/tournaments/${this.opts.tournamentId}/matches/${this.opts.matchId}/ticket`,
@@ -199,7 +210,7 @@ export class WebSocketMatchClient implements MatchClient {
     }
     // A destroy() can land while the ticket fetch is in flight; re-check before
     // opening, or a torn-down client resurrects itself with a live socket.
-    if (this.stopped) return;
+    if (!this.active || this.terminal) return;
     // Every prediction is abandoned across a reconnect — the authoritative
     // state on the far side may have moved arbitrarily far.
     this.pending = [];

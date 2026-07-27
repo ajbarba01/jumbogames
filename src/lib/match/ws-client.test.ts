@@ -129,6 +129,40 @@ describe("WebSocketMatchClient", () => {
     expect(FakeSocket.last).toBeNull();
   });
 
+  // React tears an effect down and sets it back up on the same client instance
+  // — StrictMode does it on every dev mount, and a route transition can do it
+  // when the tree is kept alive across a soft navigation. A client that cannot
+  // come back from that is silently dead: no socket, so every send is dropped
+  // and no frame ever arrives. RealtimeMatchClient survives this cycle; this is
+  // the same contract for the socket transport.
+  it("reopens on start after an unmount destroy (remount cycle)", () => {
+    const client = make();
+    client.start();
+    const first = FakeSocket.last!;
+
+    client.destroy();
+    FakeSocket.last = null;
+    client.start();
+
+    expect(FakeSocket.last).not.toBeNull();
+    expect(FakeSocket.last).not.toBe(first);
+  });
+
+  it("still refuses to restart after a terminal error frame", () => {
+    const client = make();
+    client.start();
+    // Not "unauthorized" — that one is recoverable and reconnects by design.
+    FakeSocket.last!.onmessage!({
+      data: JSON.stringify({ type: "error", reason: "not-found" }),
+    });
+
+    client.destroy();
+    FakeSocket.last = null;
+    client.start();
+
+    expect(FakeSocket.last).toBeNull();
+  });
+
   it("does not send once the socket is gone", () => {
     const client = make();
     client.start();

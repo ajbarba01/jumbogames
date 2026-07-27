@@ -221,11 +221,15 @@ its own task and has not been done.
 
 Known gaps carried out of this milestone, all of which the cutover must address:
 
-- **The full E2E suite cannot run with the flag on yet.** `trivia.spec.ts` and `round-start.spec.ts`
-  drive a match by POSTing the legacy `/slots/:ordinal/force-start` route; with the socket transport
-  on, the DO is authoritative and never sees that write. CI therefore runs the main suite at flag `0`
-  plus a dedicated flag `1` step for `e2e/realtime.spec.ts`. The cutover deletes those routes and must
-  rewrite both specs to drive through the UI.
+- **The full E2E suite cannot run with the flag on yet.** Partly resolved: both specs now clear the
+  gate through the UI (`readyUpThroughGate`) instead of POSTing the legacy
+  `/slots/:ordinal/force-start` route, and `round-start.spec.ts` passes at flag `1`. `trivia.spec.ts`
+  still does not, for a second and unrelated reason: `dealtTriviaCard` reads the dealt card from
+  `minigame_slots.payload` in Postgres, and under the socket transport the DO only persists a slot
+  once it reaches `done` — so mid-match that row holds nothing to read. The spec needs to take the
+  prompt from the screen and look the answer up by prompt, rather than reading live match state out
+  of what is now a write-behind archive. Until then CI keeps the main suite at flag `0` plus the
+  dedicated flag `1` step for `e2e/realtime.spec.ts`.
 - ~~**One secret serves two purposes.**~~ Resolved: split into `REALTIME_TICKET_KEY` (HMAC signing,
   never transmitted) and `REALTIME_INTERNAL_SECRET` (bearer on Worker→Next calls). Both must be set
   in Vercel, in `wrangler secret put`, and as GitHub Actions secrets before the flag goes to `1`.

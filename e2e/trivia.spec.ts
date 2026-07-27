@@ -11,7 +11,11 @@ import {
   profileIdByEmail,
   seedTriviaQuestions,
 } from "./support/db";
-import { createAndReadyTeam, joinByCode } from "./support/flows";
+import {
+  createAndReadyTeam,
+  joinByCode,
+  readyUpThroughGate,
+} from "./support/flows";
 import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
@@ -37,7 +41,7 @@ test("a trivia round deals a card and scores an answer", async ({
   // carries no questions of its own.
   await seedTriviaQuestions();
 
-  const { page: host, context: hostContext } = await signedIn("admin");
+  const { page: host } = await signedIn("admin");
   const { page: alpha, email: alphaEmail } = await signedIn("p1");
   const { page: bravo } = await signedIn("p2");
 
@@ -79,18 +83,7 @@ test("a trivia round deals a card and scores an answer", async ({
   await expect(alpha).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
   await expect(bravo).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
 
-  // Skip the ready gate the way round-start.spec does — it is driven by a
-  // zoom-completion callback, awkward to pilot from independent contexts, and
-  // no part of what this proves. The host's force-start valve is for exactly
-  // this.
-  for (const player of [alpha, bravo]) {
-    const { tournamentId, matchId } = matchLocationFromUrl(player);
-    const origin = new URL(player.url()).origin;
-    const res = await hostContext.request.post(
-      `${origin}/api/tournaments/${tournamentId}/matches/${matchId}/slots/0/force-start`,
-    );
-    expect(res.ok()).toBe(true);
-  }
+  await readyUpThroughGate([alpha, bravo]);
 
   // Playing forces the zoom open (see presentation.ts), so the play surface
   // mounts with no click: the score line is the first thing it renders once a

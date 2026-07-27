@@ -243,10 +243,16 @@ arrive already solved; a theme is a token-scale swap by design.
     server has admitted a `?c=` link: the server reads it on the initial request and never needs it
     again, so leaving it visible would only turn the natural "come spectate, here's the link" gesture
     into handing over the write credential — the exact failure this decision exists to prevent.
-    The accepted consequence: a link-borne viewer who has **not yet joined a team** is demoted on
-    reload, because nothing persists that grant once the URL stops carrying it — they need the link
-    again. Every other viewer class is unaffected, since a member's, host's or admin's grant is
-    derived from the roster and is reconstructed on every render.
+    The grant survives the strip via an httpOnly, per-game cookie: the client exchanges the `?c=`
+    for one (`POST /api/tournaments/[id]/code-grant`) before scrubbing, and the page reads it back
+    through the same `holdsGameCode` predicate. The cookie holds the presented code itself rather
+    than a "granted" flag, so it is re-checked against the real code on every render and forging one
+    grants nothing its author did not already know — no signing secret needed. This supersedes an
+    earlier accepted consequence, that a link-borne viewer who had not yet joined a team was demoted
+    whenever the URL stopped carrying the code. Keeping that grant only in component state lost it to
+    any remount as well as any reload, which stranded fresh joiners at a code prompt before they
+    could create a team. Every other viewer class is unaffected, since a member's, host's or admin's
+    grant is derived from the roster and is reconstructed on every render.
 17. **Roster fluidity under the lock rule.** Join, leave, and leader-kick are allowed only while the
     team has no live match (lobby phase or between rounds); slot roster snapshots already make the
     boundary safe. Leader leaving auto-transfers leadership to the earliest-joined member; an empty

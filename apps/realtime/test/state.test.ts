@@ -14,6 +14,7 @@ const room: RoomState = {
   tournamentId: "t-1",
   memberIds: ["p1", "p2"],
   labels: { p1: "Ada", p2: "Grace" },
+  initContext: {},
   seq: 7,
   lastPersistedOrdinal: -1,
 };

@@ -28,6 +28,7 @@ const seeded = (): RoomState => ({
   tournamentId: "t-1",
   memberIds: ["p1", "p2"],
   labels: { p1: "Ada", p2: "Grace" },
+  initContext: {},
   seq: 0,
   lastPersistedOrdinal: -1,
 });

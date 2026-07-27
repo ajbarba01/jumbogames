@@ -28,10 +28,15 @@ export async function GET(
   if (!gated) {
     return NextResponse.json({ error: "No such match" }, { status: 404 });
   }
+  // Minted only when the socket transport is the one that will actually run.
+  // Both helpers throw on missing realtime config, and this route is on the
+  // Supabase path's hot loop — an unconfigured environment must not turn every
+  // match read into a 500 for a credential that path never uses.
+  const useSocket = process.env.NEXT_PUBLIC_REALTIME_WS === "1";
   return NextResponse.json({
     view: gated.view,
     serverNow: Date.now(),
-    ticket: await issueTicket(matchId, auth.profile.id),
-    socketUrl: socketUrlFor(matchId),
+    ticket: useSocket ? await issueTicket(matchId, auth.profile.id) : "",
+    socketUrl: useSocket ? socketUrlFor(matchId) : "",
   } satisfies MatchSnapshotPayload);
 }

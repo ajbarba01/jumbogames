@@ -28,18 +28,21 @@ export async function GET(
 
   const state = rowsToMatchState(loaded.rows);
 
-  // Resolve init context for every kind currently gating, exactly as
-  // mutateMatch does, so the DO never reaches for Prisma itself.
-  const gatingKinds = new Set<MinigameKind>(
+  // Resolve init context for EVERY kind in the match, not only the slot that
+  // happens to be gating right now. mutateMatch could load it per request; the
+  // Durable Object hydrates once and then runs the whole match offline, so a
+  // slot that gates later would otherwise init with no context at all — for
+  // trivia that means an empty question bank and a match that deals no cards.
+  const kinds = new Set<MinigameKind>(
     state.slots
-      .filter((slot) => slot.phase === "gate")
       .map((slot) => slot.kind)
-      .filter((kind) => kind in INIT_CONTEXT_LOADERS),
+      .filter((kind) => Object.hasOwn(INIT_CONTEXT_LOADERS, kind)),
   );
   const initContext: Partial<Record<MinigameKind, unknown>> = {};
   await Promise.all(
-    [...gatingKinds].map(async (kind) => {
-      initContext[kind] = await INIT_CONTEXT_LOADERS[kind]!();
+    [...kinds].map(async (kind) => {
+      const load = INIT_CONTEXT_LOADERS[kind];
+      if (load) initContext[kind] = await load();
     }),
   );
 

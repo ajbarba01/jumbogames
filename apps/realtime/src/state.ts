@@ -5,7 +5,7 @@
  * output gates hold outgoing messages until the write has flushed, so no client
  * can observe state that is not yet durable.
  */
-import type { MatchState } from "@jumbo/engine";
+import type { MatchState, MinigameKind } from "@jumbo/engine";
 
 const KEY = "room";
 
@@ -15,6 +15,13 @@ export interface RoomState {
   tournamentId: string;
   memberIds: string[];
   labels: Record<string, string>;
+  /**
+   * Per-kind init context loaded at the IO edge and handed over by hydrate —
+   * the trivia question bank, for instance. The DO cannot load this itself
+   * (it is a Postgres read), so it is carried for the room's whole lifetime:
+   * a slot that gates later in the match still needs it at init time.
+   */
+  initContext: Partial<Record<MinigameKind, unknown>>;
   /** Monotonic, bumped on every state change; clients drop stale frames by it. */
   seq: number;
   /** Highest ordinal already persisted to Postgres, so replays are no-ops. */

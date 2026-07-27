@@ -14,6 +14,7 @@ const room = (): RoomState => ({
   tournamentId: "t-1",
   memberIds: ["p1"],
   labels: { p1: "Ada" },
+  initContext: {},
   seq: 3,
   lastPersistedOrdinal: -1,
 });

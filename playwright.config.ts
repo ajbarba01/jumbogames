@@ -18,6 +18,9 @@ import { defineConfig, devices } from "@playwright/test";
 loadEnv({ path: ".env.test.local" });
 
 const E2E_PORT = 3100;
+// wrangler dev's default. NEXT_PUBLIC_REALTIME_URL must agree with this, or
+// the browser dials a Worker that is not there.
+const REALTIME_PORT = 8787;
 
 /**
  * Personas are provisioned per worker (see e2e/support/personas.ts), so every
@@ -37,6 +40,11 @@ for (const key of [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "OWNER_EMAILS",
+  // Required even with the socket transport off: the match snapshot route
+  // mints a connect ticket on every read and throws without these.
+  "REALTIME_SHARED_SECRET",
+  "NEXT_PUBLIC_REALTIME_URL",
+  "NEXT_PUBLIC_REALTIME_WS",
 ] as const) {
   const value = process.env[key];
   if (value) webServerEnv[key] = value;
@@ -72,11 +80,31 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: `npm run build && npx next start -p ${E2E_PORT}`,
-    url: `http://localhost:${E2E_PORT}`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-    env: webServerEnv,
-  },
+  webServer: [
+    {
+      command: `npm run build && npx next start -p ${E2E_PORT}`,
+      url: `http://localhost:${E2E_PORT}`,
+      reuseExistingServer: false,
+      timeout: 180_000,
+      env: webServerEnv,
+    },
+    {
+      // The realtime Worker. Readiness is a `port` check, not a `url` check:
+      // the Worker serves only WebSocket upgrades, so every plain GET it
+      // answers is a 426, and Playwright treats 4xx as not-ready — a `url`
+      // probe here waits out the full timeout against a perfectly healthy
+      // server.
+      //
+      // ORIGIN_URL is overridden because wrangler.jsonc points the Worker at
+      // the conventional dev port (3000) while the E2E app is deliberately on
+      // 3100. Without this the Worker would hydrate from whatever happens to
+      // be on 3000 — quite possibly a dev server holding PRODUCTION
+      // credentials, which is exactly what this config's port isolation exists
+      // to prevent.
+      command: `npm run dev -w @jumbo/realtime -- --var ORIGIN_URL:http://localhost:${E2E_PORT}`,
+      port: REALTIME_PORT,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 });

@@ -88,6 +88,7 @@ export class MatchRoom implements DurableObject {
         tournamentId: hydrated.tournamentId,
         memberIds: hydrated.memberIds,
         labels: hydrated.labels,
+        initContext: hydrated.initContext,
         seq: 0,
         lastPersistedOrdinal: -1,
       };
@@ -149,7 +150,7 @@ export class MatchRoom implements DurableObject {
           playerId: viewer.profileId,
           action: action.data,
         },
-        { now, games: MINIGAMES, initContext: {} },
+        { now, games: MINIGAMES, initContext: room.initContext },
       );
     } else {
       next = applyMatchEvent(
@@ -164,7 +165,7 @@ export class MatchRoom implements DurableObject {
             // "hostForceStart". Do not rename either — the wire name matches
             // the MatchClient verb, the event name matches the reducer.
             { type: "hostForceStart", ordinal: message.data.ordinal },
-        { now, games: MINIGAMES, initContext: {} },
+        { now, games: MINIGAMES, initContext: room.initContext },
       );
     }
 
@@ -232,7 +233,7 @@ export class MatchRoom implements DurableObject {
       const next = applyMatchEvent(state, due.event, {
         now,
         games: MINIGAMES,
-        initContext: {},
+        initContext: room.initContext,
       });
       if (next === state) break;
       state = next;

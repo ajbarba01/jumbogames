@@ -12,6 +12,10 @@ export type { MatchView, ViewerRole } from "@jumbo/engine";
 export interface MatchSnapshotPayload {
   view: MatchView;
   serverNow: number;
+  /** Short-lived credential for this viewer's match socket. */
+  ticket: string;
+  /** wss:// endpoint for this match's room. */
+  socketUrl: string;
 }
 
 export interface MatchClient {

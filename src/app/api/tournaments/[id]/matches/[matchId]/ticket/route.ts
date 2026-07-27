@@ -1,12 +1,12 @@
 /**
- * Route handler: the audience-filtered match snapshot for the caller. The
- * RealtimeMatchClient seeds from the server render and refetches here on every
- * change ping and on reconnect. Role is resolved server-side from membership.
+ * Route handler: mints a fresh match-socket ticket for the caller. The client
+ * calls this on reconnect, when the ticket that shipped with the page render
+ * has expired. Authorization is the same gate the snapshot read uses — reads
+ * are open to any signed-in user (DESIGN.md decision 16).
  */
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/profile";
 import { gateMatchView } from "@/lib/match/server/read";
-import type { MatchSnapshotPayload } from "@/lib/match/client";
 import { issueTicket, socketUrlFor } from "@/lib/realtime/ticket";
 
 export async function GET(
@@ -29,9 +29,7 @@ export async function GET(
     return NextResponse.json({ error: "No such match" }, { status: 404 });
   }
   return NextResponse.json({
-    view: gated.view,
-    serverNow: Date.now(),
     ticket: await issueTicket(matchId, auth.profile.id),
     socketUrl: socketUrlFor(matchId),
-  } satisfies MatchSnapshotPayload);
+  });
 }

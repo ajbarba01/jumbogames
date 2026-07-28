@@ -22,21 +22,20 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
-      # Needed by the socket transport. A ticket is minted only when
-      # NEXT_PUBLIC_REALTIME_WS is "1", so the main suite below runs without
-      # them; the flag=1 step at the end does not. Locally these come from
-      # .env.test.local, which does not exist here.
+      # Needed by the socket transport: a ticket is minted only when
+      # NEXT_PUBLIC_REALTIME_WS is "1", which the whole suite now runs at.
+      # Locally these come from .env.test.local, which does not exist here.
       REALTIME_TICKET_KEY: ${{ secrets.REALTIME_TICKET_KEY }}
       REALTIME_INTERNAL_SECRET: ${{ secrets.REALTIME_INTERNAL_SECRET }}
       NEXT_PUBLIC_REALTIME_URL: http://localhost:8787
-      # The main suite runs the Supabase path, which is still the shipping one.
-      # Two specs (trivia, round-start) drive a match by POSTing the legacy
-      # /slots/:ordinal/force-start route; with the socket transport on, the
-      # Durable Object is authoritative and never sees that write, so those
-      # specs cannot pass against it until the cutover deletes those routes and
-      # rewrites them to drive through the UI. The socket path is covered by
-      # test:realtime and by the dedicated step below.
-      NEXT_PUBLIC_REALTIME_WS: "0"
+      # The whole suite runs the socket transport, which is the shipping path
+      # in production as of 2026-07-28. It used to run at "0" with a second,
+      # flag-1 build appended for realtime.spec.ts alone, on the belief that
+      # trivia.spec.ts and round-start.spec.ts could not pass against a
+      # Durable Object because they POSTed the legacy force-start route. They
+      # no longer do — both clear the gate through the UI via
+      # readyUpThroughGate — so one build covers everything.
+      NEXT_PUBLIC_REALTIME_WS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -62,13 +61,6 @@ jobs:
             "$REALTIME_TICKET_KEY" "$REALTIME_INTERNAL_SECRET" > apps/realtime/.dev.vars
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
-      # The socket path, proven end to end: one player's action reaches a
-      # passive second client through the Durable Object with no refetch.
-      # Rebuilds because NEXT_PUBLIC_* is inlined at build time.
-      - name: E2E against the realtime worker
-        run: npx playwright test e2e/realtime.spec.ts
-        env:
-          NEXT_PUBLIC_REALTIME_WS: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

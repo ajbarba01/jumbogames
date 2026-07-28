@@ -27,9 +27,8 @@ Full rationale and the pure-engine contract live in the
   N rounds for odd N. The 2-team case degenerates correctly — one round, one match — which is what
   makes a pickup game and a tournament the same entity (decision 14).
 - **Odd team counts** give each team exactly one **bye** across the schedule (worth a match's minigames);
-  even counts need none. A bye's credit lands on **minigames won only, never the normalized tiebreak** —
-  a team that sat out has not earned a score to break ties with — and is applied when the bye's round
-  completes, not when it starts. Accepted limitation: ending the tournament while a bye's round is
+  even counts need none. A bye's credit lands on **minigames won**, and is applied
+  when the bye's round completes, not when it starts. Accepted limitation: ending the tournament while a bye's round is
   still active drops that bye's credit, since standings only count byes from rounds recorded
   `complete`.
 - **A match is K minigames**, K = `minigamesPerMatch` (per-tournament config, 1–4, default 1), drawn
@@ -37,9 +36,15 @@ Full rationale and the pure-engine contract live in the
   declares its own outcome — a game may return a winner from its own state (Tug O' Lore's rope
   position), which overrides the mean comparison; the normalized score then only breaks a dead heat.
   The winner scores one point. There is **no match winner** — points are counted per minigame.
-- **Ranking = total minigames won**, tiebroken by **cumulative normalized score**. Final standings are
+- **Ranking = total minigames won.** Teams level on wins are tied and stay tied
+  (decision 24). Final standings are
   the ranking after the last round — no separate placement phase.
 - Teams whose match finishes early **spectate** any still-running match until the round closes.
+- **Ending a game does not stop an in-flight round.** `complete` only sets the tournament's phase;
+  nothing on the match-persist or board path consults it. Accepted limitation: a round still active
+  when the host ends the game keeps running — its slots may still finish and land, so a table shown
+  as final can still move. The board suppresses the live-round region once the game is ended, but the
+  underlying race is accepted rather than fixed.
 
 ## Player flow
 
@@ -196,7 +201,7 @@ arrive already solved; a theme is a token-scale swap by design.
    and the team picker remains the join surface for un-teamed code-holders after start.
 8. **Match = K configurable minigames, scored per minigame.** `minigamesPerMatch` (1–4, default 1) sets
    how many distinct pool games a match plays; ranking counts minigames won, so a match needs no winner
-   and even K may split. Tiebreak is cumulative normalized score.
+   and even K may split. Teams level on wins tie (decision 24).
 9. **Port console-kit rather than adopt shadcn or hand-roll.** The kit is proven, retheme-by-design,
    and already encodes the interaction quality bar; see UI system above.
 10. **The UI kit is an npm workspace package (`packages/ui`, `@jumbo/ui`).** Portability is a design
@@ -327,19 +332,36 @@ arrive already solved; a theme is a token-scale swap by design.
 21. **Auth verifies JWTs locally rather than calling `auth.getUser()` per request**, accepting a
     bounded revocation window in exchange for removing a network hop and a database write from every
     authenticated request.
-22. **Tug O' Lore's score scale is +1/0, and that constrains Milestone 6.** The rope decides the slot,
-    so per-player score stopped competing with it for "who won this minigame" and kept only its other
-    job — the cumulative-normalized-score standings tiebreak. It moved from +3/−1 to +1/0 accordingly.
-    **Consequence:** minigames now have _different score scales_, so a cross-minigame normalization
-    formula cannot simply sum raw scores between games. Normalization has to happen per minigame,
-    against that minigame's own scale, before anything is aggregated. Milestone 6 must not assume a
-    shared unit.
+22. **Tug O' Lore's score scale is +1/0.** The rope decides the slot, so per-player score stopped
+    competing with it for "who won this minigame" and, at the time, kept only its other job — the
+    cumulative-normalized-score standings tiebreak. It moved from +3/−1 to +1/0 accordingly.
+    **Consequence, now historical:** minigames score on _different scales_, so
+    a cross-minigame formula could never simply sum raw scores between games.
+    That constrained Milestone 6 only while a cumulative-normalized-score
+    tiebreak existed to do the summing. Decision 24 removed it, so there is
+    nothing left to aggregate and no shared unit to define. Per-player
+    normalization keeps its other job — the mean over a slot's frozen roster,
+    which cancels team size and decides any slot whose game declares no
+    outcome.
 23. **The wrong-answer penalty is time, not points, and the correct answer stays hidden.** A points
     penalty made blind guessing the thing to avoid; a lockout makes _dumping a card you don't know_ a
     real, priced choice instead, which is how players actually behave. Revealing the correct answer
     was cut with it: with dumping legal, a reveal turns every dump into a free lesson and makes
     lapping the deck strictly profitable. The deck cap rose 150 → 500 for the same reason — dumping
     consumes cards 2–3× faster, and a repeat card is a free charge.
+24. **There is no automated tiebreak; ties stand.** Ranking is total minigames
+    won, and teams level on wins share a rank. The room decides at the event
+    whether a tie is worth a standalone decider. This supersedes decision 8's
+    cumulative-normalized-score tiebreak and the round-robin spec's equivalent.
+    The reason is that the tiebreak was the only thing that ever summed scores
+    across minigames, which decision 22 exists to warn is invalid — different
+    games score on different scales. Removing it deletes that whole problem
+    rather than solving it: no shared unit to define, no per-game conversion
+    constant to calibrate against a game whose own tuning is still modelled
+    rather than measured. `cumulativeNormalized` was deleted with it rather
+    than kept as an informational column, since a mixed-unit number read off a
+    projector misleads. Per-slot normalized scores still show on the match
+    surfaces, where they are within one game and mean something.
 
 ## Deferred design (grill before building each)
 

@@ -18,7 +18,7 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done        |
 | 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done        |
 | 5   | Minigame 1: Tug O' Lore (trivia tug-of-war) + admin question-bank CRUD; CRUD E2E spec                                                              | done        |
-| 6   | Final standings + per-player normalization utilities                                                                                               | pending     |
+| 6   | Final standings + per-player normalization utilities                                                                                               | done        |
 | 7   | Open hosting — player-creatable games, config (minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                                       | done        |
 | 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | in progress |
 | 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | done        |
@@ -68,6 +68,42 @@ the bank itself. A round draw that lands on trivia needs that bank populated: `c
 (`round-draw.ts`) 409s a round start closed, before any mutation, if it is empty, so an unseeded
 production deploy blocks starting a round rather than committing one with an unplayable slot —
 `npm run seed:trivia` (OpenTDB) is the fix there, not code.
+
+Milestone 6 is done, and it landed smaller than its name because the design
+session removed its hardest problem rather than solving it. The standings
+tiebreak — cumulative normalized score — was the only thing that ever summed
+scores across minigames, which is exactly what DESIGN decision 22 warns is
+invalid once games score on different scales. Cutting it (decision 24) left
+nothing to aggregate, no shared unit to define, and no per-game conversion
+constant to keep calibrated against a game whose own tuning is still modelled
+rather than measured. Ranking is total minigames won; teams level on wins share
+a rank, are marked tied by a structure line down the rank column, and the room
+decides whether a tie is worth a decider. `normalizeTeamScore` needed no
+replacement at all: the mean over a slot's frozen roster _is_ the per-player
+normalization, it still decides any slot whose game declares no outcome, and
+only its docblock — which promised this milestone would replace it — was wrong.
+
+What actually needed building was the read path. `getBoardState` had been
+calling `computeStandings` with a hardcoded `outcomes: []` since M3, so every
+played minigame was invisible to the board and only bye credit ever moved a
+team: a live bug, not missing scope. Slots had been persisting `winner` all
+along. `results.ts` now collects the finished ones and standings count that
+recorded verdict rather than re-deriving a winner from the normalized means —
+which would have silently thrown away every Tug O' Lore rope pin, since a pin
+can award a slot to the team with the lower mean. Nothing new is persisted;
+final standings are still derived on read, so a completed game has one owner
+for its result. The ended board is the final-standings surface, gaining a
+champion treatment on an unshared rank 1 — a tied first place is deliberately
+not crowned. The live round also moved above the standings and out of the
+schedule, so it appears once, where the room looks first.
+
+CI collapsed to a single run with it. The job had pinned
+`NEXT_PUBLIC_REALTIME_WS` to `0` and appended a second build for
+`realtime.spec.ts` alone, justified by a comment claiming two specs POSTed the
+legacy force-start route and so could not pass against a Durable Object. That
+had already been fixed and the comment had gone stale; the whole suite now runs
+at flag `1` in one build. The force-start route itself stays — `GatePanel` uses
+it as a live host control.
 
 Milestone 8's first half has landed ahead of the rest of the milestone: `displayName` is now a real,
 `NOT NULL`, required-at-signup, user-editable `Profile` field (existing rows backfilled from the email
@@ -215,22 +251,27 @@ timers run on DO alarms, and Postgres is a write-behind archive reached only thr
 secret-authenticated internal routes. Optimistic UI is two-tiered — trivia gets acknowledgement-only
 feedback because it redacts the correct answer and a client cannot predict its own result.
 
-**Status: complete but not enabled.** `NEXT_PUBLIC_REALTIME_WS` defaults to `0`; the Supabase path is
-still the shipping one. The cutover (deploy the Worker, flip the flag, delete the old transport) is
-its own task and has not been done.
+**Status: shipped.** Production was cut over on 2026-07-28 —
+`NEXT_PUBLIC_REALTIME_WS=1` on Vercel Production, redeployed, and CI now runs
+the whole suite against the socket transport in a single build. Vercel Preview
+sets no realtime vars and so still runs the Supabase path; because a preview
+and production may share a database, never open the same match on both, since
+each transport would authoritatively overwrite the other's state (README
+Deployment). The flip's runtime effect has not yet been verified against a live
+match.
 
 Known gaps carried out of this milestone, all of which the cutover must address:
 
 - ~~**The full E2E suite cannot run with the flag on yet.**~~ Resolved: the whole suite passes at
-  flag `1` (31 tests) and at flag `0` (30 + realtime skipped). Two independent causes had to go.
+  flag `1` (34 tests) and at flag `0` (33 + realtime skipped). Two independent causes had to go.
   Both specs drove matches by POSTing the legacy `/slots/:ordinal/force-start` route, which the DO
   never sees; they now clear the gate through the UI via `readyUpThroughGate`. Fixing that exposed a
   second one the review had not separated out: `trivia.spec.ts` read the dealt card from
   `minigame_slots.payload`, but the DO only archives a slot to Postgres once it is `done`, so
   mid-match that row is empty. The spec now takes the prompt off the screen
   (`data-testid="trivia-prompt"`) and looks the answer up in the question bank, which is server
-  truth on either transport. CI still splits the run; consolidating it is a cutover decision, no
-  longer a blocked one.
+  truth on either transport. CI no longer splits the run: it now runs the whole suite at flag `1`
+  in one build.
 - ~~**One secret serves two purposes.**~~ Resolved: split into `REALTIME_TICKET_KEY` (HMAC signing,
   never transmitted) and `REALTIME_INTERNAL_SECRET` (bearer on Worker→Next calls). Both must be set
   in Vercel, in `wrangler secret put`, and as GitHub Actions secrets before the flag goes to `1`.
@@ -245,6 +286,10 @@ Known gaps carried out of this milestone, all of which the cutover must address:
 - **The tier-2 prediction stack is unreachable.** No shipped minigame declares `predict`, so
   `canPredict` is always false and `predictSlot`'s main path never runs. Either delete it or land it
   with the first game that needs it.
+- **Flag `0` (the Supabase-broadcast path) has no automated coverage.** With the trailing step gone,
+  CI exercises only `NEXT_PUBLIC_REALTIME_WS=1`. Vercel Preview sets no realtime vars and still serves
+  the Supabase-broadcast path, so a shipping code path now runs with no E2E coverage. Accepted trade,
+  recorded here rather than rediscovered.
 
 ## Tug O' Lore — minigame 1 redesigned (follow-on to Milestone 5)
 
@@ -293,6 +338,10 @@ seconds per correct answer per player, which a real hacknight should replace wit
   and the stub surface all inherit the full-bleed stage from DESIGN decision 18 without being
   designed for it — an accepted cost recorded there, still waiting on a pass that designs for the
   room.
+- **The board's movement column is dead.** `getBoardState` never passes `previousRanking` to
+  `computeStandings`, so `movement` is always 0 and the "+/−" column always renders "—". Pre-existing,
+  from Milestone 3. Making it work first requires deciding what "previous" means — presumably the
+  ranking as of the last complete round.
 - **`TeamChip`'s `colorIndex` is unbounded.** Nothing clamps it to the 15-color palette, so an index
   past `MAX_TEAMS` renders an undefined custom property (an invisible chip) rather than failing.
   Trivia's `TICKER_LENGTH` is likewise coupled to the ticker's hand-tuned reserved height by a

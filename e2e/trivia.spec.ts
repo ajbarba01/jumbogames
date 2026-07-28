@@ -1,8 +1,8 @@
 /**
- * Trivia end-to-end: a game whose pool is trivia alone draws a real trivia
- * round, deals a card to each rostered player, and scores an answer
- * server-side. This is the play surface's only end-to-end coverage — its
- * slice shipped on a hand check alone.
+ * Tug O' Lore end-to-end: a game whose pool is trivia alone draws a real
+ * round, deals a card to each rostered player, and resolves an answer
+ * server-side — a correct one scoring, a wrong one buying a lockout instead of
+ * a penalty. This is the play surface's only end-to-end coverage.
  */
 import { pickTriviaPool } from "./support/create";
 import { correctAnswerForPrompt, seedTriviaQuestions } from "./support/db";
@@ -73,7 +73,9 @@ test("a trivia round deals a card and scores an answer", async ({
   // Playing forces the zoom open (see presentation.ts), so the play surface
   // mounts with no click: the score line is the first thing it renders once a
   // card has been dealt, and its middle dot is the surface's own separator.
-  await expect(alpha.getByText("You · 0 pts")).toBeVisible({ timeout: 30_000 });
+  await expect(alpha.getByText("You · 0 right")).toBeVisible({
+    timeout: 30_000,
+  });
 
   // Which card the deal hands a player is seeded per match and drawn from a
   // bank shared with every other spec's leftover rows, so it cannot be
@@ -88,13 +90,79 @@ test("a trivia round deals a card and scores an answer", async ({
   const correctAnswer = await correctAnswerForPrompt(prompt as string);
 
   // A choice is a kit Button whose label is the answer text. Answering
-  // correctly is worth SCORE_CORRECT (+3), applied by the server: the surface
+  // correctly is worth SCORE_CORRECT (+1), applied by the server: the surface
   // reads its own score straight out of the pushed payload
   // (`payload.scores[viewerId]`), never from a local guess, so a moved score
   // proves the whole answer round-trip rather than an optimistic update.
   await alpha.getByRole("button", { name: correctAnswer, exact: true }).click();
-  await expect(alpha.getByText("You · 3 pts")).toBeVisible({ timeout: 15_000 });
+  await expect(alpha.getByText("You · 1 right")).toBeVisible({
+    timeout: 15_000,
+  });
 
   // The match surface is played phone in hand.
   await expectNoHorizontalOverflow(alpha, "/t/[id]/m/[matchId] (trivia)");
+});
+
+test("a wrong answer locks the player out instead of costing points", async ({
+  signedIn,
+}) => {
+  test.setTimeout(120_000);
+  await seedTriviaQuestions();
+
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+
+  await host.getByRole("button", { name: "Create a game" }).click();
+  await host.waitForURL(/\/create$/);
+  await host.getByPlaceholder("Thursday hacknight").fill("Lockout Cup");
+  await pickTriviaPool(host);
+  await host.getByRole("button", { name: "Create game" }).click();
+  await host.waitForURL(/\/t\/[^/]+$/);
+  await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
+  const code = (await host.getByTestId("game-code").textContent())?.trim();
+
+  await joinByCode(alpha, code as string);
+  await createAndReadyTeam(alpha, "Alpha");
+  await joinByCode(bravo, code as string);
+  await createAndReadyTeam(bravo, "Bravo");
+
+  await expect(host.getByText("Bravo")).toBeVisible();
+  await host.getByRole("button", { name: "Start game" }).click();
+  await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
+  await host.getByRole("button", { name: "Start round 1" }).click();
+  await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
+
+  await expect(alpha).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
+  await expect(bravo).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
+  await readyUpThroughGate([alpha, bravo]);
+
+  await expect(alpha.getByText("You · 0 right")).toBeVisible({
+    timeout: 30_000,
+  });
+
+  // Same identification trick as above, but the answer is used to pick a
+  // choice that is NOT it — the deck's wrong answers are not otherwise
+  // knowable from the surface.
+  const promptOnScreen = alpha.getByTestId("trivia-prompt");
+  await expect(promptOnScreen).toBeVisible();
+  const prompt = (await promptOnScreen.textContent())?.trim();
+  const correctAnswer = await correctAnswerForPrompt(prompt as string);
+
+  // Only the four choices carry data-state, so this cannot stray onto other
+  // chrome the way a bare getByRole("button") would.
+  const wrongChoice = alpha
+    .locator("button[data-state]")
+    .filter({ hasNotText: correctAnswer })
+    .first();
+  await wrongChoice.click();
+
+  // The penalty is time, not points: the score must not move, and the server
+  // must refuse further answers for the lockout's duration. Asserting the
+  // banner rather than a bare disabled button is deliberate — the lockout has
+  // to read as the game holding you, not as a broken control.
+  await expect(alpha.getByText(/back in \d+s/)).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(alpha.getByText("You · 0 right")).toBeVisible();
 });

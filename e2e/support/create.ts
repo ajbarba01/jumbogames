@@ -8,9 +8,12 @@
 import { expect, type Page } from "@playwright/test";
 
 // Registry titles, not kind ids — the picker renders the title (see
-// src/lib/minigames/{stub,trivia}/server.ts).
+// packages/engine/src/minigames/{stub,trivia}/server.ts). Renaming a game in
+// the registry breaks every spec that picks a pool, including the ones that
+// only *unpick* it, so these are the first thing to check when a whole file's
+// worth of tests dies in setup.
 const STUB_TITLE = /Button Masher/i;
-const TRIVIA_TITLE = /Trivia Tug-of-War/i;
+const TRIVIA_TITLE = /Tug O' Lore/i;
 
 async function pick(page: Page, title: RegExp): Promise<void> {
   const card = page.getByRole("button", { name: title });

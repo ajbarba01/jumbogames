@@ -1,107 +1,145 @@
-/**
- * Tests for the tug-of-war rope's leaky-integrator physics: decay shrinks
- * |p| toward zero over time without crossing it, applyPull decays then
- * adds a signed impulse clamped to [-1, 1], and pinnedSide reports a wall
- * touch only at the extremes.
+﻿/**
+ * Tests for the rope's force integration. The rope's contract is that position
+ * is the exact time-integral of the tier gap — so these cover integration
+ * across a demotion boundary, where a naive implementation that sampled the
+ * endpoint tier instead of each segment's would silently overpay one side.
  */
 import { describe, expect, it } from "vitest";
-import {
-  applyPull,
-  decayRope,
-  pinnedSide,
-  ROPE_HALF_LIFE_MS,
-  ROPE_PULL,
-  WRONG_PULL_FRACTION,
-  type RopeState,
-} from "./rope";
+import { advanceRope, INITIAL_ROPE, pinnedSide, ropeK } from "./rope";
+import type { TierState } from "./tiers";
+import { MIN_TIER, ROPE_DIVISOR, TIER_SECONDS } from "./tuning";
 
-describe("decayRope", () => {
-  it("halves p after one half-life", () => {
-    const r = decayRope({ p: 0.8, at: 0 }, ROPE_HALF_LIFE_MS);
-    expect(r.p).toBeCloseTo(0.4, 10);
-    expect(r.at).toBe(ROPE_HALF_LIFE_MS);
+const held = (tier: number): TierState => ({
+  tier,
+  enteredAt: null,
+  charge: 0,
+});
+
+/** Both teams as `init` seats them: tier 1, timer unstarted. */
+const UNSTARTED: TierState = { tier: 1, enteredAt: null, charge: 0 };
+
+describe("ropeK", () => {
+  it("scales as the square root of mean team size", () => {
+    expect(ropeK(10, 10)).toBeCloseTo(Math.sqrt(10) / ROPE_DIVISOR, 12);
+    expect(ropeK(4, 4)).toBeCloseTo(2 / ROPE_DIVISOR, 12);
   });
 
-  it("is identity at now === at", () => {
-    const r = decayRope({ p: 0.6, at: 1000 }, 1000);
-    expect(r.p).toBeCloseTo(0.6, 10);
-    expect(r.at).toBe(1000);
+  it("uses the mean when the teams differ in size", () => {
+    expect(ropeK(2, 8)).toBeCloseTo(Math.sqrt(5) / ROPE_DIVISOR, 12);
   });
 
-  it("never crosses zero", () => {
-    const r = decayRope({ p: -0.6, at: 0 }, ROPE_HALF_LIFE_MS * 50);
-    expect(r.p).toBeLessThan(0);
-    expect(r.p).toBeGreaterThan(-0.6);
+  it("never divides by a zero-size roster", () => {
+    expect(ropeK(0, 0)).toBeGreaterThan(0);
   });
 });
 
-describe("applyPull", () => {
-  it("adds PULL/teamSize toward A for a correct A answer", () => {
-    const r = applyPull({ p: 0, at: 0 }, 0, {
-      side: "A",
-      correct: true,
-      teamSize: 3,
-    });
-    expect(r.p).toBeCloseTo(ROPE_PULL / 3, 10);
+describe("advanceRope", () => {
+  const k = ropeK(10, 10);
+
+  it("does not move when the tiers are level", () => {
+    const out = advanceRope(INITIAL_ROPE, held(3), held(3), 60_000, k);
+    expect(out.p).toBeCloseTo(0, 12);
+    expect(out.at).toBe(60_000);
   });
 
-  it("pushes the answering side backward by a third on a wrong answer", () => {
-    const r = applyPull({ p: 0, at: 0 }, 0, {
-      side: "A",
-      correct: false,
-      teamSize: 1,
-    });
-    expect(r.p).toBeCloseTo(-ROPE_PULL * WRONG_PULL_FRACTION, 10);
+  it("moves toward A at k * gap per second", () => {
+    const out = advanceRope(INITIAL_ROPE, held(4), held(2), 10_000, k);
+    expect(out.p).toBeCloseTo(k * 2 * 10, 12);
   });
 
-  it("decays before applying the impulse", () => {
-    const r = applyPull({ p: 0.8, at: 0 }, ROPE_HALF_LIFE_MS, {
-      side: "A",
-      correct: true,
-      teamSize: 1,
-    });
-    expect(r.p).toBeCloseTo(0.4 + ROPE_PULL, 10);
-    expect(r.at).toBe(ROPE_HALF_LIFE_MS);
+  it("moves toward B when B out-tiers A", () => {
+    const out = advanceRope(INITIAL_ROPE, held(1), held(3), 10_000, k);
+    expect(out.p).toBeCloseTo(-k * 2 * 10, 12);
   });
 
-  it("clamps to [-1, 1]", () => {
-    const high = applyPull({ p: 0.9, at: 0 }, 0, {
-      side: "A",
-      correct: true,
-      teamSize: 1,
-    });
-    expect(high.p).toBe(1);
+  it("is identity when now is not ahead of the last integration", () => {
+    const rope = { p: 0.3, at: 5000 };
+    expect(advanceRope(rope, held(5), held(MIN_TIER), 5000, k)).toEqual(rope);
+  });
 
-    const low = applyPull({ p: -0.9, at: 0 }, 0, {
-      side: "B",
-      correct: true,
-      teamSize: 1,
-    });
-    expect(low.p).toBe(-1);
+  it("integrates each segment at its own tier across a demotion", () => {
+    // A enters tier 3 at 0 and demotes to 2 at TIER_SECONDS[3]. Over a window
+    // that straddles the boundary the gap is 3 then 2, not 3 or 2 throughout.
+    //
+    // Deliberately the 1v1 k, not this block's ten-a-side one: a gap of three
+    // against the floor for a full tier-3 duration pins long before the
+    // boundary at k(10,10), and a latched rope proves nothing about how the
+    // segments were summed. The gentler k keeps the whole window inside the
+    // walls so the arithmetic itself is what is under test.
+    const k1 = ropeK(1, 1);
+    const boundary = TIER_SECONDS[3]! * 1000;
+    const a: TierState = { tier: 3, enteredAt: 0, charge: 0 };
+    const out = advanceRope(
+      INITIAL_ROPE,
+      a,
+      held(MIN_TIER),
+      boundary + 5000,
+      k1,
+    );
+    // Against a floored opponent the gap is (3 - MIN_TIER) then (2 - MIN_TIER).
+    const expected =
+      k1 * ((3 - MIN_TIER) * (boundary / 1000) + (2 - MIN_TIER) * 5);
+    expect(out.p).toBeLessThan(1);
+    expect(out.p).toBeCloseTo(expected, 10);
+  });
+
+  it("latches at the wall rather than overshooting", () => {
+    const out = advanceRope(
+      INITIAL_ROPE,
+      held(5),
+      held(MIN_TIER),
+      10_000_000,
+      k,
+    );
+    expect(out.p).toBe(1);
+  });
+
+  it("stays pinned once it has reached a wall", () => {
+    const pinned = { p: 1, at: 1000 };
+    const out = advanceRope(pinned, held(MIN_TIER), held(5), 500_000, k);
+    expect(out.p).toBe(1);
+  });
+
+  it("leaves an epoch-zero origin harmless while both teams are unstarted", () => {
+    // init stamps rope.at = 0 with both tiers unstarted; the first advance
+    // integrates a ~1.7e12 ms window that must contribute nothing.
+    const out = advanceRope(
+      INITIAL_ROPE,
+      UNSTARTED,
+      UNSTARTED,
+      1_700_000_000_000,
+      k,
+    );
+    expect(out.p).toBeCloseTo(0, 12);
   });
 });
 
 describe("pinnedSide", () => {
-  it("reports A at p === 1, B at p === -1, null between", () => {
+  it("reports A at the +1 wall, B at -1, null between", () => {
     expect(pinnedSide({ p: 1, at: 0 })).toBe("A");
     expect(pinnedSide({ p: -1, at: 0 })).toBe("B");
-    expect(pinnedSide({ p: 0.5, at: 0 })).toBeNull();
+    expect(pinnedSide({ p: 0.99, at: 0 })).toBeNull();
+  });
+});
+
+describe("calibration", () => {
+  it("pins a sustained one-tier gap at ten-a-side in about 55 seconds", () => {
+    const k10 = ropeK(10, 10);
+    const out = advanceRope(INITIAL_ROPE, held(3), held(2), 56_000, k10);
+    expect(out.p).toBe(1);
+    const shy = advanceRope(INITIAL_ROPE, held(3), held(2), 54_000, k10);
+    expect(shy.p).toBeLessThan(1);
   });
 
-  it("a sustained one-sided streak pins", () => {
-    // 1v1, correct answers 5s apart: 0.45 -> 0.768 -> 0.993 -> pin on the 4th
-    let r: RopeState = { p: 0, at: 0 };
-    for (let i = 0; i < 4; i++)
-      r = applyPull(r, i * 5000, { side: "A", correct: true, teamSize: 1 });
-    expect(pinnedSide(r)).toBe("A");
-  });
-
-  it("balanced alternating play never pins", () => {
-    let r: RopeState = { p: 0, at: 0 };
-    for (let i = 0; i < 20; i++) {
-      const side = i % 2 === 0 ? "A" : "B";
-      r = applyPull(r, i * 2000, { side, correct: true, teamSize: 1 });
-    }
-    expect(pinnedSide(r)).toBeNull();
+  it("leaves a one-tier gap at two-a-side well short of a pin in 120s", () => {
+    const out = advanceRope(
+      INITIAL_ROPE,
+      held(3),
+      held(2),
+      120_000,
+      ropeK(2, 2),
+    );
+    expect(out.p).toBeGreaterThan(0.8);
+    expect(out.p).toBeLessThan(1);
   });
 });

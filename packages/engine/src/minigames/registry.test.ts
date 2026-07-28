@@ -11,7 +11,7 @@ describe("registry", () => {
   });
 
   it("resolves trivia by kind", () => {
-    expect(MINIGAMES.trivia.title).toBe("Trivia Tug-of-War");
+    expect(MINIGAMES.trivia.title).toBe("Tug O' Lore");
   });
 
   it("includes devOnly games outside production", () => {

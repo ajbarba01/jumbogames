@@ -17,7 +17,7 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 2   | UI system — port console-kit (drop `chrome/`), retheme tokens, port UI.md, add `motion`                                                            | done        |
 | 3   | Tournament shell — host/create, game code, lobby, teams, ready/start/lock; round-robin schedule + standings engine (pure, tested) + round board UI | done        |
 | 4   | Match container — K-minigame reveal, zoom in/out, scoring screen, round + match lifecycle (pure) + Realtime channels + spectate                    | done        |
-| 5   | Minigame 1: trivia tug-of-war + admin question-bank CRUD; CRUD E2E spec                                                                            | done        |
+| 5   | Minigame 1: Tug O' Lore (trivia tug-of-war) + admin question-bank CRUD; CRUD E2E spec                                                              | done        |
 | 6   | Final standings + per-player normalization utilities                                                                                               | pending     |
 | 7   | Open hosting — player-creatable games, config (minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                                       | done        |
 | 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | in progress |
@@ -53,8 +53,8 @@ flash and needs its own pass.
 Milestone 5 is done: trivia tug-of-war (both server logic and play UI) and the admin question-bank
 CRUD landed together, since the minigame has nothing to deal without content behind it. Landing the
 first content-backed minigame grew the contract rather than special-casing trivia around it: `apply`
-now takes a server-stamped `now` so time-based state (the rope's decay) stays deterministic off the
-same clock as the route handler; an optional `outcome` lets a game declare a winner that overrides the
+now takes a server-stamped `now` so time-based state stays deterministic off the same clock as the
+route handler; an optional `outcome` lets a game declare a winner that overrides the
 normalized-mean comparison (trivia's pin); an optional `redact` lets a game strip per-viewer payload
 before a state ever reaches a client (trivia hides each player's own current question from opponents
 and everyone's correct answers pre-reveal); and `init` now accepts route-supplied context, fetched at
@@ -246,6 +246,34 @@ Known gaps carried out of this milestone, all of which the cutover must address:
   `canPredict` is always false and `predictSlot`'s main path never runs. Either delete it or land it
   with the first game that needs it.
 
+## Tug O' Lore — minigame 1 redesigned (follow-on to Milestone 5)
+
+Trivia tug-of-war became **Tug O' Lore**. The mechanic changed shape rather than being tuned: the
+rope's leaky integrator is gone, and with it the per-answer impulse. A team now holds a _pulling-power
+tier_ that applies constant force, correct answers buy tiers, and rope position is the time-integral
+of the tier gap. Nothing pulls the rope back toward centre, so ground is only lost to being
+out-pulled. The full rules and the `k = √n̄ / 175` team-size correction live in DESIGN.md; the two
+decisions worth carrying are recorded there as 22 (the +1/0 score scale and what it forbids Milestone
+6 from assuming) and 23 (the wrong answer costs time, and the reveal had to go with it).
+
+Structurally this cost no new machinery, which was the point. Tier and rope are pure functions of
+stored state plus a server-stamped clock, so a pin that happens during an idle stretch is _discovered_
+by `isFinished`/`outcome` rather than needing a tick loop, and the client extrapolates both between
+frames with the same functions the server ran. The only contract change was giving `outcome` the
+clock — a game whose state evolves with time cannot decide a slot from a payload that is only current
+as of the last action. `tuning.ts` holds every constant so a retune is one commit with no logic edits,
+which is exactly how the first two playtest corrections landed: `CHARGE_PER_TIER` 3 → 2 (the ladder
+was harder than its own calibration — tier 3 demanded 6.3s/answer against an estimated 6.6s average)
+and a floor at tier 1 (demoting to 0 meant a team that played and stalled fell _below_ one that never
+answered, so participating was punished).
+
+Also here, and not part of the redesign: the host can **restart a game** back to the lobby, deleting
+the schedule while keeping teams, members and ready flags. It exists because iterating on a minigame
+otherwise meant rebuilding a two-team lobby for every run.
+
+Not done: the calibration is still modelled, not measured. Every number keys off an estimated 4.2–9.2
+seconds per correct answer per player, which a real hacknight should replace with observation.
+
 ## Known gaps (carry into the next branches)
 
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
@@ -295,4 +323,4 @@ Known gaps carried out of this milestone, all of which the cutover must address:
 
 ---
 
-_Last reviewed: 2026-07-27_
+_Last reviewed: 2026-07-28_

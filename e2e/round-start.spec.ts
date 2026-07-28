@@ -5,7 +5,9 @@
  * staff (host/admin) get a spectate link into any live match from the board;
  * a sitting-out team's player sees the board's bye card instead of one; and
  * starting the next round force-yields players still parked on their
- * finished match's end screen into their new one.
+ * finished match's end screen into their new one. Restarting a game back to
+ * the lobby is covered here too — it is a schedule-lifecycle mutation, and its
+ * whole point is what survives it.
  */
 import { type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
@@ -95,6 +97,52 @@ test("board auto-pull carries players into their match while the host stays on t
   // stays on the board.
   await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
   await expect(startRound).toHaveCount(0);
+});
+
+test("the host restarts a running game back to the lobby with its teams intact", async ({
+  signedIn,
+}) => {
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+
+  const code = await hostTournament(host, "Restart Cup");
+
+  await joinByCode(alpha, code);
+  await createAndReadyTeam(alpha, "Alpha");
+  await joinByCode(bravo, code);
+  await createAndReadyTeam(bravo, "Bravo");
+
+  await expect(host.getByText("Bravo")).toBeVisible();
+  await host.getByRole("button", { name: "Start game" }).click();
+  await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
+
+  // Restart is destructive and host-only, so it sits behind a confirm. The
+  // dock button and the dialog's confirm share a label, so the second click is
+  // scoped to the dialog by its aria-label rather than picked by position.
+  await host.getByRole("button", { name: "Restart game" }).click();
+  const confirm = host.getByRole("dialog", { name: "Restart game?" });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Restart game" }).click();
+
+  // Back in the lobby: the board is gone and the game is startable again.
+  await expect(host.getByRole("heading", { name: "Standings" })).toHaveCount(0);
+  const startAgain = host.getByRole("button", { name: "Start game" });
+  await expect(startAgain).toBeVisible();
+
+  // The point of restart over delete: the roster survives, so the same teams
+  // can play again without being rebuilt. Ready flags survive with it, and the
+  // dock's own status line is the assertion for that — a still-enabled Start
+  // would also be satisfied by the override button beside it.
+  await expect(host.getByText("All teams are ready.")).toBeVisible();
+  await expect(startAgain).toBeEnabled();
+
+  // The names themselves live on the team picker, not the board: pre-start the
+  // Board tab is deliberately empty ("Board opens when the host starts the
+  // game"), so the roster has to be read where it is actually rendered.
+  await host.getByRole("tab", { name: "Join a team" }).click();
+  await expect(host.getByText("Alpha")).toBeVisible();
+  await expect(host.getByText("Bravo")).toBeVisible();
 });
 
 test("the host sees a spectate link into a live match and it opens the match", async ({

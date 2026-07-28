@@ -43,6 +43,7 @@ import {
   TeamChip,
 } from "@jumbo/ui";
 import { BackgroundLab } from "./background-lab";
+import { TierLab } from "./tier-lab";
 import { MotionDemos } from "./motion-demos";
 import { SlamWipeDemo } from "./slam-wipe-demo";
 import { ZoomDemo } from "./zoom-demo";
@@ -322,7 +323,7 @@ function InputsSection() {
       <Specimen label="OptionCard — unselected, selected, disabled">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <OptionCard
-            title="Trivia tug-of-war"
+            title="Tug O' Lore"
             description="Answer fast, pull the rope"
             selected
             onToggle={() => {}}
@@ -664,6 +665,14 @@ function BackgroundSection() {
   );
 }
 
+function TierMeterSection() {
+  return (
+    <Section title="Tier meter">
+      <TierLab />
+    </Section>
+  );
+}
+
 /* ---------- brand ---------- */
 
 const PATHS_MARK: BrandMarkSpec = {
@@ -835,6 +844,7 @@ export function ShowcaseGallery(): React.JSX.Element {
           <FrameSection />
           <MotionSection />
           <BackgroundSection />
+          <TierMeterSection />
           <BrandSection />
           <TypeTokensSection />
         </div>

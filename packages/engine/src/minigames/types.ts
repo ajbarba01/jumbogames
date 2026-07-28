@@ -25,9 +25,12 @@ export interface MinigameServer<S = unknown, A = unknown> {
   apply(state: S, playerId: string, action: A, now: number): S;
   isFinished(state: S, now: number): boolean;
   scores(state: S): Record<string, number>;
-  // A game-decided winner (e.g. a tug-of-war pin) that beats the
-  // normalized-mean comparison at finalize; null defers to the means.
-  outcome?(state: S): "A" | "B" | null;
+  // A game-decided winner (e.g. a tug-of-war pin, or rope position at the
+  // buzzer) that beats the normalized-mean comparison at finalize; null defers
+  // to the means. Takes the server-stamped clock because a game whose state
+  // evolves with time — not only with actions — cannot decide from a payload
+  // that is only current as of the last action.
+  outcome?(state: S, now: number): "A" | "B" | null;
   // Per-viewer payload redaction applied before a view leaves the server.
   // Games with hidden info strip it here; absent means payload is public.
   redact?(state: S, viewerId: string | null): unknown;

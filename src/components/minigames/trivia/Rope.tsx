@@ -17,25 +17,40 @@ import type { MatchTeam } from "@jumbo/engine";
 
 export function Rope({
   p,
+  gap,
   teamA,
   teamB,
 }: {
   /** Rope position; +1 is team A's wall (the server's convention). */
   p: number;
+  /** Tier gap driving the rope right now, A minus B; 0 is a standstill. */
+  gap: number;
   teamA: MatchTeam;
   teamB: MatchTeam;
 }): React.JSX.Element {
   // A reads on the left, so p = +1 maps to 0%.
   const percent = ((1 - p) / 2) * 100;
   const toward = p === 0 ? null : p > 0 ? teamA.name : teamB.name;
+  const pulling = gap === 0 ? null : gap > 0 ? teamA.name : teamB.name;
   return (
     <div
       role="img"
-      aria-label={
-        toward === null ? "Rope at centre" : `Rope pulled toward ${toward}`
-      }
+      aria-label={[
+        toward === null ? "Rope at centre" : `Rope pulled toward ${toward}`,
+        pulling === null ? "neither team pulling" : `${pulling} pulling`,
+      ].join(", ")}
       className="relative h-24 w-full"
     >
+      {/* The instantaneous force read, riding the knot rather than parked at
+          the rope's centre: it is the knot that is being dragged, and an arrow
+          fixed to the middle stops describing it the moment the knot moves
+          away. The rope travels only about two pixels a second at a one-tier
+          gap on a projector, which reads as stuck — this says which way it is
+          going and how hard, which the motion alone cannot. Absent at a
+          standstill, on purpose. */}
+      {gap !== 0 && (
+        <Chevron gap={gap} percent={percent} teamA={teamA} teamB={teamB} />
+      )}
       <div
         className="absolute inset-x-1 top-1/2 h-6 -translate-y-1/2 rounded-r2"
         style={{
@@ -70,5 +85,52 @@ export function Rope({
         <div className="absolute inset-1.5 border-2 border-s8" aria-hidden />
       </motion.div>
     </div>
+  );
+}
+
+/**
+ * The force arrow, pinned to the leading edge of the knot and pointing the way
+ * the knot is being dragged. It grows with the size of the tier gap driving
+ * it. Team colour here is identity — whose pull this is — matching the walls
+ * below, and never a status hue: the four status colours stay reserved for
+ * live state (docs/UI.md).
+ */
+function Chevron({
+  gap,
+  percent,
+  teamA,
+  teamB,
+}: {
+  gap: number;
+  /** The knot's own left offset, so the arrow tracks it exactly. */
+  percent: number;
+  teamA: MatchTeam;
+  teamB: MatchTeam;
+}): React.JSX.Element {
+  const towardA = gap > 0;
+  const team = towardA ? teamA : teamB;
+  // Clamped so a five-tier blowout does not draw an arrow wider than the knot.
+  const scale = 1 + Math.min(Math.abs(gap), 4) * 0.3;
+  // The knot is 48px across and rotated 45°, so its points reach ~34px from
+  // centre. The arrow clears that and sits just outside whichever point leads.
+  const offset = towardA ? -40 : 40;
+  return (
+    <motion.div
+      aria-hidden
+      initial={false}
+      animate={{ left: `${percent}%`, x: offset, scale }}
+      transition={{ ease: SLIP_EASE, duration: SLIP_DUR.move }}
+      className="absolute top-1/2 z-10 -translate-y-1/2"
+      style={{ color: `var(--color-team-${team.colorIndex})` }}
+    >
+      <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+        <path
+          d={towardA ? "M15 2 L5 9 L15 16" : "M7 2 L17 9 L7 16"}
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeLinecap="square"
+        />
+      </svg>
+    </motion.div>
   );
 }

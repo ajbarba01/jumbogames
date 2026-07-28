@@ -2,8 +2,13 @@
  * The host's floating control dock: every game-level host control, docked to
  * the bottom of the game surface and showing only what the current phase can
  * act on — starting the game in the lobby, starting the next round or ending
- * the game between rounds, and nothing at all once the game is complete.
- * Per-team controls are not game-level and stay on the team cards.
+ * the game between rounds, and restarting it back to the lobby once it has
+ * begun. Per-team controls are not game-level and stay on the team cards.
+ *
+ * The dock stays mounted after the game completes, where restart is the only
+ * control left: a finished game is exactly when a host most wants to run the
+ * same roster again, and offering nothing there forced them to rebuild the
+ * teams from scratch.
  */
 "use client";
 
@@ -38,10 +43,9 @@ export function HostDock({
   const router = useRouter();
   const { cover } = useWipeNav();
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
   const [roundBusy, setRoundBusy] = useState(false);
   const [roundError, setRoundError] = useState<string | null>(null);
-
-  if (phase === "complete") return null;
 
   const activeRound = rounds.find((round) => round.state === "active");
   const pendingRound = rounds.find((round) => round.state === "pending");
@@ -137,8 +141,15 @@ export function HostDock({
               {roundError}
             </StatusLine>
           ) : null}
-          <Button variant="outline" onClick={() => setConfirmEnd(true)}>
-            End game
+          {phase === "active" ? (
+            <Button variant="outline" onClick={() => setConfirmEnd(true)}>
+              End game
+            </Button>
+          ) : (
+            <StatusLine>Game complete.</StatusLine>
+          )}
+          <Button variant="outline" onClick={() => setConfirmRestart(true)}>
+            Restart game
           </Button>
         </>
       )}
@@ -158,6 +169,23 @@ export function HostDock({
           );
         }}
         onClose={() => setConfirmEnd(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmRestart}
+        title="Restart game?"
+        description="Every round, match and score is deleted and the game returns to the lobby. Teams and their members stay, so you can start straight over."
+        confirmLabel="Restart game"
+        busy={busy}
+        onConfirm={() => {
+          setConfirmRestart(false);
+          void act(() =>
+            fetch(`/api/tournaments/${tournamentId}/restart`, {
+              method: "POST",
+            }),
+          );
+        }}
+        onClose={() => setConfirmRestart(false)}
       />
     </Card>
   );

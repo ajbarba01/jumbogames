@@ -1,10 +1,14 @@
 /**
- * Trivia tug-of-war play surface: one tree for both roles — the projector
- * clock, both team ends, the rope and the derived event log are what a
+ * Tug O' Lore's play surface: one tree for both roles — the projector clock,
+ * both teams' pulling power, the rope and its force chevron are what a
  * spectator sees, and a player gets their own running score and their own
- * question stream on top. Answering holds the card for a reveal beat before
- * the next one is shown; the card behind it has already been dealt
- * server-side, so the hold is presentation, not pacing.
+ * question stream on top.
+ *
+ * Everything time-varying here is extrapolated locally from the last pushed
+ * payload with the same pure functions the server used, so the rope crawls and
+ * the tier timers drain smoothly between frames instead of stepping on each
+ * push. Answering holds the card for a verdict beat; the card behind it has
+ * already been dealt server-side, so the hold is presentation, not pacing.
  */
 "use client";
 
@@ -22,19 +26,17 @@ import {
 import type { MatchView } from "@/lib/match/client";
 import { normalizeTeamScore } from "@jumbo/engine";
 import type { MatchTeam, SlotState } from "@jumbo/engine";
-import { decayRope } from "@jumbo/engine";
-import type { TriviaView } from "@jumbo/engine";
+import { advanceRope, resolveTier, type TriviaView } from "@jumbo/engine";
 import { useNow } from "@/components/match/use-now";
 import { Rope } from "./Rope";
+import { TierMeter } from "./TierMeter";
 import { WinGlow } from "./WinGlow";
-import { useTicker } from "./use-ticker";
-import type { TickerEvent } from "@jumbo/engine";
 
-/** How long the answered card stays on screen with its reveal. */
+/** How long the answered card stays on screen with its verdict. */
 const REVEAL_MS = 1000;
-/** Ceiling on a hold whose reveal never arrives — a rejected action leaves
- *  `lastAnswer` unchanged, and a player must never be stranded on a dead
- *  card with their choices disabled. */
+/** Ceiling on a hold whose verdict never arrives — a rejected action leaves
+ *  `answers` unchanged, and a player must never be stranded on a dead card
+ *  with their choices disabled. */
 const HOLD_MAX_MS = 3000;
 const SHAKE_DUR = 0.4;
 
@@ -43,11 +45,12 @@ interface HeldCard {
   prompt: string;
   choices: [string, string, string, string];
   picked: number;
-  /** The viewer's own score at the moment this card was picked, so the hold
-   *  can tell when the server has resolved it — every answer moves the score
-   *  by a nonzero amount — without depending on `lastAnswer`, which is
-   *  suppressed on the deck-exhaustion collision path. */
-  baselineScore: number;
+  /** The viewer's applied-answer count when this card was picked. Monotonic
+   *  and moved by wrong answers too — which no longer touch the score — so it
+   *  is the one edge that means "the server has resolved my card" for both
+   *  verdicts. A plain number, so it stays referentially stable across a frame
+   *  that did not change it. */
+  baselineAnswers: number;
 }
 
 function formatClock(totalSeconds: number): string {
@@ -87,71 +90,11 @@ function TeamEnd({
   );
 }
 
-/** The anonymized log: who scored and by how much, newest first, with a
- *  reserved height so a new row animates in place instead of resizing the
- *  surface around it. */
-function Ticker({
-  events,
-  teamA,
-  teamB,
-  compact,
-}: {
-  events: TickerEvent[];
-  teamA: MatchTeam;
-  teamB: MatchTeam;
-  compact: boolean;
-}): React.JSX.Element {
-  return (
-    <ul
-      aria-live="polite"
-      className={cx(
-        "flex flex-col items-center gap-1 overflow-hidden",
-        compact ? "h-24" : "h-28",
-      )}
-    >
-      <AnimatePresence initial={false}>
-        {events.map((event) => {
-          const team = event.side === "A" ? teamA : teamB;
-          return (
-            <motion.li
-              key={event.id}
-              layout
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ ease: SLIP_EASE, duration: SLIP_DUR.base }}
-              className={cx(
-                "flex items-center justify-center gap-2",
-                compact ? "text-s8" : "text-sec text-s9",
-              )}
-            >
-              <TeamChip
-                colorIndex={team.colorIndex}
-                name={team.name}
-                size="xs"
-              />
-              <span
-                className={cx(
-                  "font-bold",
-                  event.delta > 0 ? "text-ok" : "text-crit",
-                )}
-              >
-                {event.delta > 0 ? `+${event.delta}` : event.delta}
-              </span>
-            </motion.li>
-          );
-        })}
-      </AnimatePresence>
-    </ul>
-  );
-}
-
-/** One answer choice. Interactive until the reveal; the reveal marks the
- *  correct choice and shakes a wrong pick. A tapped-but-unresolved choice
- *  reads as *taken* (tier-1 optimism, DESIGN.md decision 23) — deliberately
- *  neutral, because trivia redacts the correct answer and the client cannot
- *  know whether the pick was right until the server says so. The frame carries
- *  the verdict, so the kit Button underneath keeps its own faces intact. */
+/** One answer choice. Interactive until the verdict; a tapped-but-unresolved
+ *  choice reads as *taken* — acknowledgement-only optimism, because the server
+ *  never ships a correct index and the client genuinely cannot know whether the
+ *  pick scored. The frame carries the verdict, so the kit Button underneath
+ *  keeps its own faces. */
 function Choice({
   label,
   disabled,
@@ -189,6 +132,17 @@ function Choice({
   );
 }
 
+/** The lockout banner. A wrong answer costs seconds, not points, and this has
+ *  to read as *the game holding you* — a bare disabled state with no
+ *  explanation is the worst version of this. */
+function Lockout({ secondsLeft }: { secondsLeft: number }): React.JSX.Element {
+  return (
+    <p aria-live="polite" className="text-center text-sec font-bold text-crit">
+      Wrong — back in {secondsLeft}s
+    </p>
+  );
+}
+
 export function TriviaPlay({
   view,
   slot,
@@ -208,97 +162,104 @@ export function TriviaPlay({
   const snapshot = slot.snapshot ?? { teamA: [], teamB: [] };
   const { teamA, teamB } = view.match;
 
-  const rope = decayRope(payload.rope, serverNow);
+  // Extrapolated, not read: the payload is only current as of the last answer,
+  // and both the rope and the tier timers keep moving after it.
+  const rope = advanceRope(
+    payload.rope,
+    payload.tierA,
+    payload.tierB,
+    serverNow,
+    payload.k,
+  );
+  const tierA = resolveTier(payload.tierA, serverNow);
+  const tierB = resolveTier(payload.tierB, serverNow);
+  const gap = tierA.tier - tierB.tier;
+
   const meanA = normalizeTeamScore(payload.scores, snapshot.teamA);
   const meanB = normalizeTeamScore(payload.scores, snapshot.teamB);
   const remaining = Math.max(
     0,
     Math.ceil(((slot.deadline ?? serverNow) - serverNow) / 1000),
   );
-  const events = useTicker(payload.scores, snapshot);
   const myScore =
     view.viewerId !== null ? (payload.scores[view.viewerId] ?? 0) : 0;
+
+  const lockedFor = Math.max(0, payload.lockedUntil - serverNow);
+  const locked = lockedFor > 0;
 
   const [held, setHeld] = useState<HeldCard | null>(null);
   const [pop, setPop] = useState({ key: 0, delta: 0 });
   // Which held card's pop has already fired, so a card that keeps
-  // re-rendering during its reveal beat cannot pop a second time.
+  // re-rendering during its verdict beat cannot pop a second time.
   const [poppedDeckIndex, setPoppedDeckIndex] = useState<number | null>(null);
 
-  // Drives the choice highlighting only. `lastAnswer` is suppressed on the
-  // deck-exhaustion collision path (the newly dealt card is the same one just
-  // answered), so a held card can resolve with `revealed` staying null the
-  // whole time — the release below must not depend on it.
-  const revealed =
-    held !== null && payload.lastAnswer?.deckIndex === held.deckIndex
-      ? payload.lastAnswer
-      : null;
-
-  // The hold releases once the viewer's own score has moved away from what it
-  // was when the held card was picked — every resolved answer changes it by a
-  // nonzero amount (+3 or -1), so "the score moved" is a reliable "the server
-  // has decided" signal that survives the `lastAnswer` suppression above.
-  // `myScore` is a plain number derived from `payload.scores`, so — unlike
-  // `payload.lastAnswer`'s object identity — it stays referentially stable
-  // across a Realtime push that didn't change it (every push is a full
-  // refetch; see realtime-client.ts), which keeps this effect from re-arming
-  // on every push the way one keyed on the object would.
-  const resolvedDeckIndex =
-    held !== null && myScore !== held.baselineScore ? held.deckIndex : null;
+  // The server resolved this card once the viewer's applied-answer count has
+  // moved past what it was when the card was picked. This replaces the old
+  // score-based edge, which a wrong answer no longer moves.
+  const resolved =
+    held !== null && payload.answers > held.baselineAnswers ? held : null;
 
   // Release the hold once its answer has resolved.
   useEffect(() => {
-    if (resolvedDeckIndex === null) return;
+    if (resolved === null) return;
     const timer = setTimeout(() => setHeld(null), REVEAL_MS);
     return () => clearTimeout(timer);
-  }, [resolvedDeckIndex]);
+  }, [resolved]);
 
-  // Ceiling: a genuinely rejected action (stale or mismatched deckIndex)
-  // never moves the score, so `resolvedDeckIndex` never fires and this is the
-  // only way out — a stranded hold would leave the player unable to answer
-  // anything at all. Nothing to pop here: the score never moved, so there is
-  // no baseline left to advance for the next card.
+  // Ceiling: a genuinely rejected action (stale deckIndex, or one sent inside
+  // a lockout) never moves `answers`, so the release above never fires and
+  // this is the only way out — a stranded hold would leave the player unable
+  // to answer anything at all.
   useEffect(() => {
     if (held === null) return;
     const timer = setTimeout(() => setHeld(null), HOLD_MAX_MS);
     return () => clearTimeout(timer);
   }, [held]);
 
-  // A pin ends play; nobody should sit out a reveal beat for a match that is
-  // already decided. Dropped during render (not an effect) — this is a pure
-  // sync from `payload.pinned`, the same "you might not need an effect"
-  // pattern as the ticker and score-pop state below.
-  if (payload.pinned !== null && held !== null) setHeld(null);
+  // A pin ends play; nobody should sit out a verdict beat for a match that is
+  // already decided. Dropped during render (not an effect) — a pure sync from
+  // the derived pin, the same "you might not need an effect" pattern as the
+  // score-pop state below.
+  const pinned = rope.p >= 1 || rope.p <= -1;
+  if (pinned && held !== null) setHeld(null);
 
   const card = held ?? payload.question;
 
   function pick(choiceIndex: number): void {
     const question = payload.question;
     if (question === null) return;
-    setHeld({ ...question, picked: choiceIndex, baselineScore: myScore });
-    onAction({
-      type: "answer",
-      deckIndex: question.deckIndex,
-      choiceIndex,
+    setHeld({
+      ...question,
+      picked: choiceIndex,
+      baselineAnswers: payload.answers,
     });
+    onAction({ type: "answer", deckIndex: question.deckIndex, choiceIndex });
   }
 
   // The pop reports the viewer's own score movement rather than a guess at
   // what an answer is worth — the scoring constants live on the server and
-  // this surface should not hold a second copy of them. Keyed on the same
-  // resolution signal as the release above (not on `revealed`), so a
-  // suppressed reveal still pops; guarded by `poppedDeckIndex` so it only
-  // fires once per card even though this runs on every render.
+  // this surface should not hold a second copy of them. A wrong answer scores
+  // nothing now, so this only ever fires on a correct one.
   if (
     held !== null &&
     held.deckIndex !== poppedDeckIndex &&
-    myScore !== held.baselineScore
+    payload.answers > held.baselineAnswers
   ) {
     setPoppedDeckIndex(held.deckIndex);
-    setPop((prev) => ({
-      key: prev.key + 1,
-      delta: myScore - held.baselineScore,
-    }));
+    if (payload.lastResult === "correct") {
+      setPop((prev) => ({ key: prev.key + 1, delta: 1 }));
+    }
+  }
+
+  /** The verdict for one choice. Correct flashes the choice the player picked;
+   *  wrong reddens it. No correct index crosses the wire, so an unpicked
+   *  choice is never marked either way. */
+  function verdictFor(
+    choiceIndex: number,
+  ): "idle" | "pending" | "correct" | "wrong" {
+    if (held === null || choiceIndex !== held.picked) return "idle";
+    if (resolved === null || payload.lastResult === null) return "pending";
+    return payload.lastResult;
   }
 
   return (
@@ -312,7 +273,7 @@ export function TriviaPlay({
           {card !== null && (
             <div className="relative">
               <span className="text-sec font-bold text-s11">
-                You · {myScore} pts
+                You · {myScore} right
               </span>
               <ScorePop popKey={pop.key} delta={pop.delta} />
             </div>
@@ -326,11 +287,29 @@ export function TriviaPlay({
             <TeamEnd team={teamA} mean={meanA} align="left" />
             <TeamEnd team={teamB} mean={meanB} align="right" />
           </div>
-          <Rope p={rope.p} teamA={teamA} teamB={teamB} />
+          {/* Pulling power sits directly over the rope it drives, so the
+              numeral, the gap and the chevron read as one causal chain. */}
+          <div className="flex items-start justify-between gap-3">
+            <TierMeter
+              team={teamA}
+              tier={payload.tierA}
+              now={serverNow}
+              leading={gap > 0}
+              align="left"
+            />
+            <TierMeter
+              team={teamB}
+              tier={payload.tierB}
+              now={serverNow}
+              leading={gap < 0}
+              align="right"
+            />
+          </div>
+          <Rope p={rope.p} gap={gap} teamA={teamA} teamB={teamB} />
         </div>
 
         {card !== null ? (
-          <div className="mx-auto w-full max-w-3xl">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
             <AnimatePresence mode="wait">
               <motion.div
                 key={card.deckIndex}
@@ -340,11 +319,9 @@ export function TriviaPlay({
                 transition={{ ease: SLIP_EASE, duration: SLIP_DUR.enter }}
                 className="flex flex-col gap-4"
               >
-                {/* The deal is seeded per match from a shared bank, so which
-                    card a player holds cannot be predicted. E2E reads the
-                    prompt off the screen and looks the answer up by it —
-                    the slot payload it used to read is only archived to
-                    Postgres once the slot is done. */}
+                {/* The E2E spec identifies the dealt card from this element:
+                    which card the deal hands a player cannot be predicted, so
+                    the prompt on screen is how the test finds it. */}
                 <p
                   data-testid="trivia-prompt"
                   className="text-center text-lg font-bold text-balance text-s12"
@@ -357,43 +334,21 @@ export function TriviaPlay({
                     <Choice
                       key={choiceIndex}
                       label={choice}
-                      disabled={!canAct || held !== null}
-                      verdict={
-                        revealed === null
-                          ? // Pre-reveal the only thing that is known is which
-                            // choice this viewer took — never whether it scored.
-                            held !== null && choiceIndex === held.picked
-                            ? "pending"
-                            : "idle"
-                          : choiceIndex === revealed.correctIndex
-                            ? "correct"
-                            : held !== null && choiceIndex === held.picked
-                              ? "wrong"
-                              : "idle"
-                      }
+                      disabled={!canAct || held !== null || locked}
+                      verdict={verdictFor(choiceIndex)}
                       onPick={() => pick(choiceIndex)}
                     />
                   ))}
                 </div>
               </motion.div>
             </AnimatePresence>
+            {locked && <Lockout secondsLeft={Math.ceil(lockedFor / 1000)} />}
           </div>
         ) : (
           <p className="text-center text-s10">
             No hand to play — spectating this game.
           </p>
         )}
-
-        <div
-          className={cx(card !== null ? "mt-auto" : "mx-auto w-full max-w-md")}
-        >
-          <Ticker
-            events={events}
-            teamA={teamA}
-            teamB={teamB}
-            compact={card !== null}
-          />
-        </div>
       </div>
     </div>
   );

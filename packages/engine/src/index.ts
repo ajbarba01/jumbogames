@@ -24,6 +24,7 @@ export * from "./minigames/stub/server";
 export * from "./minigames/trivia/server";
 export * from "./minigames/trivia/deal";
 export * from "./minigames/trivia/rope";
-export * from "./minigames/trivia/ticker";
+export * from "./minigames/trivia/tiers";
+export * from "./minigames/trivia/tuning";
 export * from "./minigames/trivia/view";
 export { seededShuffle } from "./random";

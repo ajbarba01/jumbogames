@@ -8,6 +8,9 @@
  * finished match's end screen into their new one. Restarting a game back to
  * the lobby is covered here too — it is a schedule-lifecycle mutation, and its
  * whole point is what survives it.
+ * A finished round's result reaching the standings board — and the ended
+ * board's final state — is covered here too, since it needs the same stub
+ * round lifecycle.
  */
 import { type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
@@ -369,4 +372,133 @@ test("starting the next round force-yields players off their finished match's en
   ).toHaveCount(0);
   await expect(alpha.getByRole("button", MATCH_SLOT_CARD)).toBeVisible();
   await expect(bravo.getByRole("button", MATCH_SLOT_CARD)).toBeVisible();
+});
+
+test("a finished minigame reaches the standings and the ended board crowns its winner", async ({
+  signedIn,
+}) => {
+  // The stub's countdown/play/scoring deadlines put a firm ~18s floor under
+  // finishing the round, on top of signup and lobby setup.
+  test.setTimeout(120_000);
+
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
+  const { page: bravo } = await signedIn("p2");
+
+  const code = await hostTournament(host, "Standings Cup");
+
+  // Two teams is one match and one round, so the whole round-robin completes
+  // here and the game can be ended without a second round.
+  await joinByCode(alpha, code);
+  await createAndReadyTeam(alpha, "Alpha");
+  await joinByCode(bravo, code);
+  await createAndReadyTeam(bravo, "Bravo");
+
+  await expect(host.getByText("Bravo")).toBeVisible();
+  await host.getByRole("button", { name: "Start game" }).click();
+  await expect(host.getByRole("heading", { name: "Standings" })).toBeVisible();
+
+  await host.getByRole("button", { name: "Start round 1" }).click();
+  await expect(host.getByTestId("slam-wipe")).toHaveCount(0);
+
+  await expect(alpha).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
+  await expect(bravo).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
+  await readyUpThroughGate([alpha, bravo]);
+
+  // The stub ties at 0-0, which records no winner at all. Alpha mashes once
+  // and Bravo never does, so Alpha's team mean beats zero and the slot
+  // resolves to a real, predictable winner for the board to show.
+  // Exact, not substring: "MASH" is also a substring of the Overview slot
+  // card's "Button Masher" label, and that card's shared-layout exit
+  // animation (see Overview.tsx's motion.button layoutId) keeps it mounted
+  // for a beat after StubPlay's own MASH button appears, so an unscoped name
+  // match hits both and Playwright's strict mode rejects it.
+  const mash = alpha.getByRole("button", { name: "MASH", exact: true });
+  await expect(mash).toBeEnabled({ timeout: 30_000 });
+  await mash.click();
+  await expect(alpha.getByText("You: 1")).toBeVisible();
+
+  // Both players must reach the end screen for the round to flip complete
+  // server-side.
+  await Promise.all(
+    [alpha, bravo].map((player) =>
+      expect(
+        player.getByRole("heading", { name: "Match complete" }),
+      ).toBeVisible({ timeout: 30_000 }),
+    ),
+  );
+
+  // The standings table's rows and the schedule's matchup rows are both
+  // `<li>` elements that carry a team's name, so a bare listitem-and-name
+  // filter is ambiguous once round 1 lands in the schedule below. Scoping to
+  // the section that owns the "Standings" heading keeps the row to the one
+  // table this test means to read.
+  const standingsSection = host
+    .locator("section")
+    .filter({ has: host.getByRole("heading", { name: "Standings" }) });
+  const alphaRow = standingsSection
+    .getByRole("listitem")
+    .filter({ hasText: "Alpha" });
+  // A row is rank, team, games-won and movement, each its own direct <span>
+  // (see StandingRow in round-board.tsx). Alpha ends the round undefeated at
+  // rank 1 with 1 game won, so the row carries "1" twice — a plain text
+  // filter is ambiguous the same way alphaRow itself was, and for the same
+  // reason. The games-won column is the one that actually proves the finished
+  // minigame reached the board, so it is addressed by position.
+  const alphaGamesWon = alphaRow.locator("> span").nth(2);
+  const alphaRank = alphaRow.locator("> span").nth(0);
+  const alphaTeamName = alphaRow.locator("> span").nth(1);
+
+  // The host took no action during the match, so its board learns of the
+  // result only from a Realtime broadcast — the flakiest hop in the suite.
+  // Reloading forces the same fresh server render the app performs on
+  // tab-restore, so the assertion reflects server truth. Retried as a unit
+  // because a broadcast landing mid-reload tears the navigation out from
+  // under Playwright.
+  await expect(async () => {
+    await host.reload();
+    await expect(alphaGamesWon).toHaveText("1", { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
+
+  // computeStandings has no phase input and getBoardState calls it
+  // unconditionally, so Alpha is already rank 1 the instant it wins the only
+  // match — well before "End game" is clicked. Rank alone can never
+  // distinguish crowned from merely-winning, so the pre-end baseline this
+  // test needs is the winner's team-name size, captured here before ending,
+  // not its rank. There is still no final banner at this point.
+  await expect(host.getByText("Ended · final standings")).toHaveCount(0);
+  const beforeSize = await alphaTeamName.evaluate(
+    (el) => getComputedStyle(el).fontSize,
+  );
+
+  // End the game: host-only, behind a confirm whose button shares the dock
+  // button's label, so the second click is scoped to the dialog.
+  await host.getByRole("button", { name: "End game" }).click();
+  const confirm = host.getByRole("dialog", { name: "End game?" });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "End game" }).click();
+
+  // The ended board is the final-standings surface: same table, now frozen.
+  // Alpha won the only minigame, so it is rank 1 alone once the game ends —
+  // still true, though rank never changed and so cannot prove crowning.
+  await expect(host.getByText("Ended · final standings")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(alphaRank).toHaveText("1", { timeout: 15_000 });
+
+  // The champion treatment (round-board.tsx) swaps the winner's team-name
+  // span from text-lg/font-bold to font-display/text-2xl — a size and voice
+  // change, not a badge or label, since UI.md forbids word markers. Assert
+  // the size actually grows once Alpha is crowned, rather than asserting a
+  // class string a token rename would break, and rather than reusing rank —
+  // which reads "1" identically whether or not the crown ever renders.
+  await expect(async () => {
+    const afterSize = await alphaTeamName.evaluate(
+      (el) => getComputedStyle(el).fontSize,
+    );
+    expect(parseFloat(afterSize)).toBeGreaterThan(parseFloat(beforeSize));
+  }).toPass({ timeout: 15_000 });
+
+  // The board is also read on a phone between rounds.
+  await expectNoHorizontalOverflow(host, "/t/[id] (ended board)");
 });

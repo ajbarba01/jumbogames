@@ -1,15 +1,17 @@
 /**
  * Seeds trivia_questions from the Open Trivia Database (OpenTDB,
  * https://opentdb.com), whose question bank is licensed CC BY-SA 4.0.
- * Requests a session token, then pulls up to 8 batches of 50 multiple-choice
- * questions, honoring OpenTDB's one-request-per-5-seconds rate limit.
- * Duplicate prompts are never re-inserted, but each run draws a fresh
- * random sample from OpenTDB, so re-running grows the bank with new
- * questions rather than converging to zero inserts.
+ * Requests a session token, then pulls batches of 50 multiple-choice questions,
+ * honoring OpenTDB's one-request-per-5-seconds rate limit. Duplicate prompts
+ * are never re-inserted, but each run draws a fresh random sample from OpenTDB,
+ * so re-running grows the bank with new questions rather than converging to
+ * zero inserts.
  *
- * Draws easy and medium only by default (see DEFAULT_DIFFICULTIES for why),
- * rotating batches across the selected set because OpenTDB accepts one
- * difficulty per request.
+ * Draws easy only by default (see DEFAULT_DIFFICULTIES for why), rotating
+ * batches across the selected set because OpenTDB accepts one difficulty per
+ * request. One session token spans the whole run and OpenTDB will not repeat a
+ * question within it, so a run with a high enough batch cap drains the pool and
+ * stops on the token-exhausted signal rather than on the cap.
  *
  * Run via `npm run seed:trivia`, which loads `.env.test.local` and always
  * targets the test/dev database. This script never chooses an environment
@@ -23,20 +25,40 @@ import { PrismaClient } from "../src/generated/prisma/client";
 const OPENTDB_TOKEN_URL = "https://opentdb.com/api_token.php?command=request";
 const OPENTDB_QUESTIONS_URL = "https://opentdb.com/api.php";
 const BATCH_SIZE = 50;
-const MAX_BATCHES = 8;
+const DEFAULT_MAX_BATCHES = 8;
 const RATE_LIMIT_DELAY_MS = 5200;
+
+/**
+ * Batch ceiling for one run. The default keeps a routine top-up short; raise it
+ * with `TRIVIA_MAX_BATCHES` to drain a difficulty's whole pool in a single
+ * session token, which is the only way to avoid re-drawing questions the bank
+ * already has (a fresh token per run has no memory of the previous one).
+ */
+function maxBatchesFromEnv(): number {
+  const raw = process.env.TRIVIA_MAX_BATCHES;
+  if (!raw) return DEFAULT_MAX_BATCHES;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(
+      `TRIVIA_MAX_BATCHES must be a positive integer; got "${raw}"`,
+    );
+  }
+  return parsed;
+}
 
 const DIFFICULTIES = ["easy", "medium", "hard"] as const;
 type Difficulty = (typeof DIFFICULTIES)[number];
 
 /**
- * Which difficulties to draw. Hard is excluded by default: a hacknight round
- * lasts two minutes and pulling power is bought with *answer rate*, so a bank
- * full of questions nobody can answer quickly flattens both teams onto the
- * floor tier and leaves the rope motionless. Override with
- * `TRIVIA_DIFFICULTIES=easy,medium,hard`.
+ * Which difficulties to draw. Easy only by default: a round lasts two minutes
+ * and pulling power is bought with *answer rate*, so a question that takes
+ * thinking about costs a team its tier. Anything slower than instant
+ * recognition flattens both teams onto the floor tier and leaves the rope
+ * motionless — which is the one failure mode this minigame cannot survive,
+ * since the rope is what the room watches. Override with
+ * `TRIVIA_DIFFICULTIES=easy,medium` (or add `hard`) if a bank ever needs range.
  */
-const DEFAULT_DIFFICULTIES: readonly Difficulty[] = ["easy", "medium"];
+const DEFAULT_DIFFICULTIES: readonly Difficulty[] = ["easy"];
 
 function difficultiesFromEnv(): readonly Difficulty[] {
   const raw = process.env.TRIVIA_DIFFICULTIES;
@@ -157,13 +179,16 @@ async function main(): Promise<void> {
     const knownPrompts = new Set(existing.map((row) => row.prompt));
 
     const difficulties = difficultiesFromEnv();
-    console.log(`Drawing difficulties: ${difficulties.join(", ")}`);
+    const maxBatches = maxBatchesFromEnv();
+    console.log(
+      `Drawing difficulties: ${difficulties.join(", ")} (up to ${maxBatches} batches)`,
+    );
 
     const rows: QuestionRow[] = [];
     let fetched = 0;
     let skipped = 0;
 
-    for (let batch = 0; batch < MAX_BATCHES; batch += 1) {
+    for (let batch = 0; batch < maxBatches; batch += 1) {
       if (batch > 0) {
         await sleep(RATE_LIMIT_DELAY_MS);
       }

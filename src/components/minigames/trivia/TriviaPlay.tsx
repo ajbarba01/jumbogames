@@ -340,7 +340,15 @@ export function TriviaPlay({
                 transition={{ ease: SLIP_EASE, duration: SLIP_DUR.enter }}
                 className="flex flex-col gap-4"
               >
-                <p className="text-center text-lg font-bold text-balance text-s12">
+                {/* The deal is seeded per match from a shared bank, so which
+                    card a player holds cannot be predicted. E2E reads the
+                    prompt off the screen and looks the answer up by it —
+                    the slot payload it used to read is only archived to
+                    Postgres once the slot is done. */}
+                <p
+                  data-testid="trivia-prompt"
+                  className="text-center text-lg font-bold text-balance text-s12"
+                >
                   {card.prompt}
                 </p>
                 {/* Two columns where there is room, one stack at the floor. */}

@@ -33,8 +33,10 @@ Full rationale and the pure-engine contract live in the
   still active drops that bye's credit, since standings only count byes from rounds recorded
   `complete`.
 - **A match is K minigames**, K = `minigamesPerMatch` (per-tournament config, 1–4, default 1), drawn
-  distinct from the pool. A minigame is won by the higher **normalized team score**; the winner scores
-  one point. There is **no match winner** — points are counted per minigame.
+  distinct from the pool. A minigame is won by the higher **normalized team score**, unless the game
+  declares its own outcome — a game may return a winner from its own state (Tug O' Lore's rope
+  position), which overrides the mean comparison; the normalized score then only breaks a dead heat.
+  The winner scores one point. There is **no match winner** — points are counted per minigame.
 - **Ranking = total minigames won**, tiebroken by **cumulative normalized score**. Final standings are
   the ranking after the last round — no separate placement phase.
 - Teams whose match finishes early **spectate** any still-running match until the round closes.
@@ -96,14 +98,37 @@ before build (see [ROADMAP.md](ROADMAP.md)); the shapes below are the agreed bas
    (CRUD via admin UI, seedable from OpenTDB), in the same order, so neither team gets an easier
    sequence; each player free-paces their own stream of cards from their team's shared deck rather
    than waiting on a shared clock, and a team never repeats a card until every member has personally
-   exhausted the deck. A correct answer is worth +3, a wrong one −1, so blind guessing nets zero
-   expected value and doesn't pay. Every answer also pulls a rope: a decaying-impulse model where
-   each pull scales down with team size (so a bigger team's individual answers move it less, keeping
-   totals comparable) and idle time relaxes the rope back toward center on a 10-second half-life, so
-   a losing team is never locked out of a comeback. Pinning the rope at either wall ends the match
-   immediately and wins it outright, overriding the normalized-score comparison; if neither side pins,
-   the 120-second timer ends the match and the higher normalized mean wins. There is no skip — every
-   question must be answered to advance.
+   exhausted the deck. A correct answer scores **+1**, a wrong one **0**.
+
+   Correct answers build the team's **pulling power**: a tier, 1–5, that sets a _constant force_ on
+   the rope for as long as the team holds it. Each answer adds `1/teamSize` charge, so a tier costs
+   the same per-player effort at every team size and team size cancels exactly; each tier runs a
+   timer that demotes the team when it expires, and the timer **never resets on an answer** — it is
+   rent on holding the tier, and resetting it would let any steadily-answering team park at the
+   ceiling, converging the tiers and stalling the rope. Demotion keeps half the charge. **Tier 1 is
+   the floor**: demotion stops there, so a team that climbed and stalled ends level with one that
+   never answered rather than below it.
+
+   Rope position is the **time-integral of the tier gap** — nothing pulls it back toward centre, so
+   ground is only lost to the other team out-pulling you and a deficit reads as a distance rather
+   than a verdict. Sensitivity is `k = √n̄ / 175`, `n̄` the mean team size. The `√` is a team-size
+   correction, not a difficulty knob: a team's answer rate is the _mean_ of its members', so
+   between-team gaps shrink as `1/√n`, and sensitivity must grow as `√n` or the biggest games get the
+   most static rope. **The 175 is the only knob to move if pins are too rare**; touch the exponent
+   only if the pin rate differs systematically _between_ team sizes.
+
+   Pinning the rope at either wall ends the match immediately and wins it outright. If neither side
+   pins, **rope position at the buzzer decides** — under continuous force most matches end that way,
+   so it is the common path, not a fallback, and the rope is the one object the room watched for two
+   minutes; only a dead heat inside `TIE_EPSILON` defers to the normalized means.
+
+   A wrong answer costs **time, not points**: it locks that player's choices for a few seconds and
+   deals a fresh card, and the correct answer is **not** revealed. Dumping a card you don't recognise
+   is therefore accepted, intended play, priced in seconds. Two consequences are handled rather than
+   tolerated: the deck is consumed 2–3× faster, so the cap rises to 500 (a team that laps the deck
+   would otherwise draw repeats, and a repeat is a free charge), and the reveal is removed (otherwise
+   every dump is a free lesson and lapping is strictly profitable).
+
 2. **Typing race** — same passage for all; team progress is the normalized aggregate of individual
    typing.
 3. **Word game (territory capture)** — one shared letter grid; players drag across adjacent letters
@@ -302,6 +327,19 @@ arrive already solved; a theme is a token-scale swap by design.
 21. **Auth verifies JWTs locally rather than calling `auth.getUser()` per request**, accepting a
     bounded revocation window in exchange for removing a network hop and a database write from every
     authenticated request.
+22. **Tug O' Lore's score scale is +1/0, and that constrains Milestone 6.** The rope decides the slot,
+    so per-player score stopped competing with it for "who won this minigame" and kept only its other
+    job — the cumulative-normalized-score standings tiebreak. It moved from +3/−1 to +1/0 accordingly.
+    **Consequence:** minigames now have _different score scales_, so a cross-minigame normalization
+    formula cannot simply sum raw scores between games. Normalization has to happen per minigame,
+    against that minigame's own scale, before anything is aggregated. Milestone 6 must not assume a
+    shared unit.
+23. **The wrong-answer penalty is time, not points, and the correct answer stays hidden.** A points
+    penalty made blind guessing the thing to avoid; a lockout makes _dumping a card you don't know_ a
+    real, priced choice instead, which is how players actually behave. Revealing the correct answer
+    was cut with it: with dumping legal, a reveal turns every dump into a free lesson and makes
+    lapping the deck strictly profitable. The deck cap rose 150 → 500 for the same reason — dumping
+    consumes cards 2–3× faster, and a repeat card is a free charge.
 
 ## Deferred design (grill before building each)
 
@@ -315,4 +353,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-26_
+_Last reviewed: 2026-07-28_

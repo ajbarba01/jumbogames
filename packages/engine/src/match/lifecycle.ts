@@ -176,7 +176,7 @@ export function applyMatchEvent(
       const normA = normalizeTeamScore(raws, slot.snapshot.teamA);
       const normB = normalizeTeamScore(raws, slot.snapshot.teamB);
       // A game-decided outcome (e.g. a rope pin) beats the mean comparison.
-      const override = game.outcome?.(slot.payload) ?? null;
+      const override = game.outcome?.(slot.payload, deps.now) ?? null;
       const winner: SlotWinner =
         override ?? (normA > normB ? "A" : normB > normA ? "B" : "tie");
       return replaceSlot(state, {

@@ -4,8 +4,8 @@
  * and each round's state), and the current standings derived through the pure
  * engine. Also resolves the viewer's own live match id or active bye (if
  * they're a player in one), so the board can route or message them straight.
- * Until minigames are played, standings reflect only completed byes; the
- * shape is already what the live board and any rankings page consume.
+ * Standings count every finished minigame slot plus completed byes, taking
+ * each slot's recorded winner as authoritative rather than recomputing one.
  */
 import { prisma } from "@/lib/prisma";
 import type { TournamentPhase } from "@/generated/prisma/client";
@@ -16,6 +16,7 @@ import {
   type PlacementMatch,
 } from "./placement";
 import { computeStandings } from "./standings";
+import { collectMinigameOutcomes, type ResultMatch } from "./results";
 
 export interface BoardTeamRef {
   id: string;
@@ -26,7 +27,7 @@ export interface BoardTeamRef {
 export interface BoardStandingRow extends BoardTeamRef {
   rank: number;
   minigamesWon: number;
-  cumulativeNormalized: number;
+  tied: boolean; // another team is level on minigames won
   movement: number;
   // Derived from an empty roster at read time — never stored — so a team a
   // player left mid-tournament still shows as forfeited on the board.
@@ -88,7 +89,7 @@ export async function getBoardState(
               id: true,
               teamAId: true,
               teamBId: true,
-              slots: { select: { phase: true } },
+              slots: { select: { phase: true, winner: true } },
             },
           },
         },
@@ -116,17 +117,25 @@ export async function getBoardState(
     })),
   }));
 
-  // No minigame results exist until they are played, so the only credit on
-  // the board so far is completed byes; everyone else ranks at zero.
+  // Every finished slot across the whole schedule; a match still in play and
+  // a bye both contribute nothing (see results.ts).
+  const resultMatches: ResultMatch[] = tournament.rounds.flatMap((round) =>
+    round.matches.map((match) => ({
+      teamAId: match.teamAId,
+      teamBId: match.teamBId,
+      slots: match.slots,
+    })),
+  );
+
   const standings = computeStandings({
     teams: tournament.teams.map((team) => team.id),
-    outcomes: [],
+    outcomes: collectMinigameOutcomes(resultMatches),
     byes: collectByeAwards(byeRounds, tournament.minigamesPerMatch),
   }).map((row) => ({
     ...(teamById.get(row.team) as BoardTeamRef),
     rank: row.rank,
     minigamesWon: row.minigamesWon,
-    cumulativeNormalized: row.cumulativeNormalized,
+    tied: row.tied,
     movement: row.movement,
     forfeited: (memberCountById.get(row.team) ?? 0) === 0,
   }));

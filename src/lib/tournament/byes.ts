@@ -13,8 +13,8 @@ export interface ByeRound {
 // A bye is worth a full match's minigames — the same constant every team
 // collects, since the circle-method schedule gives each team exactly one bye.
 // Credited only once its round is complete: a team has not sat a round out
-// until the round is over. Credit lands on wins, never on the normalized
-// tiebreak, so it cannot inflate a team past a team that actually played.
+// until the round is over. Credit lands on minigames won — there is no
+// separate score for it to inflate (DESIGN decision 24).
 export function collectByeAwards(
   rounds: readonly ByeRound[],
   minigamesPerMatch: number,

@@ -8,7 +8,7 @@
 
 import { motion } from "motion/react";
 import { SLIP_DUR, SLIP_EASE, cx } from "@jumbo/ui";
-import type { MatchTeam } from "@/lib/match/types";
+import type { MatchTeam } from "@jumbo/engine";
 
 /** Below this the swell adds nothing — the wash still shows at `GLOW_BASE`
  *  the instant a side leads, but it stops growing until `p` clears this. */

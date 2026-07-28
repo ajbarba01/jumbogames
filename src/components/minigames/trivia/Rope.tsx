@@ -13,7 +13,7 @@
 
 import { motion } from "motion/react";
 import { SLIP_DUR, SLIP_EASE } from "@jumbo/ui";
-import type { MatchTeam } from "@/lib/match/types";
+import type { MatchTeam } from "@jumbo/engine";
 
 export function Rope({
   p,

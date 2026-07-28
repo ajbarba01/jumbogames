@@ -106,42 +106,28 @@ export async function seedTriviaQuestions(): Promise<void> {
   }
 }
 
-/** The shape of a trivia slot's server-authoritative payload (see
- *  minigames/trivia/server.ts) — only the parts read below. */
-interface TriviaPayload {
-  deck: { prompt: string; choices: string[]; correctIndex: number }[];
-  players: Record<string, { current: number | null } | undefined>;
-}
-
 /**
- * The card trivia has dealt one player, read from the slot's payload. The deal
- * is seeded per match and the bank is shared with every other spec's leftovers,
- * so which card a player holds cannot be predicted — but it is server truth, so
- * reading it here lets a spec assert that exact prompt on screen and click the
- * answer the server will score as correct, whatever the shuffle produced.
+ * The answer the server will score as correct for a prompt, looked up in the
+ * question bank.
+ *
+ * The deal is seeded per match from a bank shared with every other spec's
+ * leftovers, so which card a player holds cannot be predicted — but the prompt
+ * is on screen, and the bank is the same server truth the deal drew from. This
+ * deliberately does not read the slot's payload: under the socket transport the
+ * Durable Object owns live match state and only archives a slot to Postgres
+ * once it is done, so mid-match that row holds nothing. Reading the bank works
+ * on either transport.
  */
-export async function dealtTriviaCard(
-  matchId: string,
-  profileId: string,
-): Promise<{ prompt: string; correctAnswer: string }> {
-  const rows = await query<{ payload: unknown }>(
-    `SELECT payload FROM minigame_slots WHERE match_id = $1 AND ordinal = 0`,
-    [matchId],
+export async function correctAnswerForPrompt(prompt: string): Promise<string> {
+  const rows = await query<{ correct_answer: string }>(
+    `SELECT correct_answer FROM trivia_questions WHERE prompt = $1`,
+    [prompt],
   );
-  const payload = rows[0]?.payload as TriviaPayload | null | undefined;
-  const index = payload?.players[profileId]?.current;
-  const card =
-    index === null || index === undefined ? null : payload?.deck[index];
-  if (!card) {
-    throw new Error(
-      `No trivia card dealt to ${profileId} in match ${matchId} (slot 0)`,
-    );
+  const answer = rows[0]?.correct_answer;
+  if (answer === undefined) {
+    throw new Error(`No trivia question in the bank with prompt ${prompt}`);
   }
-  const correctAnswer = card.choices[card.correctIndex];
-  if (correctAnswer === undefined) {
-    throw new Error(`Trivia card for ${profileId} has no correct choice`);
-  }
-  return { prompt: card.prompt, correctAnswer };
+  return answer;
 }
 
 // Match.team_a_id / team_b_id are ON DELETE CASCADE, so a team wrongly deleted

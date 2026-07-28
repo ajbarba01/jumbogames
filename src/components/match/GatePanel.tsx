@@ -7,8 +7,8 @@
 
 import { Button, TeamChip } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import type { MatchTeam, SlotState } from "@/lib/match/types";
-import { MINIGAMES } from "@/lib/minigames/registry";
+import type { MatchTeam, SlotState } from "@jumbo/engine";
+import { MINIGAMES } from "@jumbo/engine";
 
 function ReadyColumn({
   team,

@@ -5,7 +5,7 @@
  * wraps each player's own answered history decides what they see next, so a
  * player only repeats a card once they have personally exhausted the deck.
  */
-import { seededShuffle } from "@/lib/random";
+import { seededShuffle } from "../../random";
 
 export interface BankQuestion {
   id: string;

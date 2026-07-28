@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { buildRoundSlots } from "./round-slots";
-import type { MinigameKind } from "@/lib/minigames/types";
+import type { MinigameKind } from "@jumbo/engine";
 
 const drawn = ["stub", "stub"] as MinigameKind[];
 

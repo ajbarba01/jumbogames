@@ -4,26 +4,15 @@
  * server-side. This is the play surface's only end-to-end coverage — its
  * slice shipped on a hand check alone.
  */
-import { type Page } from "@playwright/test";
 import { pickTriviaPool } from "./support/create";
+import { correctAnswerForPrompt, seedTriviaQuestions } from "./support/db";
 import {
-  dealtTriviaCard,
-  profileIdByEmail,
-  seedTriviaQuestions,
-} from "./support/db";
-import { createAndReadyTeam, joinByCode } from "./support/flows";
+  createAndReadyTeam,
+  joinByCode,
+  readyUpThroughGate,
+} from "./support/flows";
 import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
-
-function matchLocationFromUrl(page: Page): {
-  tournamentId: string;
-  matchId: string;
-} {
-  const url = new URL(page.url());
-  const found = /\/t\/([^/]+)\/m\/([^/]+)$/.exec(url.pathname);
-  if (!found) throw new Error(`Expected a match URL, got ${page.url()}`);
-  return { tournamentId: found[1], matchId: found[2] };
-}
 
 test("a trivia round deals a card and scores an answer", async ({
   signedIn,
@@ -37,8 +26,8 @@ test("a trivia round deals a card and scores an answer", async ({
   // carries no questions of its own.
   await seedTriviaQuestions();
 
-  const { page: host, context: hostContext } = await signedIn("admin");
-  const { page: alpha, email: alphaEmail } = await signedIn("p1");
+  const { page: host } = await signedIn("admin");
+  const { page: alpha } = await signedIn("p1");
   const { page: bravo } = await signedIn("p2");
 
   // The host is on no team, so it stays on the board rather than being pulled
@@ -79,18 +68,7 @@ test("a trivia round deals a card and scores an answer", async ({
   await expect(alpha).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
   await expect(bravo).toHaveURL(/\/t\/[^/]+\/m\/[^/]+$/);
 
-  // Skip the ready gate the way round-start.spec does — it is driven by a
-  // zoom-completion callback, awkward to pilot from independent contexts, and
-  // no part of what this proves. The host's force-start valve is for exactly
-  // this.
-  for (const player of [alpha, bravo]) {
-    const { tournamentId, matchId } = matchLocationFromUrl(player);
-    const origin = new URL(player.url()).origin;
-    const res = await hostContext.request.post(
-      `${origin}/api/tournaments/${tournamentId}/matches/${matchId}/slots/0/force-start`,
-    );
-    expect(res.ok()).toBe(true);
-  }
+  await readyUpThroughGate([alpha, bravo]);
 
   // Playing forces the zoom open (see presentation.ts), so the play surface
   // mounts with no click: the score line is the first thing it renders once a
@@ -99,23 +77,22 @@ test("a trivia round deals a card and scores an answer", async ({
 
   // Which card the deal hands a player is seeded per match and drawn from a
   // bank shared with every other spec's leftover rows, so it cannot be
-  // predicted — it is read back as server truth instead. Asserting that exact
-  // prompt on screen is what proves the dealt card reached the surface.
-  const { matchId } = matchLocationFromUrl(alpha);
-  const card = await dealtTriviaCard(
-    matchId,
-    await profileIdByEmail(alphaEmail),
-  );
-  await expect(alpha.getByText(card.prompt)).toBeVisible();
+  // predicted. The prompt on screen is what the deal produced, and the bank is
+  // the same server truth it drew from — so the card is identified from the
+  // surface and its answer looked up, rather than read out of the slot payload,
+  // which the Durable Object does not archive until the slot is done.
+  const promptOnScreen = alpha.getByTestId("trivia-prompt");
+  await expect(promptOnScreen).toBeVisible();
+  const prompt = (await promptOnScreen.textContent())?.trim();
+  expect(prompt).toBeTruthy();
+  const correctAnswer = await correctAnswerForPrompt(prompt as string);
 
   // A choice is a kit Button whose label is the answer text. Answering
   // correctly is worth SCORE_CORRECT (+3), applied by the server: the surface
   // reads its own score straight out of the pushed payload
   // (`payload.scores[viewerId]`), never from a local guess, so a moved score
   // proves the whole answer round-trip rather than an optimistic update.
-  await alpha
-    .getByRole("button", { name: card.correctAnswer, exact: true })
-    .click();
+  await alpha.getByRole("button", { name: correctAnswer, exact: true }).click();
   await expect(alpha.getByText("You · 3 pts")).toBeVisible({ timeout: 15_000 });
 
   // The match surface is played phone in hand.

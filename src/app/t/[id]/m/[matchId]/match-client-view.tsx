@@ -23,8 +23,9 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { MatchContainer } from "@/components/match/MatchContainer";
 import { RealtimeMatchClient } from "@/lib/match/realtime-client";
+import { WebSocketMatchClient } from "@/lib/match/ws-client";
 import type { MatchView } from "@/lib/match/client";
-import { derivePhase } from "@/lib/match/derive";
+import { derivePhase } from "@jumbo/engine";
 import { subscribeToTournament } from "@/lib/realtime/subscribe";
 import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 import { useRefreshOnRestore } from "../../use-refresh-on-restore";
@@ -36,11 +37,16 @@ export function MatchClientView({
   serverNow,
   tournamentId,
   matchId,
+  ticket,
+  socketUrl,
 }: {
   initialView: MatchView;
   serverNow: number;
   tournamentId: string;
   matchId: string;
+  /** Empty unless the socket transport is enabled; see NEXT_PUBLIC_REALTIME_WS. */
+  ticket: string;
+  socketUrl: string;
 }): React.JSX.Element {
   const router = useRouter();
   const { navigate } = useWipeNav();
@@ -50,13 +56,22 @@ export function MatchClientView({
   // The constructor is side-effect-free; start() begins IO here so a
   // StrictMode/Fast-Refresh double-invoked initializer cannot leak a live
   // client (see RealtimeMatchClient.start).
-  const [client] = useState(
-    () =>
-      new RealtimeMatchClient(initialView, {
-        tournamentId,
-        matchId,
-        serverNow,
-      }),
+  // Which transport runs is fixed for the lifetime of this mount: the flag is
+  // build-time, and both clients satisfy MatchClient, so nothing below cares.
+  const [client] = useState(() =>
+    process.env.NEXT_PUBLIC_REALTIME_WS === "1"
+      ? new WebSocketMatchClient(initialView, {
+          tournamentId,
+          matchId,
+          socketUrl,
+          ticket,
+          serverNow,
+        })
+      : new RealtimeMatchClient(initialView, {
+          tournamentId,
+          matchId,
+          serverNow,
+        }),
   );
   useEffect(() => {
     client.start();

@@ -3,8 +3,9 @@
  * scores over an opaque state — so reducers and route handlers can drive any
  * game identically. Content games use the optional hooks: init context fed in
  * from the IO edge, a game-decided outcome that beats the mean comparison,
- * and per-viewer redaction for hidden info. Client surfaces register
- * separately (no React here).
+ * per-viewer redaction for hidden info, and client-side prediction for games
+ * where a viewer's own redacted state is enough to predict their action's
+ * result. Client surfaces register separately (no React here).
  */
 
 export type MinigameKind = "stub" | "trivia";
@@ -30,4 +31,10 @@ export interface MinigameServer<S = unknown, A = unknown> {
   // Per-viewer payload redaction applied before a view leaves the server.
   // Games with hidden info strip it here; absent means payload is public.
   redact?(state: S, viewerId: string | null): unknown;
+  // Client-side prediction (optimistic UI tier 2). Present only when a viewer's
+  // REDACTED state is sufficient to compute the result of their own action —
+  // so a hidden-information game must leave this absent and gets
+  // acknowledgement-only optimism instead (DESIGN.md decision 23). Runs on the
+  // client against the last authoritative view; the server's frame always wins.
+  predict?(state: S, playerId: string, action: A, now: number): S;
 }

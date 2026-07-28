@@ -16,6 +16,12 @@ them. Route handlers do IO at the edge (auth, fetch state, persist result) and p
 - **Why:** pure logic is unit-testable without mocks and is where the real bugs live. A round-robin
   schedule and standings engine you can test in isolation is one you can trust live at hacknight.
 
+That core lives in its own workspace package, **`packages/engine` (`@jumbo/engine`)** — match state
+types, the reducer and its derivations, normalization, the round draw, and the minigame registry. It
+imports no Prisma, no React, and no `@/…` path, and is consumed identically by the Next app and the
+realtime Worker, so both drive a match through the same code. Prisma-touching helpers (for example
+minigame init-context loading) stay in the app, at the edge.
+
 ## 2. Typed boundaries; validate external data at the edge
 
 TypeScript `strict`, no `any`. **Every request body, param, and external payload is parsed with a Zod

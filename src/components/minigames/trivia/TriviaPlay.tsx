@@ -20,15 +20,15 @@ import {
   cx,
 } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import { normalizeTeamScore } from "@/lib/match/normalize";
-import type { MatchTeam, SlotState } from "@/lib/match/types";
-import { decayRope } from "@/lib/minigames/trivia/rope";
-import type { TriviaView } from "@/lib/minigames/trivia/view";
+import { normalizeTeamScore } from "@jumbo/engine";
+import type { MatchTeam, SlotState } from "@jumbo/engine";
+import { decayRope } from "@jumbo/engine";
+import type { TriviaView } from "@jumbo/engine";
 import { useNow } from "@/components/match/use-now";
 import { Rope } from "./Rope";
 import { WinGlow } from "./WinGlow";
 import { useTicker } from "./use-ticker";
-import type { TickerEvent } from "@/lib/minigames/trivia/ticker";
+import type { TickerEvent } from "@jumbo/engine";
 
 /** How long the answered card stays on screen with its reveal. */
 const REVEAL_MS = 1000;
@@ -147,8 +147,11 @@ function Ticker({
 }
 
 /** One answer choice. Interactive until the reveal; the reveal marks the
- *  correct choice and shakes a wrong pick. The frame carries the verdict, so
- *  the kit Button underneath keeps its own faces intact. */
+ *  correct choice and shakes a wrong pick. A tapped-but-unresolved choice
+ *  reads as *taken* (tier-1 optimism, DESIGN.md decision 23) — deliberately
+ *  neutral, because trivia redacts the correct answer and the client cannot
+ *  know whether the pick was right until the server says so. The frame carries
+ *  the verdict, so the kit Button underneath keeps its own faces intact. */
 function Choice({
   label,
   disabled,
@@ -157,7 +160,7 @@ function Choice({
 }: {
   label: string;
   disabled: boolean;
-  verdict: "none" | "correct" | "wrong";
+  verdict: "idle" | "pending" | "correct" | "wrong";
   onPick: () => void;
 }): React.JSX.Element {
   return (
@@ -168,7 +171,9 @@ function Choice({
         "rounded-r2 border-2",
         verdict === "correct" && "border-ok",
         verdict === "wrong" && "border-crit",
-        verdict === "none" && "border-transparent",
+        // Held, not scored: the existing neutral rule, no new colour token.
+        verdict === "pending" && "border-s6",
+        verdict === "idle" && "border-transparent",
       )}
     >
       <Button
@@ -176,6 +181,7 @@ function Choice({
         className="w-full"
         disabled={disabled}
         onClick={onPick}
+        data-state={verdict}
       >
         {label}
       </Button>
@@ -334,7 +340,15 @@ export function TriviaPlay({
                 transition={{ ease: SLIP_EASE, duration: SLIP_DUR.enter }}
                 className="flex flex-col gap-4"
               >
-                <p className="text-center text-lg font-bold text-balance text-s12">
+                {/* The deal is seeded per match from a shared bank, so which
+                    card a player holds cannot be predicted. E2E reads the
+                    prompt off the screen and looks the answer up by it —
+                    the slot payload it used to read is only archived to
+                    Postgres once the slot is done. */}
+                <p
+                  data-testid="trivia-prompt"
+                  className="text-center text-lg font-bold text-balance text-s12"
+                >
                   {card.prompt}
                 </p>
                 {/* Two columns where there is room, one stack at the floor. */}
@@ -346,12 +360,16 @@ export function TriviaPlay({
                       disabled={!canAct || held !== null}
                       verdict={
                         revealed === null
-                          ? "none"
+                          ? // Pre-reveal the only thing that is known is which
+                            // choice this viewer took — never whether it scored.
+                            held !== null && choiceIndex === held.picked
+                            ? "pending"
+                            : "idle"
                           : choiceIndex === revealed.correctIndex
                             ? "correct"
                             : held !== null && choiceIndex === held.picked
                               ? "wrong"
-                              : "none"
+                              : "idle"
                       }
                       onPick={() => pick(choiceIndex)}
                     />

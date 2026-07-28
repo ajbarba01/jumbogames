@@ -4,8 +4,8 @@
  * match in the round plays the same kinds in the same order. Distinct while
  * the pool lasts, cycling past it (only reachable with a dev-sized pool).
  */
-import { seededShuffle } from "@/lib/random";
-import type { MinigameKind } from "@/lib/minigames/types";
+import { seededShuffle } from "../random";
+import type { MinigameKind } from "../minigames/types";
 
 export function drawRoundGames(
   pool: MinigameKind[],

@@ -8,9 +8,9 @@
 import { motion } from "motion/react";
 import { TeamChip } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import { derivePhase, minigamesWon } from "@/lib/match/derive";
-import type { MatchState, SlotState } from "@/lib/match/types";
-import { MINIGAMES } from "@/lib/minigames/registry";
+import { derivePhase, minigamesWon } from "@jumbo/engine";
+import type { MatchState, SlotState } from "@jumbo/engine";
+import { MINIGAMES } from "@jumbo/engine";
 
 function SlotCard({
   slot,

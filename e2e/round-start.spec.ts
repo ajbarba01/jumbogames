@@ -9,7 +9,11 @@
  */
 import { type Page } from "@playwright/test";
 import { pickStubPool } from "./support/create";
-import { createAndReadyTeam, joinByCode } from "./support/flows";
+import {
+  createAndReadyTeam,
+  joinByCode,
+  readyUpThroughGate,
+} from "./support/flows";
 import { test, expect } from "./support/personas";
 import { expectNoHorizontalOverflow } from "./support/viewport";
 
@@ -219,7 +223,7 @@ test("starting the next round force-yields players off their finished match's en
   // signup and lobby setup, so the default per-test budget is too tight.
   test.setTimeout(120_000);
 
-  const { page: host, context: hostContext } = await signedIn("admin");
+  const { page: host } = await signedIn("admin");
   const { page: alpha } = await signedIn("p1");
   const { page: bravo } = await signedIn("p2");
   const { page: charlie } = await signedIn("p3");
@@ -266,19 +270,7 @@ test("starting the next round force-yields players off their finished match's en
   const alphaRound1Match = matchLocationFromUrl(alpha).matchId;
   const bravoRound1Match = matchLocationFromUrl(bravo).matchId;
 
-  // The gate's ready button is driven by a shared-element zoom animation
-  // whose completion callback is what unlocks it — awkward to pilot from
-  // four independent browser contexts and no part of what this test is
-  // about. The host's force-start valve (see the force-start route) skips
-  // the ready gate outright and is exactly what it's for.
-  for (const player of [alpha, bravo, charlie, delta]) {
-    const { tournamentId, matchId } = matchLocationFromUrl(player);
-    const origin = new URL(player.url()).origin;
-    const res = await hostContext.request.post(
-      `${origin}/api/tournaments/${tournamentId}/matches/${matchId}/slots/0/force-start`,
-    );
-    expect(res.ok()).toBe(true);
-  }
+  await readyUpThroughGate([alpha, bravo, charlie, delta]);
 
   // From here the stub runs itself off persisted deadlines — countdown, a
   // fixed play window, then scoring — with no player input at all. Both

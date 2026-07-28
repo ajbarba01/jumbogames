@@ -8,7 +8,7 @@ import type {
   MinigameKind,
   MinigameServer,
   RosterSnapshot,
-} from "@/lib/minigames/types";
+} from "../minigames/types";
 import { isGateSatisfied } from "./derive";
 import { normalizeTeamScore } from "./normalize";
 import {

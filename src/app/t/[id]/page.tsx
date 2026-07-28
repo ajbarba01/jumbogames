@@ -6,7 +6,9 @@
  * open board never hands a spectator the write key.
  */
 import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { requireUser } from "@/lib/auth/profile";
+import { codeCookieName, presentedCode } from "@/lib/tournament/code-grant";
 import { gateTournamentRead, toLobbyDTO } from "@/lib/tournament/lobby";
 import { holdsGameCode } from "@/lib/tournament/viewer";
 import { getBoardState } from "@/lib/tournament/board";
@@ -27,8 +29,14 @@ export default async function GamePage(props: {
   if (!gated) notFound();
   const { state, relation } = gated;
 
+  // The link's `?c=` is scrubbed from the address bar as soon as it has been
+  // honored, so the code a viewer presented earlier is read back from the
+  // per-game cookie the exchange route set. Same predicate either way: the
+  // cookie is checked against the real code, never trusted as a flag.
   const { c } = await props.searchParams;
-  const holdsCode = holdsGameCode(relation, state.code, c ?? null);
+  const cookieCode = (await cookies()).get(codeCookieName(id))?.value ?? null;
+  const presented = presentedCode(c ?? null, cookieCode);
+  const holdsCode = holdsGameCode(relation, state.code, presented);
   // The client scrubs ?c= out of the address bar once it has been honored
   // (decision 16), which also drops it from the router's URL — so tell the
   // client which grant came from the link itself. That grant belongs to the tab
@@ -38,7 +46,7 @@ export default async function GamePage(props: {
   const urlGrantsCode = holdsGameCode(
     { as: "guest", canHost: false },
     state.code,
-    c ?? null,
+    presented,
   );
 
   const board =

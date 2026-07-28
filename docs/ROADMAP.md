@@ -205,6 +205,47 @@ sign-up budget. Not fixed, and out of scope by decision: the signup route collap
 `supabase.auth.signUp` failure into one opaque 400, which is what made this take two days to see —
 worth its own change, since it is a production auth path under the no-leaky-logs floor.
 
+## Milestone 6.5 — realtime over Durable Objects (landed dark, behind a flag)
+
+Match authority moved off Next route handlers + Supabase Realtime onto one Cloudflare Durable Object
+per match. The pure core was extracted to `packages/engine` (`@jumbo/engine`) and the wire contract to
+`packages/protocol`, so the Next app and the new `apps/realtime` Worker drive a match through the same
+reducer. During a slot the DO is authoritative: state lives in `ctx.storage`, sockets hibernate, slot
+timers run on DO alarms, and Postgres is a write-behind archive reached only through two
+secret-authenticated internal routes. Optimistic UI is two-tiered — trivia gets acknowledgement-only
+feedback because it redacts the correct answer and a client cannot predict its own result.
+
+**Status: complete but not enabled.** `NEXT_PUBLIC_REALTIME_WS` defaults to `0`; the Supabase path is
+still the shipping one. The cutover (deploy the Worker, flip the flag, delete the old transport) is
+its own task and has not been done.
+
+Known gaps carried out of this milestone, all of which the cutover must address:
+
+- ~~**The full E2E suite cannot run with the flag on yet.**~~ Resolved: the whole suite passes at
+  flag `1` (31 tests) and at flag `0` (30 + realtime skipped). Two independent causes had to go.
+  Both specs drove matches by POSTing the legacy `/slots/:ordinal/force-start` route, which the DO
+  never sees; they now clear the gate through the UI via `readyUpThroughGate`. Fixing that exposed a
+  second one the review had not separated out: `trivia.spec.ts` read the dealt card from
+  `minigame_slots.payload`, but the DO only archives a slot to Postgres once it is `done`, so
+  mid-match that row is empty. The spec now takes the prompt off the screen
+  (`data-testid="trivia-prompt"`) and looks the answer up in the question bank, which is server
+  truth on either transport. CI still splits the run; consolidating it is a cutover decision, no
+  longer a blocked one.
+- ~~**One secret serves two purposes.**~~ Resolved: split into `REALTIME_TICKET_KEY` (HMAC signing,
+  never transmitted) and `REALTIME_INTERNAL_SECRET` (bearer on Worker→Next calls). Both must be set
+  in Vercel, in `wrangler secret put`, and as GitHub Actions secrets before the flag goes to `1`.
+- ~~**The roster is frozen at hydrate.**~~ Resolved as a documentation gap, not a code one: the
+  reviewed scenario cannot occur, because join, leave and kick all pass `requireRosterOpen`, which
+  refuses for exactly the window in which a `MatchRoom` exists (DESIGN decision 17). The freeze is
+  correct; what was missing was any statement of the coupling. `MatchRoom.room()` and
+  `roster-lock.ts` now each name the other, so relaxing the lock surfaces the Worker's dependency
+  and `rosterChanged` as its prerequisite.
+- ~~**`NEXT_PUBLIC_REALTIME_WS` is a whole-environment switch.**~~ Resolved: the rule that two
+  deployments at different flag values must never share a database is recorded in README Deployment.
+- **The tier-2 prediction stack is unreachable.** No shipped minigame declares `predict`, so
+  `canPredict` is always false and `predictSlot`'s main path never runs. Either delete it or land it
+  with the first game that needs it.
+
 ## Known gaps (carry into the next branches)
 
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
@@ -254,4 +295,4 @@ worth its own change, since it is a production auth path under the no-leaky-logs
 
 ---
 
-_Last reviewed: 2026-07-26_
+_Last reviewed: 2026-07-27_

@@ -140,10 +140,25 @@ export function GameView({
   // router.replace would re-navigate.
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (!url.searchParams.has("c")) return;
-    url.searchParams.delete("c");
-    window.history.replaceState(null, "", url.toString());
-  }, []);
+    const carried = url.searchParams.get("c");
+    if (carried === null) return;
+    const scrub = () => {
+      url.searchParams.delete("c");
+      window.history.replaceState(null, "", url.toString());
+    };
+    // Hand the code to the server for an httpOnly cookie before dropping it
+    // from the URL. Until this lands the grant exists only in this mount's
+    // state, and anything that remounts the tree loses it — which is exactly
+    // how a fresh joiner ended up back at a code prompt. Scrub either way:
+    // leaving a write credential in a shared address bar is the worse failure.
+    void fetch(`/api/tournaments/${tournament.id}/code-grant`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: carried }),
+    })
+      .catch(() => null)
+      .finally(scrub);
+  }, [tournament.id]);
 
   // The strip also drops ?c= from the router's URL, so every later
   // router.refresh() re-renders with linkCode null — which would revoke, mid

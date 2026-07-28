@@ -3,7 +3,7 @@
  * drawn game order, emit the MinigameSlot rows to create — one per (match,
  * ordinal), slot 0 open at the gate and the rest upcoming.
  */
-import type { MinigameKind } from "@/lib/minigames/types";
+import type { MinigameKind } from "@jumbo/engine";
 
 export interface RoundMatchRef {
   id: string;

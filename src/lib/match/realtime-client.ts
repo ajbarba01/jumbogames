@@ -8,7 +8,7 @@
 "use client";
 
 import type { MatchClient, MatchSnapshotPayload, MatchView } from "./client";
-import { pendingAdvance } from "./timers";
+import { pendingAdvance } from "@jumbo/engine";
 import { subscribeToMatch } from "@/lib/realtime/subscribe";
 
 const TICK_MS = 250;

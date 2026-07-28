@@ -6,9 +6,9 @@
 
 import { Button } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import { normalizeTeamScore } from "@/lib/match/normalize";
-import type { SlotState } from "@/lib/match/types";
-import type { StubState } from "@/lib/minigames/stub/server";
+import { normalizeTeamScore } from "@jumbo/engine";
+import type { SlotState } from "@jumbo/engine";
+import type { StubState } from "@jumbo/engine";
 import { useNow } from "@/components/match/use-now";
 
 export function StubPlay({

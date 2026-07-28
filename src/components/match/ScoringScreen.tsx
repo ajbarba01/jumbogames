@@ -8,7 +8,7 @@
 import { motion } from "motion/react";
 import { SLIP_DUR, SLIP_EASE, TeamChip } from "@jumbo/ui";
 import type { MatchView } from "@/lib/match/client";
-import type { SlotState } from "@/lib/match/types";
+import type { SlotState } from "@jumbo/engine";
 
 const STAMP_DELAY_SECONDS = 0.25;
 

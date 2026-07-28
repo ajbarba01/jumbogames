@@ -3,7 +3,7 @@
  * Slots are the single source of truth — matches store no phase of their
  * own. Presentation-only phases (reveal, zoom) live client-side.
  */
-import type { MinigameKind, RosterSnapshot } from "@/lib/minigames/types";
+import type { MinigameKind, RosterSnapshot } from "../minigames/types";
 
 export type SlotPhase =
   "upcoming" | "gate" | "countdown" | "playing" | "scoring" | "done";

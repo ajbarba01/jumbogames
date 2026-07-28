@@ -10,7 +10,7 @@ import {
   checkRoundDraw,
   drawRoundGames,
 } from "./round-draw";
-import type { MinigameKind } from "@/lib/minigames/types";
+import type { MinigameKind } from "../minigames/types";
 
 // Widened pool for draw semantics; only "stub" exists as a real kind today.
 const pool = ["stub"] as MinigameKind[];

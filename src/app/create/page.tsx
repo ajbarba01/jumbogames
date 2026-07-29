@@ -16,10 +16,12 @@ export default async function CreatePage() {
   if (!profile) redirect("/login");
   // No role check: hosting is a per-game role held by the creator (M7).
 
+  // Text only: the emblem is a client component and the form looks it up from
+  // the client registry itself, which keeps this server component free of it.
   const available = poolFor(eligibleEnv()).map((kind) => ({
     kind,
     title: MINIGAMES[kind].title,
-    instructions: MINIGAMES[kind].instructions,
+    tagline: MINIGAMES[kind].tagline,
   }));
 
   return (

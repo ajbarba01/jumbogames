@@ -150,8 +150,8 @@ A sticker card that toggles on press, for picking several options out of a small
 
 - **Use it when:** Choosing a subset from a handful of options that each need a line of explanation. The options deserve more room than a checkbox row gives them.
 - **Don't use it when:** Exactly one option may be chosen (use Select or a radio group). The set is long enough to need scrolling or search (use a menu). The control is a binary setting (use Toggle).
-- **Anatomy:** A full-width button holding a title, an optional description, and a trailing check that appears when selected; the selected face also takes a tint.
-- **Variants & states:** unselected · selected (tint + check) · hover · pressed · disabled (dimmed, inert)
+- **Anatomy:** A full-width button holding an optional leading icon, a title, an optional description, and a trailing check that appears when selected; the selected face also takes a tint. The icon is centred against the card's height and sized by the card.
+- **Variants & states:** unselected · selected (tint + check) · hover · pressed · disabled (dimmed, inert), with icon · without icon
 - **Accessibility:** A button with aria-pressed carrying the selection state; the check is decorative, so selection is never conveyed by the marker alone.
 - **Related:** Toggle, MenuItem, Select
 

@@ -49,7 +49,7 @@ export function PlayFrame({
   const canLeave = slot.phase === "gate";
   useDismissLayer(canLeave, onLeave);
   const offsetMs = client.serverOffsetMs();
-  const Surface = MINIGAME_SURFACES[slot.kind];
+  const { Play: Surface } = MINIGAME_SURFACES[slot.kind];
   const canAct =
     view.role === "player" &&
     view.viewerId !== null &&

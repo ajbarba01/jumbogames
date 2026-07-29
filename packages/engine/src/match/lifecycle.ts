@@ -83,6 +83,7 @@ function startCountdown(
     payload: game.init(
       snapshot,
       `${state.seed}:${slot.ordinal}`,
+      deps.now,
       deps.initContext?.[slot.kind],
     ),
   });
@@ -164,6 +165,15 @@ export function applyMatchEvent(
           deps.now,
         ),
       });
+    }
+    case "gameTick": {
+      const slot = state.slots[event.ordinal];
+      if (!slot || slot.phase !== "playing") return state;
+      const game = deps.games[slot.kind];
+      if (!game.tick) return state;
+      const ticked = game.tick(slot.payload, deps.now);
+      if (ticked === slot.payload) return state;
+      return replaceSlot(state, { ...slot, payload: ticked });
     }
     case "finalize": {
       const slot = state.slots[event.ordinal];

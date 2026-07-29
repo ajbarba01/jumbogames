@@ -25,7 +25,7 @@ const bank: BankQuestion[] = Array.from({ length: 8 }, (_, i) => ({
 const snapshot = { teamA: ["a1", "a2", "a3"], teamB: ["b1"] };
 
 function initGame(seed = "seed"): TriviaState {
-  return triviaGame.init(snapshot, seed, bank);
+  return triviaGame.init(snapshot, seed, 0, bank);
 }
 
 function answer(
@@ -301,7 +301,7 @@ describe("guards", () => {
   });
 
   it("init without context yields an empty deck and null hands", () => {
-    const state = triviaGame.init(snapshot, "seed");
+    const state = triviaGame.init(snapshot, "seed", 0);
     expect(state.deck).toEqual([]);
     expect(state.players.a1!.current).toBeNull();
   });

@@ -43,6 +43,7 @@ import {
   TeamChip,
 } from "@jumbo/ui";
 import { BackgroundLab } from "./background-lab";
+import { EmblemLab } from "./emblem-lab";
 import { TierLab } from "./tier-lab";
 import { MotionDemos } from "./motion-demos";
 import { SlamWipeDemo } from "./slam-wipe-demo";
@@ -673,6 +674,14 @@ function TierMeterSection() {
   );
 }
 
+function EmblemSection() {
+  return (
+    <Section title="Minigame emblems">
+      <EmblemLab />
+    </Section>
+  );
+}
+
 /* ---------- brand ---------- */
 
 const PATHS_MARK: BrandMarkSpec = {
@@ -845,6 +854,7 @@ export function ShowcaseGallery(): React.JSX.Element {
           <MotionSection />
           <BackgroundSection />
           <TierMeterSection />
+          <EmblemSection />
           <BrandSection />
           <TypeTokensSection />
         </div>

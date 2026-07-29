@@ -14,6 +14,7 @@ import { expect, type Page } from "@playwright/test";
 // worth of tests dies in setup.
 const STUB_TITLE = /Button Masher/i;
 const TRIVIA_TITLE = /Tug O' Lore/i;
+const WORDLOCK_TITLE = /Word Lock/i;
 
 async function pick(page: Page, title: RegExp): Promise<void> {
   const card = page.getByRole("button", { name: title });
@@ -36,10 +37,19 @@ async function unpick(page: Page, title: RegExp): Promise<void> {
 export async function pickStubPool(page: Page): Promise<void> {
   await pick(page, STUB_TITLE);
   await unpick(page, TRIVIA_TITLE);
+  await unpick(page, WORDLOCK_TITLE);
 }
 
 /** Selects trivia alone, so the round draw can only land on it. */
 export async function pickTriviaPool(page: Page): Promise<void> {
   await pick(page, TRIVIA_TITLE);
   await unpick(page, STUB_TITLE);
+  await unpick(page, WORDLOCK_TITLE);
+}
+
+/** Selects Word Lock alone, so the round draw can only land on it. */
+export async function pickWordLockPool(page: Page): Promise<void> {
+  await pick(page, WORDLOCK_TITLE);
+  await unpick(page, STUB_TITLE);
+  await unpick(page, TRIVIA_TITLE);
 }

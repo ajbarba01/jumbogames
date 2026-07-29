@@ -190,6 +190,21 @@ palette ceiling (`MAX_TEAMS`), the same for every game — there is no `maxTeams
 stepper anywhere in the repo, and none should be added without a fresh decision (see DESIGN decision
 14).
 
+The minigame-identity pass landed outside the milestone table — it redesigns three existing surfaces
+rather than adding scope. Every minigame now ships an **emblem** and a **gate demo** alongside its
+play surface, required by the client registry's type (`MinigamePresentation`), and the three sizes an
+emblem renders at are the levels of detail described in [UI.md](UI.md): create-form chip, slot card
+and reveal reel, gate screen. The reveal stopped being its own screen — it is match home with the
+chrome hidden and the cards spinning, which makes the old settle-lurch unrepresentable rather than
+tuned away — and slot cards now scale inversely with K instead of sitting at a fixed 208×160.
+`MinigameServer` gained a `tagline` beside `instructions`, because one string was doing both a chip's
+job and a gate's. **Two knock-on fixes** came out of building it, both pre-existing: the rope's force
+chevron was anchored by its left edge rather than centred, so it cleared the knot pointing right and
+overlapped it pointing left; and `GatePanel` centred content on its own scroll container, which pushes
+the top of overflowing content out of reach. **Deliberately not built:** a per-minigame signature
+colour (rejected — see the UI.md law), and any E2E for these surfaces, which are visual and sit inside
+flows the existing specs already cover.
+
 Slice 1.5 of the mockup-integration program landed between Slices 1 and 2, ahead of its approved
 sequence: [UI.md](UI.md) had no responsive guidance at all, and Slices 2, 3 and 5 add eight-plus new
 kit members between them, so the law was written before the members rather than retrofitted into

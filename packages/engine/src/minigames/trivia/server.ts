@@ -87,11 +87,11 @@ function dealOpeners(
 export const triviaGame: MinigameServer<TriviaState, TriviaAction> = {
   kind: "trivia",
   title: "Tug O' Lore",
+  tagline: "Trivia tug of war.",
   instructions:
-    "Answer your own stream of questions. Right answers build your team's " +
-    "pulling power, and the stronger side drags the rope for as long as it " +
-    "leads — so keep them coming or your tier slips. A wrong answer costs a " +
-    "few seconds, not points: dump a card you don't know and take the next.",
+    "Right answers build your team's pulling power, and the stronger side " +
+    "drags the rope for as long as it leads, so keep them coming or your " +
+    "pulling force slips.",
   playSeconds: TRIVIA_PLAY_SECONDS,
   devOnly: false,
   init(snapshot: RosterSnapshot, seed: string, context?: unknown): TriviaState {

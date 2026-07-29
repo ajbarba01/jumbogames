@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, MotionConfig } from "motion/react";
 import { SLIP_DUR, SLIP_EASE } from "@jumbo/ui";
 import type { MatchClient } from "@/lib/match/client";
@@ -15,7 +15,9 @@ import { computePresentation, isPristine } from "@jumbo/engine";
 import { EndScreen } from "./EndScreen";
 import { Overview } from "./Overview";
 import { PlayFrame } from "./PlayFrame";
-import { Reveal } from "./Reveal";
+
+/** How long the settled reels hold before the chrome fades in around them. */
+const SETTLE_PAUSE_MS = 700;
 
 export function MatchContainer({
   client,
@@ -50,7 +52,20 @@ export function MatchContainer({
     setChosenZoom(null);
   }
 
+  // The reveal's own bookkeeping, which used to live inside the Reveal screen
+  // and came here with the merge: count the reels that have stopped, and once
+  // they all have, hold a beat before the chrome arrives.
+  const [settledReels, setSettledReels] = useState(0);
+  const onReelSettled = useCallback(() => setSettledReels((n) => n + 1), []);
+
   const presentation = computePresentation({ match, revealDone, chosenZoom });
+
+  const reelsAllSettled = settledReels >= match.slots.length;
+  useEffect(() => {
+    if (revealDone || !reelsAllSettled) return;
+    const id = setTimeout(() => setRevealDone(true), SETTLE_PAUSE_MS);
+    return () => clearTimeout(id);
+  }, [revealDone, reelsAllSettled]);
   const zoomedSlot =
     presentation.kind === "zoom" ? match.slots[presentation.ordinal] : null;
   const locked = presentation.kind === "reveal" || zoomAnimating;
@@ -64,16 +79,15 @@ export function MatchContainer({
         aria-busy={locked}
         className={locked ? "pointer-events-none select-none" : undefined}
       >
-        {presentation.kind === "reveal" ? (
-          <Reveal
-            kinds={match.slots.map((s) => s.kind)}
-            onDone={() => setRevealDone(true)}
-          />
-        ) : presentation.kind === "complete" ? (
+        {presentation.kind === "complete" ? (
           <EndScreen view={view} onExit={onExit} />
         ) : (
+          // One screen for both beats: the reveal is match home with its chrome
+          // hidden and its cards spinning, so nothing moves when it resolves.
           <Overview
             view={view}
+            revealing={presentation.kind === "reveal"}
+            onRevealSettled={onReelSettled}
             onEnter={(ordinal) => {
               setZoomAnimating(true);
               setChosenZoom(ordinal);

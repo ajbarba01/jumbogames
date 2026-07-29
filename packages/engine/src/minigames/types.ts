@@ -18,6 +18,14 @@ export interface RosterSnapshot {
 export interface MinigameServer<S = unknown, A = unknown> {
   kind: MinigameKind;
   title: string;
+  /**
+   * One short line, for surfaces that have room for a hint and not a rule —
+   * the create-form chip today. Separate from `instructions` because a chip
+   * that carries a paragraph stops being scannable, which is the only reason
+   * a chip exists.
+   */
+  tagline: string;
+  /** The rules, for the gate screen, where the demo carries the mechanics. */
   instructions: string;
   playSeconds: number;
   devOnly: boolean;

@@ -44,6 +44,7 @@ export function TierMeter({
   now,
   leading,
   align,
+  compact = false,
 }: {
   team: MatchTeam;
   /** Stored tier state; resolved against `now` here, never pre-resolved. */
@@ -53,6 +54,12 @@ export function TierMeter({
   /** Whether this team currently out-pulls the other. */
   leading: boolean;
   align: "left" | "right";
+  /**
+   * Draw at diagram scale rather than play scale, for the gate demo. Play size
+   * is tuned for a projector; the demo is a miniature sitting above the ready
+   * button, and at play size it pushes that button off a laptop screen.
+   */
+  compact?: boolean;
 }): React.JSX.Element {
   const resolved = resolveTier(tier, now);
   const expiresAt = tierExpiresAt(tier, now);
@@ -74,7 +81,12 @@ export function TierMeter({
         leading ? "opacity-100" : "opacity-55",
       )}
     >
-      <div className="relative h-24 w-24 sm:h-32 sm:w-32">
+      <div
+        className={cx(
+          "relative",
+          compact ? "h-14 w-14" : "h-24 w-24 sm:h-32 sm:w-32",
+        )}
+      >
         {/* The rent timer. A ring drains clockwise from the top — a shape the
             charge bar below cannot be mistaken for, at any distance. */}
         <svg
@@ -116,7 +128,10 @@ export function TierMeter({
             ease: SLIP_EASE,
             duration: critical ? SHAKE_DUR : SLIP_DUR.enter,
           }}
-          className="absolute inset-0 flex items-center justify-center font-display text-5xl leading-none sm:text-7xl"
+          className={cx(
+            "absolute inset-0 flex items-center justify-center font-display leading-none",
+            compact ? "text-2xl" : "text-5xl sm:text-7xl",
+          )}
           style={{ color: `var(--color-team-${team.colorIndex})` }}
         >
           {resolved.tier}
@@ -127,7 +142,10 @@ export function TierMeter({
           answer is worth 1/teamSize, so segments would read chunky for a solo
           player and invisibly fine for a team of ten. */}
       <div
-        className="h-3 w-24 overflow-hidden rounded-r1 border-2 border-s6 sm:h-4 sm:w-32"
+        className={cx(
+          "overflow-hidden rounded-r1 border-2 border-s6",
+          compact ? "h-2 w-14" : "h-3 w-24 sm:h-4 sm:w-32",
+        )}
         aria-hidden
       >
         <motion.div

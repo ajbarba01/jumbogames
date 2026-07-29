@@ -18,6 +18,7 @@ export const STUB_PLAY_SECONDS = 10;
 export const stubGame: MinigameServer<StubState, StubAction> = {
   kind: "stub",
   title: "Button Masher",
+  tagline: "Mash the button. That's it.",
   instructions:
     "Mash the button as fast as you can. Every press adds a point; your " +
     "team's score is the average across its players.",

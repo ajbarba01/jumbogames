@@ -20,6 +20,7 @@ import {
   cx,
 } from "@jumbo/ui";
 import type { MinigameKind } from "@/generated/prisma/client";
+import { MinigameEmblem } from "@/components/minigames/registry";
 import { useWipeNav } from "@/components/wipe/use-wipe-nav";
 
 const K_STOPS = ["1", "2", "3", "4"] as const;
@@ -27,7 +28,7 @@ const K_STOPS = ["1", "2", "3", "4"] as const;
 export interface AvailableMinigame {
   kind: MinigameKind;
   title: string;
-  instructions: string;
+  tagline: string;
 }
 
 export function CreateForm({
@@ -127,7 +128,8 @@ export function CreateForm({
                 <OptionCard
                   key={game.kind}
                   title={game.title}
-                  description={game.instructions}
+                  description={game.tagline}
+                  icon={<MinigameEmblem kind={game.kind} />}
                   selected={selected.includes(game.kind)}
                   disabled={pending}
                   onToggle={() =>

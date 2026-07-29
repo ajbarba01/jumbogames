@@ -37,6 +37,13 @@ export interface FakeMatchConfig {
   botsPerTeam: number;
   botReadyDelayMs: number;
   botMashIntervalMs: number;
+  /**
+   * Draw from these kinds instead of the dev-only default. The harness uses it
+   * to inspect a content game's reveal, slot card and gate — none of which need
+   * the question bank the mock cannot fetch. Its play surface will be empty,
+   * which is the documented cost of looking at the screens around it.
+   */
+  pool?: MinigameKind[];
 }
 
 export class FakeMatchClient implements MatchClient {
@@ -76,7 +83,11 @@ export class FakeMatchClient implements MatchClient {
         colorIndex: 2,
         members: membersB,
       },
-      kinds: drawRoundGames(MOCK_POOL, config.k, "mock-round"),
+      kinds: drawRoundGames(
+        config.pool?.length ? config.pool : MOCK_POOL,
+        config.k,
+        "mock-round",
+      ),
     });
     this.view = this.buildView();
     this.timer = setInterval(() => this.tick(), TICK_MS);

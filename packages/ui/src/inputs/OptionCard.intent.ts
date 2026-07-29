@@ -18,9 +18,10 @@ export const optionCardIntent: ComponentIntent = assertIntent({
     "The control is a binary setting (use Toggle).",
   ],
   anatomy:
-    "A full-width button holding a title, an optional description, and a trailing check that appears when selected; the selected face also takes a tint.",
+    "A full-width button holding an optional leading icon, a title, an optional description, and a trailing check that appears when selected; the selected face also takes a tint. The icon is centred against the card's height and sized by the card.",
   variantsStates: [
     "unselected · selected (tint + check) · hover · pressed · disabled (dimmed, inert)",
+    "with icon · without icon",
   ],
   accessibility:
     "A button with aria-pressed carrying the selection state; the check is decorative, so selection is never conveyed by the marker alone.",

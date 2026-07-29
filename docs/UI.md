@@ -46,6 +46,19 @@
   no team is named and nothing is identified. 15 fully colorblind-safe colors is beyond the
   proven ceiling, so the name pairing is load-bearing; the palette is graded for
   maximum normal-vision distinctness with colorblind separation as a tiebreak.
+- **Minigame emblems.** Every minigame carries one **monochrome** mark — a
+  silhouette in `currentColor`, authored in a 48-unit box, drawn in the clean
+  control vocabulary and never the hand-drawn one. It renders at three sizes
+  that are **levels of detail on one idea, not three assets**: the create-form
+  chip, the match-home slot card and the reveal reel, and the gate screen, where
+  the game's looping demo animates that same silhouette's own parts. A minigame
+  gets **no signature colour** — colour is already spent three ways (accent
+  pair, status hues, team palette), and a fourth axis would sit on the same
+  screen as the first and third; shape is what has to read at 20px anyway.
+  Emblems and demos are game-surface art, not kit members, on the grounds the
+  "Game surfaces" section below records. Both are required of every minigame:
+  a game without an emblem is a nameless card in the reveal, and one without a
+  demo is a wall of text at the gate.
 - **Sentence case.** Every piece of UI copy — headings, labels, buttons,
   captions — is sentence case. Never lowercase-stylized, never Title Case.
   (CapsLabel's uppercase is a CSS transform over sentence-case source.)
@@ -189,7 +202,14 @@
 ## Game surfaces
 
 - Projector legibility: the round board and spectate surfaces are read from
-  meters away — type steps up, status vocabulary unchanged.
+  meters away — type steps up, status vocabulary unchanged. A surface that is
+  read as a _diagram_ rather than played — the gate demo — takes a compact size
+  instead, declared as a prop on the indicator rather than by scaling the band:
+  play size is tuned for a projector and buries the gate's ready button.
+- The reveal is not its own screen. It is match home with the chrome hidden and
+  the cards spinning, so the cards never move when it resolves. A beat that
+  relocates its own subject at the moment of resolution reads as a lurch, and
+  the fix is layout, not easing.
 - Reduced motion is first-class: every motion-layer animation (zoom,
   slot-machine, round transitions) collapses to instant via MotionConfig
   reducedMotion="user"; CSS durations collapse via the tokens.
@@ -199,4 +219,4 @@
 
 ---
 
-_Last reviewed: 2026-07-26_
+_Last reviewed: 2026-07-28_

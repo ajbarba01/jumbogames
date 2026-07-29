@@ -18,8 +18,8 @@ vi.mock("motion/react", () => ({
 }));
 
 const available = [
-  { kind: "stub" as const, title: "Stub game", instructions: "A test game" },
-  { kind: "trivia" as const, title: "Trivia", instructions: "Answer fast" },
+  { kind: "stub" as const, title: "Stub game", tagline: "A test game." },
+  { kind: "trivia" as const, title: "Trivia", tagline: "Answer fast." },
 ];
 
 beforeEach(() => {

@@ -8,13 +8,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Select, StepSlider, Toggle } from "@jumbo/ui";
 import { MatchContainer } from "@/components/match/MatchContainer";
-import { derivePhase } from "@jumbo/engine";
+import { derivePhase, MINIGAMES } from "@jumbo/engine";
+import type { MinigameKind } from "@jumbo/engine";
 import { FakeMatchClient } from "@/lib/match/fake-client";
 import type { ViewerRole } from "@/lib/match/client";
 
 const BOT_READY_DELAY_MS = 1500;
 const BOT_MASH_INTERVAL_MS = 300;
 const COUNT_STOPS = ["1", "2", "3", "4"] as const;
+/** "any" draws from the dev-only default; a named kind pins every slot to it. */
+const POOL_OPTIONS = ["any", ...Object.keys(MINIGAMES)] as const;
 
 function Labeled({
   label,
@@ -36,9 +39,10 @@ export function MockupHarness(): React.JSX.Element {
   const [bots, setBots] = useState<(typeof COUNT_STOPS)[number]>("2");
   const [role, setRole] = useState<ViewerRole>("player");
   const [skipIntro, setSkipIntro] = useState(false);
+  const [pool, setPool] = useState<(typeof POOL_OPTIONS)[number]>("any");
   const [resetKey, setResetKey] = useState(0);
 
-  const configKey = `${resetKey}-${k}-${role}-${bots}`;
+  const configKey = `${resetKey}-${k}-${role}-${bots}-${pool}`;
   const client = useMemo(() => {
     void configKey; // a new client per config; resetKey alone also remakes it
     return new FakeMatchClient({
@@ -47,8 +51,9 @@ export function MockupHarness(): React.JSX.Element {
       botsPerTeam: Number(bots),
       botReadyDelayMs: BOT_READY_DELAY_MS,
       botMashIntervalMs: BOT_MASH_INTERVAL_MS,
+      pool: pool === "any" ? undefined : [pool as MinigameKind],
     });
-  }, [configKey, k, role, bots]);
+  }, [configKey, k, role, bots, pool]);
   useEffect(() => () => client.destroy(), [client]);
 
   const kickFirstBot = () => {
@@ -95,6 +100,16 @@ export function MockupHarness(): React.JSX.Element {
             value={role}
             onChange={(v) => setRole(v as ViewerRole)}
             aria-label="Viewer role"
+          />
+        </Labeled>
+        {/* Pinning a content game gives a real reveal, slot card and gate; its
+            play surface is empty, because the mock has no question bank. */}
+        <Labeled label="Minigame">
+          <Select
+            options={[...POOL_OPTIONS]}
+            value={pool}
+            onChange={(v) => setPool(v as (typeof POOL_OPTIONS)[number])}
+            aria-label="Minigame pool"
           />
         </Labeled>
         <Labeled label="Skip reveal">

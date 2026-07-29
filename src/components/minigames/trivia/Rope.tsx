@@ -12,14 +12,20 @@
 "use client";
 
 import { motion } from "motion/react";
-import { SLIP_DUR, SLIP_EASE } from "@jumbo/ui";
+import { cx, SLIP_DUR, SLIP_EASE } from "@jumbo/ui";
 import type { MatchTeam } from "@jumbo/engine";
+
+/** The chevron SVG's own width, in the units its viewBox is authored in. */
+const SVG_WIDTH = 22;
+/** Clearance between the knot's leading point and the arrow. */
+const ARROW_AIR = 5;
 
 export function Rope({
   p,
   gap,
   teamA,
   teamB,
+  compact = false,
 }: {
   /** Rope position; +1 is team A's wall (the server's convention). */
   p: number;
@@ -27,6 +33,12 @@ export function Rope({
   gap: number;
   teamA: MatchTeam;
   teamB: MatchTeam;
+  /**
+   * Draw at diagram scale rather than play scale. For the gate demo, which is
+   * a miniature of the game sitting above the screen's actual verb — at play
+   * size it pushes the ready button off a laptop.
+   */
+  compact?: boolean;
 }): React.JSX.Element {
   // A reads on the left, so p = +1 maps to 0%.
   const percent = ((1 - p) / 2) * 100;
@@ -39,7 +51,7 @@ export function Rope({
         toward === null ? "Rope at centre" : `Rope pulled toward ${toward}`,
         pulling === null ? "neither team pulling" : `${pulling} pulling`,
       ].join(", ")}
-      className="relative h-24 w-full"
+      className={cx("relative w-full", compact ? "h-14" : "h-24")}
     >
       {/* The instantaneous force read, riding the knot rather than parked at
           the rope's centre: it is the knot that is being dragged, and an arrow
@@ -49,10 +61,19 @@ export function Rope({
           going and how hard, which the motion alone cannot. Absent at a
           standstill, on purpose. */}
       {gap !== 0 && (
-        <Chevron gap={gap} percent={percent} teamA={teamA} teamB={teamB} />
+        <Chevron
+          gap={gap}
+          percent={percent}
+          teamA={teamA}
+          teamB={teamB}
+          compact={compact}
+        />
       )}
       <div
-        className="absolute inset-x-1 top-1/2 h-6 -translate-y-1/2 rounded-r2"
+        className={cx(
+          "absolute inset-x-1 top-1/2 -translate-y-1/2 rounded-r2",
+          compact ? "h-4" : "h-6",
+        )}
         style={{
           background:
             "repeating-linear-gradient(45deg, var(--color-s6) 0 8px, var(--color-s7) 8px 16px)",
@@ -62,17 +83,26 @@ export function Rope({
       {/* The handles are inherently fixed and stay far under the floor's
           content budget; the track between them is fluid. */}
       <div
-        className="absolute left-0 top-1/2 h-14 w-4 -translate-y-1/2 rounded-r1"
+        className={cx(
+          "absolute top-1/2 left-0 -translate-y-1/2 rounded-r1",
+          compact ? "h-9 w-2.5" : "h-14 w-4",
+        )}
         style={{ background: `var(--color-team-${teamA.colorIndex})` }}
         aria-hidden
       />
       <div
-        className="absolute right-0 top-1/2 h-14 w-4 -translate-y-1/2 rounded-r1"
+        className={cx(
+          "absolute top-1/2 right-0 -translate-y-1/2 rounded-r1",
+          compact ? "h-9 w-2.5" : "h-14 w-4",
+        )}
         style={{ background: `var(--color-team-${teamB.colorIndex})` }}
         aria-hidden
       />
       <div
-        className="absolute left-1/2 top-1/2 h-16 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-s8"
+        className={cx(
+          "absolute top-1/2 left-1/2 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-s8",
+          compact ? "h-10" : "h-16",
+        )}
         aria-hidden
       />
       <motion.div
@@ -80,7 +110,10 @@ export function Rope({
         initial={false}
         animate={{ left: `${percent}%` }}
         transition={{ ease: SLIP_EASE, duration: SLIP_DUR.move }}
-        className="sticker absolute top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-s12"
+        className={cx(
+          "sticker absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-s12",
+          compact ? "h-7 w-7" : "h-12 w-12",
+        )}
       >
         <div className="absolute inset-1.5 border-2 border-s8" aria-hidden />
       </motion.div>
@@ -100,30 +133,45 @@ function Chevron({
   percent,
   teamA,
   teamB,
+  compact,
 }: {
   gap: number;
   /** The knot's own left offset, so the arrow tracks it exactly. */
   percent: number;
   teamA: MatchTeam;
   teamB: MatchTeam;
+  compact: boolean;
 }): React.JSX.Element {
   const towardA = gap > 0;
   const team = towardA ? teamA : teamB;
   // Clamped so a five-tier blowout does not draw an arrow wider than the knot.
-  const scale = 1 + Math.min(Math.abs(gap), 4) * 0.3;
-  // The knot is 48px across and rotated 45°, so its points reach ~34px from
-  // centre. The arrow clears that and sits just outside whichever point leads.
-  const offset = towardA ? -40 : 40;
+  const base = compact ? 0.6 : 1;
+  const scale = base * (1 + Math.min(Math.abs(gap), 4) * 0.3);
+  // The arrow sits just outside whichever of the knot's points leads. The knot
+  // is a rotated square, so its points reach half its diagonal from centre —
+  // 34px at play scale, 20px compact. Add half the (scaled) arrow plus a little
+  // air, because the arrow is centred on this offset rather than anchored by
+  // its left edge: anchoring by the edge is why it used to sit correctly when
+  // pointing right and overlap the knot when pointing left.
+  const knotReach = compact ? 20 : 34;
+  const halfArrow = (SVG_WIDTH * scale) / 2;
+  const reach = knotReach + halfArrow + ARROW_AIR;
+  const offset = towardA ? -reach : reach;
   return (
     <motion.div
       aria-hidden
       initial={false}
       animate={{ left: `${percent}%`, x: offset, scale }}
       transition={{ ease: SLIP_EASE, duration: SLIP_DUR.move }}
-      className="absolute top-1/2 z-10 -translate-y-1/2"
+      className="absolute top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
       style={{ color: `var(--color-team-${team.colorIndex})` }}
     >
-      <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+      <svg
+        width={SVG_WIDTH}
+        height="18"
+        viewBox={`0 0 ${SVG_WIDTH} 18`}
+        fill="none"
+      >
         <path
           d={towardA ? "M15 2 L5 9 L15 16" : "M7 2 L17 9 L7 16"}
           stroke="currentColor"

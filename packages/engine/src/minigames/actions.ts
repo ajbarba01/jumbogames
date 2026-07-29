@@ -5,6 +5,7 @@
  */
 import { z } from "zod";
 import type { MinigameKind } from "./types";
+import { MAX_SIDE, MAX_WORD_LENGTH, MIN_WORD_LENGTH } from "./wordlock/tuning";
 
 const stubAction = z.object({ type: z.literal("mash") });
 
@@ -14,9 +15,24 @@ const triviaAction = z.object({
   choiceIndex: z.number().int().min(0).max(3),
 });
 
+const wordLockAction = z.object({
+  type: z.literal("submit"),
+  path: z
+    .array(
+      z
+        .number()
+        .int()
+        .min(0)
+        .max(MAX_SIDE * MAX_SIDE - 1),
+    )
+    .min(MIN_WORD_LENGTH)
+    .max(MAX_WORD_LENGTH),
+});
+
 const ACTION_SCHEMAS: Record<MinigameKind, z.ZodType> = {
   stub: stubAction,
   trivia: triviaAction,
+  wordlock: wordLockAction,
 };
 
 export function actionSchemaFor(kind: MinigameKind): z.ZodType {

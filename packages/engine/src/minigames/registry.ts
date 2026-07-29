@@ -6,10 +6,12 @@
 import type { MinigameKind, MinigameServer } from "./types";
 import { stubGame } from "./stub/server";
 import { triviaGame } from "./trivia/server";
+import { wordLockGame } from "./wordlock/server";
 
 export const MINIGAMES: Record<MinigameKind, MinigameServer> = {
   stub: stubGame as MinigameServer,
   trivia: triviaGame as MinigameServer,
+  wordlock: wordLockGame as MinigameServer,
 };
 
 export function poolFor(

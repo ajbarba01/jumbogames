@@ -27,4 +27,16 @@ export * from "./minigames/trivia/rope";
 export * from "./minigames/trivia/tiers";
 export * from "./minigames/trivia/tuning";
 export * from "./minigames/trivia/view";
+export * from "./minigames/wordlock/server";
+export * from "./minigames/wordlock/view";
+export * from "./minigames/wordlock/capture";
+export * from "./minigames/wordlock/grid";
+export * from "./minigames/wordlock/refresh";
+export * from "./minigames/wordlock/tuning";
+export * from "./minigames/wordlock/solver";
+// `dictionary` holds only the installer and lookup functions, never the word
+// blob itself, so exporting it here cannot pull the ~1.5 MB list into a
+// client bundle — a non-authoritative caller (the mockup harness) needs
+// `installWordList` to make the engine's `apply` usable in the browser.
+export * from "./minigames/wordlock/dictionary";
 export { seededShuffle } from "./random";

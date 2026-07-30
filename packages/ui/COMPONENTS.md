@@ -251,7 +251,7 @@ The dialog TOC rail: one row per section, jump on click, quiet active tint.
 
 A titled modal that gates a consequential action behind an explicit confirm.
 
-- **Use it when:** An action is destructive or hard to reverse (end a tournament, remove a team). A single stray click should not trigger the outcome.
+- **Use it when:** An action is destructive or hard to reverse (end a game, remove a team). A single stray click should not trigger the outcome.
 - **Don't use it when:** The action is cheap and reversible (just do it, offer undo instead). A rich, multi-field flow is needed (compose ModalShell directly).
 - **Anatomy:** ModalShell wrapping a display title, an optional description line, and a cancel/confirm button pair; cancel is first so the focus trap lands there.
 - **Variants & states:** default · busy (both actions disabled while the request runs) · error (confirmation failed; buttons stay enabled for retry) · closed (renders nothing)

@@ -42,7 +42,7 @@ test("home fits the floor width, with a code entered and an error showing", asyn
   // Exact: home also carries a "Rejoin <game>" button whenever the account is
   // already in a live game, and personas usually are.
   await page.getByRole("button", { name: "Join", exact: true }).click();
-  await expect(page.getByText("No tournament with that code")).toBeVisible();
+  await expect(page.getByText("No game with that code")).toBeVisible();
   await expectNoHorizontalOverflow(page, "/ (home, rejected code)");
 });
 

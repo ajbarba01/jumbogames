@@ -89,9 +89,8 @@ export const triviaGame: MinigameServer<TriviaState, TriviaAction> = {
   title: "Tug O' Lore",
   tagline: "Trivia tug of war.",
   instructions:
-    "Right answers build your team's pulling power, and the stronger side " +
-    "drags the rope for as long as it leads, so keep them coming or your " +
-    "pulling force slips.",
+    "Right answers raise your team's pull, and it slips back if you stall. " +
+    "A wrong answer locks your cards for three seconds.",
   playSeconds: TRIVIA_PLAY_SECONDS,
   devOnly: false,
   init(

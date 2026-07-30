@@ -29,7 +29,7 @@ export async function GET(
     viewerRole: auth.profile.role,
   });
   if (!gated) {
-    return NextResponse.json({ error: "No such tournament" }, { status: 404 });
+    return NextResponse.json({ error: "No such game" }, { status: 404 });
   }
 
   const includeCode = holdsGameCode(gated.relation, gated.state.code, null);

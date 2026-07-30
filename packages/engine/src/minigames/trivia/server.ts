@@ -94,7 +94,12 @@ export const triviaGame: MinigameServer<TriviaState, TriviaAction> = {
     "pulling force slips.",
   playSeconds: TRIVIA_PLAY_SECONDS,
   devOnly: false,
-  init(snapshot: RosterSnapshot, seed: string, context?: unknown): TriviaState {
+  init(
+    snapshot: RosterSnapshot,
+    seed: string,
+    _now: number,
+    context?: unknown,
+  ): TriviaState {
     const bank = Array.isArray(context) ? (context as BankQuestion[]) : [];
     const deck = buildDeck(bank, seed, DECK_CAP);
     const players: Record<string, TriviaPlayerState> = {};

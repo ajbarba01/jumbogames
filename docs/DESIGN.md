@@ -136,9 +136,15 @@ before build (see [ROADMAP.md](ROADMAP.md)); the shapes below are the agreed bas
 
 2. **Typing race** — same passage for all; team progress is the normalized aggregate of individual
    typing.
-3. **Word game (territory capture)** — one shared letter grid; players drag across adjacent letters
-   to form words, claiming those tiles for their team. Claimed tiles can only be reclaimed by a
-   longer word that runs through at least one of them. Most tiles at timeout wins.
+3. **Word Lock (territory capture)** — one shared letter grid; every player drags across adjacent
+   letters, orthogonally or diagonally, claiming those tiles for their team. A claimed word is held
+   as a unit and breaks only to a **strictly longer** word running through at least one of its
+   tiles — applied uniformly, including to the team that played it, which is what keeps every tile
+   part of at most one live word and so keeps the board unambiguous to draw. Neutral tiles that have
+   stayed neutral reroll every 20 seconds, so a locked-up board frees itself. **Scoring declares no
+   `outcome`**: a player's raw score is the tiles they _currently_ hold, so the container's
+   per-player mean is territory-per-player and team size cancels. "Most tiles at timeout wins", which
+   this said until Milestone 10, does not — it hands the round to whichever side brought more people.
 4. **Battleship** — one shared board per team; each player owns ships and aims their own shots.
    Balance baseline: **fixed fleet and volley size per match**, distributed across each team's
    players (a 3-player team owns 2 ships each and fires twice per volley against a 6-player team),
@@ -189,8 +195,10 @@ arrive already solved; a theme is a token-scale swap by design.
 4. **Dedicated test Supabase project** (`jumbogames-test`) as the Playwright/CI target — real
    Supabase branching is paid; a separate project satisfies "database branch for testing" in spirit.
 5. **Build the tournament shell + ONE minigame end-to-end before starting the next game.** Minigames
-   are swappable content behind a uniform match container. Order: trivia → typing race → word game →
-   battleship. Submittable at every point after the first game lands.
+   are swappable content behind a uniform match container. Order: trivia → Word Lock → typing race →
+   battleship (Word Lock and the typing race swapped at Milestone 10 — Word Lock needs no content
+   behind it, so it ships without a second admin CRUD surface). Submittable at every point after the
+   first game lands.
 6. **Round-robin over bracket/Swiss/elimination.** Every team plays every other once, so final ranking
    reflects aggregate performance against the whole field rather than pairing luck or first-loss
    position. The cost is a round count that scales with N; accepted for the fairness. Supersedes the
@@ -365,8 +373,12 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ## Deferred design (grill before building each)
 
-- Per-game specifics: typing passage source, word-game grid size and word validation dictionary,
-  battleship fleet/volley numbers and turn cadence.
+- Per-game specifics: typing passage source, battleship fleet/volley numbers and turn cadence.
+- **Word Lock's `ONE_PLAY_PER_WORD`** (`tuning.ts`, currently `false`) — whether a player may play the
+  same word twice in a slot. Rate modelling says replaying memorised three-letter words out-earns
+  hunting by ~2.5×; against that, the same tiles cannot be replayed anyway (a same-length recapture is
+  blocked), so spam needs the letters to recur elsewhere, which depends on the reroll. Revisit only
+  with hacknight observation, not more modelling.
 - The exact per-player normalization formula per game.
 - Reconnect UX polish (server-authoritative state makes resume-on-rejoin near-free; the polish is
   client-side).
@@ -375,4 +387,4 @@ arrive already solved; a theme is a token-scale swap by design.
 
 ---
 
-_Last reviewed: 2026-07-28_
+_Last reviewed: 2026-07-29_

@@ -17,6 +17,7 @@ import {
   applyMatchEvent,
   MINIGAMES,
   derivePhase,
+  nextTickAt,
   pendingAdvance,
 } from "@jumbo/engine";
 import type { Env } from "./env";
@@ -222,16 +223,19 @@ export class MatchRoom implements DurableObject {
 
   /**
    * Arm the alarm for whatever the match is next waiting on — a countdown
-   * ending, a play deadline, or a scoring beat. The DO owns its own clock, so a
-   * match progresses with no client connected at all.
+   * ending, a play deadline, a scoring beat, or a game's own clock-driven
+   * tick (Word Lock's refresh). The DO owns its own clock, so a match
+   * progresses with no client connected at all.
    */
   private async scheduleNext(room: RoomState): Promise<void> {
     const now = Date.now();
+    const tick = nextTickAt(room.state, MINIGAMES, now);
 
     // Something is already due (an elapsed deadline, or a game that finished
     // early on its own terms — a trivia rope pin has no timestamp at all).
     // Arm immediately rather than computing a future instant that would leave
-    // it unprocessed.
+    // it unprocessed. `nextTickAt` cannot be "already due" — it is defined as
+    // the next boundary strictly after `now`, so it never needs this check.
     if (pendingAdvance(room.state, now)) {
       await this.ctx.storage.setAlarm(now);
       return;
@@ -251,7 +255,7 @@ export class MatchRoom implements DurableObject {
     }
 
     const slot = phase.slot;
-    const next =
+    const deadline =
       slot.phase === "countdown"
         ? slot.countdownEndsAt
         : slot.phase === "playing"
@@ -259,6 +263,13 @@ export class MatchRoom implements DurableObject {
           : slot.phase === "scoring"
             ? slot.scoringEndsAt
             : null;
+
+    // `nextTickAt` already clamps to the slot's deadline, so the tick is
+    // always the sooner of the two while a slot is playing; this comparison
+    // exists so a slot with no deadline (none today, but the contract allows
+    // one) still arms on the tick alone.
+    const next =
+      tick !== null && (deadline === null || tick < deadline) ? tick : deadline;
 
     if (next === null) {
       await this.ctx.storage.deleteAlarm();
@@ -280,12 +291,27 @@ export class MatchRoom implements DurableObject {
     let state = room.state;
     let seq = room.seq;
 
-    // Several deadlines can be due at once after a hibernation gap; drain them
-    // all rather than advancing one phase per alarm.
+    // Several deadlines (or a tick and a deadline) can be due at once after a
+    // hibernation gap; drain them all rather than advancing one phase per
+    // alarm. A tick is only tried once no phase advance is due, since a phase
+    // change (e.g. countdown into playing) can itself make a tick relevant.
+    // Whether a tick actually has anything to do is decided by the reducer's
+    // own identity check, not predicted here — `nextTickAt` reports the next
+    // FUTURE boundary for arming, which is never "now" and so can never gate
+    // this dispatch.
     for (let guard = 0; guard < 8; guard++) {
       const due = pendingAdvance(state, now);
-      if (!due) break;
-      const next = applyMatchEvent(state, due.event, {
+      const event = due
+        ? due.event
+        : (() => {
+            const phase = derivePhase(state);
+            return phase.kind === "slot" &&
+              MINIGAMES[phase.slot.kind].tick !== undefined
+              ? { type: "gameTick" as const, ordinal: phase.slot.ordinal }
+              : null;
+          })();
+      if (!event) break;
+      const next = applyMatchEvent(state, event, {
         now,
         games: MINIGAMES,
         initContext: room.initContext,

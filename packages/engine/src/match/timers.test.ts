@@ -1,10 +1,14 @@
 /**
- * Tests for the lazy-advance selector: given a match and now, which timer event
- * (if any) is due — countdown end, play deadline, scoring end — mirroring the
- * server's advance route and the client's ticker.
+ * Tests for the lazy-advance selectors: `pendingAdvance` — given a match and
+ * now, which timer event (if any) is due — countdown end, play deadline,
+ * scoring end — mirroring the server's advance route and the client's
+ * ticker; and `nextTickAt` — when the active slot's game next needs a
+ * clock-driven advance, and its clamp to the slot's deadline.
  */
 import { describe, expect, it } from "vitest";
-import { pendingAdvance } from "./timers";
+import { MINIGAMES } from "../minigames/registry";
+import { nextTickAt, pendingAdvance } from "./timers";
+import type { MinigameKind, MinigameServer } from "../minigames/types";
 import type { MatchState, SlotState } from "./types";
 
 function slot(overrides: Partial<SlotState>): SlotState {
@@ -72,5 +76,41 @@ describe("pendingAdvance", () => {
 
   it("is null when the match is complete", () => {
     expect(pendingAdvance(match(slot({ phase: "done" })), 99_999)).toBeNull();
+  });
+});
+
+describe("nextTickAt", () => {
+  function withFakeTick(at: number): Record<MinigameKind, MinigameServer> {
+    const fake: MinigameServer = {
+      ...MINIGAMES.stub,
+      nextTickAt: () => at,
+    } as MinigameServer;
+    return { ...MINIGAMES, stub: fake };
+  }
+
+  it("is null for a game that declares no nextTickAt", () => {
+    const m = match(slot({ phase: "playing", deadline: 20_000 }));
+    expect(nextTickAt(m, MINIGAMES, 10_000)).toBeNull();
+  });
+
+  it("is null when the active slot is not playing", () => {
+    const games = withFakeTick(15_000);
+    const m = match(slot({ phase: "countdown", countdownEndsAt: 20_000 }));
+    expect(nextTickAt(m, games, 10_000)).toBeNull();
+  });
+
+  it("returns the game's boundary when it falls before the deadline", () => {
+    const games = withFakeTick(15_000);
+    const m = match(slot({ phase: "playing", deadline: 20_000 }));
+    expect(nextTickAt(m, games, 10_000)).toBe(15_000);
+  });
+
+  // The clamp that stops the room waking a game's clock after its slot has
+  // ended: without `Math.min(at, slot.deadline)` in the implementation, this
+  // would return the game's boundary (25_000) instead of the deadline.
+  it("clamps to the slot's deadline when the boundary falls after it", () => {
+    const games = withFakeTick(25_000);
+    const m = match(slot({ phase: "playing", deadline: 20_000 }));
+    expect(nextTickAt(m, games, 10_000)).toBe(20_000);
   });
 });

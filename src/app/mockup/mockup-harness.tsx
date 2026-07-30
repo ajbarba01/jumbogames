@@ -9,9 +9,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Select, StepSlider, Toggle } from "@jumbo/ui";
 import { MatchContainer } from "@/components/match/MatchContainer";
 import { derivePhase, MINIGAMES } from "@jumbo/engine";
+import { installWordList, isWordListInstalled } from "@jumbo/engine";
 import type { MinigameKind } from "@jumbo/engine";
 import { FakeMatchClient } from "@/lib/match/fake-client";
 import type { ViewerRole } from "@/lib/match/client";
+
+const WORD_LIST_URL = "/api/wordlock/words";
 
 const BOT_READY_DELAY_MS = 1500;
 const BOT_MASH_INTERVAL_MS = 300;
@@ -41,9 +44,32 @@ export function MockupHarness(): React.JSX.Element {
   const [skipIntro, setSkipIntro] = useState(false);
   const [pool, setPool] = useState<(typeof POOL_OPTIONS)[number]>("any");
   const [resetKey, setResetKey] = useState(0);
+  const [wordListReady, setWordListReady] = useState(isWordListInstalled());
+
+  // The fake client calls the engine's `apply` directly in the browser, so
+  // Word Lock's word list — installed server-side in every real runtime —
+  // must be installed here too, or every submission throws. Fetching the
+  // blob unconditionally (rather than only when Word Lock is picked) keeps
+  // this effect simple and costs nothing once installed, since the dictionary
+  // module no-ops a second install.
+  useEffect(() => {
+    if (isWordListInstalled()) return;
+    let cancelled = false;
+    void fetch(WORD_LIST_URL)
+      .then((response) => response.text())
+      .then((blob) => {
+        if (cancelled) return;
+        installWordList(blob);
+        setWordListReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const configKey = `${resetKey}-${k}-${role}-${bots}-${pool}`;
   const client = useMemo(() => {
+    if (!wordListReady) return null;
     void configKey; // a new client per config; resetKey alone also remakes it
     return new FakeMatchClient({
       k: Number(k),
@@ -53,10 +79,11 @@ export function MockupHarness(): React.JSX.Element {
       botMashIntervalMs: BOT_MASH_INTERVAL_MS,
       pool: pool === "any" ? undefined : [pool as MinigameKind],
     });
-  }, [configKey, k, role, bots, pool]);
-  useEffect(() => () => client.destroy(), [client]);
+  }, [wordListReady, configKey, k, role, bots, pool]);
+  useEffect(() => () => client?.destroy(), [client]);
 
   const kickFirstBot = () => {
+    if (client === null) return;
     const { match } = client.getView();
     const bot = [...match.teamA.members, ...match.teamB.members].find((id) =>
       id.startsWith("bot-"),
@@ -65,9 +92,18 @@ export function MockupHarness(): React.JSX.Element {
   };
 
   const forceStartActive = () => {
+    if (client === null) return;
     const phase = derivePhase(client.getView().match);
     if (phase.kind === "slot") client.forceStart(phase.slot.ordinal);
   };
+
+  if (client === null) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-s1 text-s10">
+        Loading word list…
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-s1">

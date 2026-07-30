@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeMatchClient } from "./fake-client";
 import { derivePhase } from "@jumbo/engine";
+import type { WordLockView } from "@jumbo/engine";
 
 const config = {
   k: 1,
@@ -55,5 +56,32 @@ describe("FakeMatchClient", () => {
     const before = client.getView().match.teamB.members.length;
     client.debugJoinBot("B");
     expect(client.getView().match.teamB.members.length).toBe(before + 1);
+  });
+
+  it("rerolls a Word Lock board on its own refresh clock, with no player action dispatched", () => {
+    // No bots and a spectator viewer: the only way anything advances is the
+    // client's own timer loop, isolating the clock-driven tick from the
+    // action-driven catch-up `apply` already does.
+    const wordlockClient = new FakeMatchClient({
+      ...config,
+      role: "spectator",
+      botsPerTeam: 0,
+      pool: ["wordlock"],
+    });
+    wordlockClient.forceStart(0);
+    // 3s countdown, then the board is live.
+    vi.advanceTimersByTime(3_000);
+    const before = wordlockClient.getView().match.slots[0]!
+      .payload as WordLockView;
+    expect(before.epoch).toBe(0);
+
+    // Past the 20s refresh period, still with nothing dispatched but the
+    // client's own deadline-advancing loop.
+    vi.advanceTimersByTime(20_000);
+    const after = wordlockClient.getView().match.slots[0]!
+      .payload as WordLockView;
+    expect(after.epoch).toBeGreaterThan(before.epoch);
+    expect(after.letters).not.toBe(before.letters);
+    wordlockClient.destroy();
   });
 });

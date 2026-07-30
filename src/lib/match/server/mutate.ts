@@ -6,6 +6,7 @@
  * The realtime Worker writes through the internal persist route instead; both
  * bump the same version, so whichever loses the claim retries.
  */
+import "@/lib/minigames/install-words";
 import { prisma } from "@/lib/prisma";
 import { MINIGAMES } from "@jumbo/engine";
 import { INIT_CONTEXT_LOADERS } from "@/lib/minigames/prepare";

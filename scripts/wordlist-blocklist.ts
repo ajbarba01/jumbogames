@@ -1,0 +1,43 @@
+/**
+ * Slurs excluded from the Word Lock dictionary. A projector at a public
+ * event is the reason this exists; ordinary rude words are not the target
+ * and are left in ENABLE1 untouched.
+ */
+export const BLOCKED_WORDS: string[] = [
+  "NIGGER",
+  "NIGGERS",
+  "NIGGA",
+  "NIGGAS",
+  "SPIC",
+  "SPICS",
+  "CHINK",
+  "CHINKS",
+  "KIKE",
+  "KIKES",
+  "WETBACK",
+  "WETBACKS",
+  "GOOK",
+  "GOOKS",
+  "FAGGOT",
+  "FAGGOTS",
+  "FAG",
+  "FAGS",
+  "DYKE",
+  "DYKES",
+  "TRANNY",
+  "TRANNIES",
+  "COON",
+  "COONS",
+  "JAP",
+  "JAPS",
+  "PAKI",
+  "PAKIS",
+  "RETARD",
+  "RETARDS",
+  "TARD",
+  "TARDS",
+  "SQUAW",
+  "SQUAWS",
+  "REDSKIN",
+  "REDSKINS",
+];

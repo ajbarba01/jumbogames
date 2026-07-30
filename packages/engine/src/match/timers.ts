@@ -1,11 +1,16 @@
 /**
- * Lazy-advance selector: given a match snapshot and the current time, the timer
- * event due on the active slot, if any. Serverless has no ticker, so both the
- * advance route and the client ticker share this to fire countdown/finalize/
- * scoring transitions from persisted deadlines. The reducer re-checks timing.
+ * Two lazy selectors over a match snapshot and the current time.
+ * `pendingAdvance` is one-shot: the timer event due on the active slot, if
+ * any — countdown, finalize, or scoring — shared by the advance route and
+ * the client ticker to fire transitions from persisted deadlines; the
+ * reducer re-checks timing. `nextTickAt` is recurring instead: the next
+ * instant a game's own clock-driven `tick` should run, for the life of a
+ * slot rather than for a single phase change, so the realtime Worker's room
+ * can arm its alarm on it.
  */
 import { derivePhase } from "./derive";
 import { MINIGAMES } from "../minigames/registry";
+import type { MinigameKind, MinigameServer } from "../minigames/types";
 import type { MatchEvent, MatchState } from "./types";
 
 /** The subset of MatchEvent that pendingAdvance can return — all timer-driven,
@@ -47,4 +52,29 @@ export function pendingAdvance(
     return { event: { type: "scoringElapsed", ordinal: slot.ordinal } };
   }
   return null;
+}
+
+/**
+ * When the active slot's game next needs a clock-driven advance, or null when
+ * no game in the match wants one. Separate from the phase deadlines because a
+ * tick recurs for the life of a slot rather than ending a phase.
+ *
+ * The boundary formula is game-specific, so this defers to the game's own
+ * `nextTickAt` rather than reimplementing it — the only game-agnostic part is
+ * clamping to the slot's deadline, since there is no point waking a game's
+ * clock after its slot has ended.
+ */
+export function nextTickAt(
+  state: MatchState,
+  games: Record<MinigameKind, MinigameServer>,
+  now: number,
+): number | null {
+  const phase = derivePhase(state);
+  if (phase.kind === "complete") return null;
+  const slot = phase.slot;
+  if (slot.phase !== "playing") return null;
+
+  const at = games[slot.kind].nextTickAt?.(slot.payload, now) ?? null;
+  if (at === null) return null;
+  return slot.deadline !== null ? Math.min(at, slot.deadline) : at;
 }

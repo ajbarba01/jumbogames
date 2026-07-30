@@ -22,8 +22,8 @@ build (per-game specifics are listed under Deferred design in DESIGN.md).
 | 7   | Open hosting — player-creatable games, config (minigame pool, K), "game" copy sweep (DESIGN decisions 14–15)                                       | done        |
 | 8   | `displayName` (schema + backfill + label swap) + spectate-by-link (DESIGN decision 16)                                                             | in progress |
 | 9   | Team rooms + roster fluidity — Board/My team tabs, persistent team picker, join/leave/kick under the lock rule (DESIGN decision 17); E2E           | done        |
-| 10  | Minigame 2: typing race                                                                                                                            | pending     |
-| 11  | Minigame 3: word game (territory capture)                                                                                                          | pending     |
+| 10  | Minigame 2: Word Lock (word-grid territory capture)                                                                                                | done        |
+| 11  | Minigame 3: typing race                                                                                                                            | pending     |
 | 12  | Minigame 4: battleship                                                                                                                             | pending     |
 | 13  | Polish pass — reconnect UX, reduced-motion, projector-scale check on the round board                                                               | pending     |
 
@@ -45,7 +45,7 @@ restore (Next reuses a page's RSC payload on back/forward), and the match page s
 heartbeat. A live match guards tab close/reload.
 
 The slam-wipe transition + loading system (`SlamWipe` in the kit, `src/components/wipe/` in the app)
-shipped as foundational infrastructure ahead of Milestone 10's polish pass, so that milestone isn't
+shipped as foundational infrastructure ahead of Milestone 13's polish pass, so that milestone isn't
 double-counted for it. It covers all in-app (client) navigations, the primary case; the cold-load /
 first-paint cover is deferred — the provider is client-only, so a pre-hydration cover risks an SSR
 flash and needs its own pass.
@@ -334,6 +334,35 @@ otherwise meant rebuilding a two-team lobby for every run.
 Not done: the calibration is still modelled, not measured. Every number keys off an estimated 4.2–9.2
 seconds per correct answer per player, which a real hacknight should replace with observation.
 
+## Word Lock — minigame 2 (Milestone 10)
+
+Word Lock swapped ahead of the typing race: it needs no content behind it, so it could ship without a
+second admin CRUD surface, and it is the game that stress-tests the container's clock. One shared
+letter grid; every player on both teams traces three or more adjacent tiles — orthogonally or
+diagonally — to claim them. A claimed word is held **as a unit** and breaks only to a **strictly
+longer** word running through at least one of its tiles, applied uniformly, including to the team
+that played it. That uniformity is load-bearing rather than fair-minded: it guarantees a tile is part
+of at most one live word, which is what makes the board unambiguous to draw.
+
+Scoring declares no `outcome`. A player's raw score is the tiles they _currently_ hold, so the
+container's existing per-player mean is exactly territory-per-player and team size cancels — see
+DESIGN.md, which had recorded "most tiles at timeout wins" and was wrong: that hands the round to
+whichever side brought more people. Board size tracks the roster at `clamp(round(√(25 · players)),
+10, 24)`, and the board scales to fill whatever square the layout gives it, so pan and zoom are
+deliberately not built — the whole grid is always on screen and no gesture competes with the trace
+drag.
+
+The contract grew twice. `init` gained a server-stamped `now`, and games gained optional
+`tick`/`nextTickAt`, with the Durable Object arming an alarm from the latter: Word Lock rerolls dead
+tiles every 20 seconds, and without a clock-driven advance a saturated board (nothing playable, so
+nobody acts) froze for the rest of the match. `FakeMatchClient` mirrors the alarm so `/mockup` behaves
+like production. Word validation is an installed ENABLE1 list (150,101 words) held server-side, with
+the client fetching the same list at the gate purely to style the traced word.
+
+Not done: `ONE_PLAY_PER_WORD` (`tuning.ts`) stays `false` pending real hacknight evidence — rate
+modelling favoured turning it on, playtesting favoured leaving it off, and neither settles it. There
+is no keyboard path for tracing.
+
 ## Known gaps (carry into the next branches)
 
 - **Portaled overlays aren't inert'd by the wipe.** `WipeProvider`'s `inert` wrapper only covers the
@@ -387,4 +416,4 @@ seconds per correct answer per player, which a real hacknight should replace wit
 
 ---
 
-_Last reviewed: 2026-07-28_
+_Last reviewed: 2026-07-29_

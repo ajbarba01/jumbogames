@@ -21,6 +21,9 @@ import { StubDemo } from "./StubDemo";
 import { TriviaPlay } from "./trivia/TriviaPlay";
 import { TriviaEmblem } from "./trivia/Emblem";
 import { TriviaDemo } from "./trivia/Demo";
+import { WordLockPlay } from "./wordlock/WordLockPlay";
+import { WordLockEmblem } from "./wordlock/Emblem";
+import { WordLockDemo } from "./wordlock/Demo";
 
 export interface MinigamePlayProps {
   view: MatchView;
@@ -54,6 +57,7 @@ export interface MinigamePresentation {
 export const MINIGAME_SURFACES: Record<MinigameKind, MinigamePresentation> = {
   stub: { Play: StubPlay, Emblem: StubEmblem, Demo: StubDemo },
   trivia: { Play: TriviaPlay, Emblem: TriviaEmblem, Demo: TriviaDemo },
+  wordlock: { Play: WordLockPlay, Emblem: WordLockEmblem, Demo: WordLockDemo },
 };
 
 /**

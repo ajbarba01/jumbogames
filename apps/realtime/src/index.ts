@@ -4,6 +4,11 @@
  * on the same authoritative instance. Nothing else is served.
  */
 import type { Env } from "./env";
+import { installBundledWordList } from "@jumbo/engine/minigames/wordlock/install-words";
+
+// Installed at module scope so every cold start of this Worker has the Word
+// Lock dictionary ready before any Durable Object's `apply` can reach it.
+installBundledWordList();
 
 export { MatchRoom } from "./MatchRoom";
 

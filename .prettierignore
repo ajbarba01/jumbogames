@@ -5,3 +5,6 @@ test-results
 package-lock.json
 .superpowers
 .claude
+# One enormous string literal; Prettier's own formatting would blow the diff
+# on every regeneration for no readability gain.
+packages/engine/src/minigames/wordlock/words.generated.ts

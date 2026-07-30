@@ -49,5 +49,6 @@ export type MatchEvent =
   | { type: "rosterChanged"; teamA: string[]; teamB: string[] }
   | { type: "countdownElapsed"; ordinal: number }
   | { type: "gameAction"; ordinal: number; playerId: string; action: unknown }
+  | { type: "gameTick"; ordinal: number }
   | { type: "finalize"; ordinal: number }
   | { type: "scoringElapsed"; ordinal: number };

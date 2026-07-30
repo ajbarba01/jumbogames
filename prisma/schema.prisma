@@ -25,6 +25,7 @@ enum TournamentPhase {
 enum MinigameKind {
   stub
   trivia
+  wordlock
 }
 
 enum RoundState {

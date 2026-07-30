@@ -11,6 +11,7 @@
  */
 "use client";
 
+import { useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button, SLIP_DUR, SLIP_EASE_OUT, useDismissLayer } from "@jumbo/ui";
 import type { MatchClient, MatchView } from "@/lib/match/client";
@@ -56,6 +57,17 @@ export function PlayFrame({
     slot.snapshot !== null &&
     (slot.snapshot.teamA.includes(view.viewerId) ||
       slot.snapshot.teamB.includes(view.viewerId));
+  // Stable across the ticks that push a new `view` without changing which
+  // slot is live: `client` is a caller-owned singleton and `slot.ordinal` is
+  // fixed for the lifetime of this mounted frame (a different ordinal
+  // remounts via the `key` in MatchContainer). A minigame surface's own
+  // `submit`-style callback still changes on a real state tick — it closes
+  // over the current board/deck, which is exactly why it must — but that
+  // churn no longer originates here.
+  const onAction = useCallback(
+    (action: unknown) => client.act(slot.ordinal, action),
+    [client, slot.ordinal],
+  );
 
   return (
     <motion.div
@@ -96,7 +108,7 @@ export function PlayFrame({
                 view={view}
                 slot={slot}
                 canAct={canAct}
-                onAction={(action) => client.act(slot.ordinal, action)}
+                onAction={onAction}
                 offsetMs={offsetMs}
               />
             </Panel>

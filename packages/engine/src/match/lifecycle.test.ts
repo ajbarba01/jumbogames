@@ -364,9 +364,49 @@ describe("contract hooks", () => {
 
   it("passes initContext[kind] to init at countdown start", () => {
     const games = withFake({
-      init: (_snapshot, _seed, context) => ({ sawContext: context }),
+      init: (_snapshot, _seed, _now, context) => ({ sawContext: context }),
     });
     const m = readyAllWith(fresh(), T0, games, { stub: ["ctx"] });
     expect(m.slots[0]!.payload).toEqual({ sawContext: ["ctx"] });
+  });
+
+  it("hands init the server-stamped clock", () => {
+    let seenNow = -1;
+    const games = withFake({
+      init: (_snapshot, _seed, now) => {
+        seenNow = now;
+        return { at: now };
+      },
+    });
+    applyMatchEvent(
+      fresh(),
+      { type: "hostForceStart", ordinal: 0 },
+      { now: 1_700_000_000_000, games },
+    );
+    expect(seenNow).toBe(1_700_000_000_000);
+  });
+
+  it("advances a game's own state on a gameTick when the slot is playing", () => {
+    const games = withFake({
+      init: () => ({ ticks: 0 }),
+      tick: (s) => ({ ticks: (s as { ticks: number }).ticks + 1 }),
+    });
+    const { m, now } = playingWith(games);
+    const ticked = applyMatchEvent(
+      m,
+      { type: "gameTick", ordinal: 0 },
+      { now: now + 1, games },
+    );
+    expect(ticked.slots[0]!.payload).toEqual({ ticks: 1 });
+  });
+
+  it("gameTick is a no-op when the slot's game declares no tick", () => {
+    const { m, now } = playingWith(MINIGAMES);
+    const ticked = applyMatchEvent(
+      m,
+      { type: "gameTick", ordinal: 0 },
+      { now: now + 1, games: MINIGAMES },
+    );
+    expect(ticked).toBe(m);
   });
 });

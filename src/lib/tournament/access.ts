@@ -21,7 +21,7 @@ export async function requireLobby(id: string): Promise<LobbyGuard> {
     select: { id: true, hostId: true, phase: true, code: true },
   });
   if (!tournament) {
-    return { ok: false, status: 404, error: "No such tournament" };
+    return { ok: false, status: 404, error: "No such game" };
   }
   if (tournament.phase !== TournamentPhase.lobby) {
     return { ok: false, status: 409, error: "The lobby is closed" };

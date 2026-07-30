@@ -174,7 +174,7 @@ export function HostDock({
       <ConfirmDialog
         open={confirmRestart}
         title="Restart game?"
-        description="Every round, match and score is deleted and the game returns to the lobby. Teams and their members stay, so you can start straight over."
+        description="Deletes every round, match and score, and puts the game back in the lobby. Teams and their members stay."
         confirmLabel="Restart game"
         busy={busy}
         onConfirm={() => {

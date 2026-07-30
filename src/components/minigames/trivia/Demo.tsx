@@ -107,7 +107,7 @@ export function TriviaDemo({
   return (
     <div
       role="img"
-      aria-label="Demonstration: answering correctly raises a team's pulling power, and the leading team drags the rope toward its wall."
+      aria-label="Demonstration: answering correctly raises a team's pull, and the leading team drags the rope toward its wall."
       className="flex w-full max-w-2xl flex-col gap-3"
     >
       <div className="flex items-start justify-between gap-3">

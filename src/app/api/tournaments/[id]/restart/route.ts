@@ -30,7 +30,7 @@ export async function POST(
     select: { hostId: true, phase: true },
   });
   if (!tournament) {
-    return NextResponse.json({ error: "No such tournament" }, { status: 404 });
+    return NextResponse.json({ error: "No such game" }, { status: 404 });
   }
   if (!isGameHost(auth.profile, tournament.hostId)) {
     return NextResponse.json(

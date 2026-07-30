@@ -46,7 +46,7 @@ export async function POST(
 
   if (parsedCode.data.code !== lobby.tournament.code) {
     return NextResponse.json(
-      { error: "That code doesn't match this game." },
+      { error: "That code doesn't match this game" },
       { status: 403 },
     );
   }
@@ -70,10 +70,7 @@ export async function POST(
   });
   const colorIndex = pickColorIndex(teams.map((team) => team.colorIndex));
   if (colorIndex === null) {
-    return NextResponse.json(
-      { error: "This tournament is full" },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: "This game is full" }, { status: 409 });
   }
 
   try {

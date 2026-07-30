@@ -27,7 +27,7 @@ export function checkRoundDraw(drawn: MinigameKind[], k: number): DrawCheck {
   if (k < 1)
     return {
       ok: false,
-      reason: "This tournament plays no minigames per match",
+      reason: "This game plays no minigames per match",
     };
   if (drawn.length < k) {
     return {

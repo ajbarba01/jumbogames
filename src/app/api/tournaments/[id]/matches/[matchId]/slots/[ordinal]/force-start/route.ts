@@ -30,7 +30,10 @@ export async function POST(
     return NextResponse.json({ error: "No such match" }, { status: 404 });
   }
   if (!isGameHost(auth.profile, loaded.hostId)) {
-    return NextResponse.json({ error: "Host only" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Only the host can force-start a slot" },
+      { status: 403 },
+    );
   }
 
   const result = await mutateMatch(matchId, {

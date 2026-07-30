@@ -361,9 +361,7 @@ the client fetching the same list at the gate purely to style the traced word.
 
 Not done: `ONE_PLAY_PER_WORD` (`tuning.ts`) stays `false` pending real hacknight evidence — rate
 modelling favoured turning it on, playtesting favoured leaving it off, and neither settles it. There
-is no keyboard path for tracing. The `wordlock` value added to the `MinigameKind` Postgres enum is
-applied to dev/CI only; **production has not been migrated**, and Word Lock cannot run there until it
-is.
+is no keyboard path for tracing.
 
 ## Known gaps (carry into the next branches)
 

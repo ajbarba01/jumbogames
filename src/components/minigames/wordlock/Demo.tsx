@@ -63,7 +63,7 @@ const CAPTIONS: Record<DemoBeat["kind"], string> = {
   break:
     "A longer word crossing a claimed word takes it — the rest scatters " +
     "back to neutral.",
-  refresh: "Tiles nobody has touched reroll their letters on their own.",
+  refresh: "Unclaimed tiles reroll their letters if nobody uses them.",
 };
 
 /** A tile's letter reroll mid-flicker, landing on its final letter by the
@@ -218,7 +218,7 @@ export function WordLockDemo({
   return (
     <div
       role="img"
-      aria-label="Demonstration: tracing three or more letters claims a word for your team; a longer word crossing a claimed word takes it and scatters the rest back to neutral; tiles nobody has touched reroll their letters on their own."
+      aria-label="Demonstration: tracing three or more letters claims a word for your team. A longer word crossing a claimed word takes it and scatters the rest back to neutral. Unclaimed tiles reroll if nobody uses them."
       className="flex w-full max-w-xs flex-col items-center gap-3"
     >
       <svg viewBox={`0 0 ${boardPx} ${boardPx}`} className="w-full select-none">

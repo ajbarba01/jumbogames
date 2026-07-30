@@ -41,17 +41,17 @@ export async function POST(
     },
   });
   if (!tournament) {
-    return NextResponse.json({ error: "No such tournament" }, { status: 404 });
+    return NextResponse.json({ error: "No such game" }, { status: 404 });
   }
   if (!isGameHost(auth.profile, tournament.hostId)) {
     return NextResponse.json(
-      { error: "Only the host can start this tournament" },
+      { error: "Only the host can start this game" },
       { status: 403 },
     );
   }
   if (tournament.phase !== TournamentPhase.lobby) {
     return NextResponse.json(
-      { error: "This tournament has already started" },
+      { error: "This game has already started" },
       { status: 409 },
     );
   }

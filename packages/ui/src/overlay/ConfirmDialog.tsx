@@ -1,6 +1,6 @@
 /**
  * Confirmation dialog: a titled ModalShell with a cancel/confirm pair, for
- * actions that should not fire on a single click (ending a tournament, removing
+ * actions that should not fire on a single click (ending a game, removing
  * a team). Weight is carried by the copy, not by color — the register reserves
  * crit for live state, so the confirm button is the ordinary accent action.
  * Cancel comes first so the focus trap lands there, not on the destructive path.
@@ -15,7 +15,7 @@ import { ModalShell } from "./ModalShell";
 
 export interface ConfirmDialogProps {
   open: boolean;
-  /** Names the dialog and states the action, e.g. "End tournament?". */
+  /** Names the dialog and states the action, e.g. "End game?". */
   title: string;
   /** Optional line spelling out the consequence. */
   description?: string;

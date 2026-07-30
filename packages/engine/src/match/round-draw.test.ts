@@ -51,7 +51,7 @@ describe("checkRoundDraw", () => {
   it("rejects k = 0", () => {
     expect(checkRoundDraw([], 0)).toEqual({
       ok: false,
-      reason: "This tournament plays no minigames per match",
+      reason: "This game plays no minigames per match",
     });
   });
 

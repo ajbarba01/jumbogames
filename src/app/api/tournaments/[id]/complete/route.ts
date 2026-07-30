@@ -24,17 +24,17 @@ export async function POST(
     select: { hostId: true, phase: true },
   });
   if (!tournament) {
-    return NextResponse.json({ error: "No such tournament" }, { status: 404 });
+    return NextResponse.json({ error: "No such game" }, { status: 404 });
   }
   if (!isGameHost(auth.profile, tournament.hostId)) {
     return NextResponse.json(
-      { error: "Only the host can end this tournament" },
+      { error: "Only the host can end this game" },
       { status: 403 },
     );
   }
   if (tournament.phase !== TournamentPhase.active) {
     return NextResponse.json(
-      { error: "Only a running tournament can be ended" },
+      { error: "This game isn't running" },
       { status: 409 },
     );
   }

@@ -42,7 +42,7 @@ export async function POST(
 
   if (parsed.data.code !== guard.tournament.code) {
     return NextResponse.json(
-      { error: "That code doesn't match this game." },
+      { error: "That code doesn't match this game" },
       { status: 403 },
     );
   }

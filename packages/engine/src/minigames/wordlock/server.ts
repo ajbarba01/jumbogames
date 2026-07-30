@@ -61,11 +61,11 @@ function heldTiles(state: WordLockState): Record<string, number> {
 export const wordLockGame: MinigameServer<WordLockState, WordLockAction> = {
   kind: "wordlock",
   title: "Word Lock",
-  tagline: "Hunt for words to claim the grid",
+  tagline: "Hunt for words to claim the grid.",
   instructions:
     "Trace three or more letters in any direction to claim those tiles for " +
-    "your team. A claimed word only breaks to a longer word running through " +
-    "it, so build long and hold the ground.",
+    "your team. Only a longer word crossing a claimed word can break it. " +
+    "Unclaimed tiles reroll if nobody uses them.",
   playSeconds: WORDLOCK_PLAY_SECONDS,
   devOnly: false,
 

@@ -40,7 +40,7 @@ export async function POST(
     select: { code: true },
   });
   if (!tournament) {
-    return NextResponse.json({ error: "No such tournament" }, { status: 404 });
+    return NextResponse.json({ error: "No such game" }, { status: 404 });
   }
   // Refuse rather than store a wrong code: a cookie that never validates would
   // look like a grant to every later debugging eye and be one to none of them.

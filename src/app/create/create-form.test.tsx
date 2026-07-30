@@ -100,7 +100,7 @@ describe("CreateForm", () => {
   it("surfaces a failed create instead of navigating", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
-      json: async () => ({ error: "Invalid tournament" }),
+      json: async () => ({ error: "Invalid game" }),
     }) as unknown as typeof fetch;
 
     render(<CreateForm available={available} />);
@@ -112,7 +112,7 @@ describe("CreateForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create game" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("Invalid tournament"),
+      expect(screen.getByRole("alert")).toHaveTextContent("Invalid game"),
     );
     expect(navigate).not.toHaveBeenCalled();
   });

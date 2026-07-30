@@ -29,6 +29,7 @@ Built for the JumboCode Tech Lead onboarding project — the graded criteria in
 | [docs/ENGINEERING.md](docs/ENGINEERING.md)   | Architecture & code-quality principles                                 | writing/refactoring non-trivial code |
 | [docs/CODE_STYLE.md](docs/CODE_STYLE.md)     | Formatting, naming, comments (incl. required header comments)          | writing any code                     |
 | [docs/UI.md](docs/UI.md)                     | Design laws + kit authoring rules (the `@jumbo/ui` register)           | any UI work                          |
+| [docs/COPY.md](docs/COPY.md)                 | Terminology register, error-string contract, point of view per surface | writing any user-facing string       |
 | [docs/WORKFLOW.md](docs/WORKFLOW.md)         | Dev loop, branches, PRs, quality gates                                 | starting work / committing           |
 
 ## Operating rules (always on)

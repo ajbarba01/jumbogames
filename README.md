@@ -1,8 +1,8 @@
 # Jumbogames
 
-A team-based tournament of short co-operative minigames for JumboCode hacknights. Teams join with a
-short code and play a round-robin of short matches drawn from a minigame pool; scoring is normalized
-per-player. Admins run the tournament and can spectate any live match.
+Teams join with one code and play a round-robin of short co-operative minigames, scored per player so
+team sizes don't matter. Built for JumboCode hacknights. The host runs the game, and any signed-in
+user can spectate by link.
 
 **Live app:** https://jumbogames.vercel.app
 
@@ -86,8 +86,8 @@ Playwright E2E tests live in [e2e/](e2e/) and cover auth and CRUD flows.
 
 ## Trivia question bank
 
-The `trivia_questions` table backs the Trivia Tug-of-War minigame. Seed it with
-`npm run seed:trivia`, which targets the test/dev database by default (via
-`.env.test.local`); Duplicate prompts are never re-inserted, but each run draws a fresh random sample from OpenTDB, so re-running adds new questions rather than inserting nothing.
-Questions are seeded from the [Open Trivia Database](https://opentdb.com)
-under CC BY-SA 4.0.
+The `trivia_questions` table backs the Tug O' Lore minigame. Seed it with `npm run seed:trivia`,
+which targets the test/dev database by default via `.env.test.local`. Each run draws a fresh random
+sample from OpenTDB and skips prompts already in the table, so re-running grows the bank instead of
+duplicating it. Questions come from the [Open Trivia Database](https://opentdb.com) under CC BY-SA
+4.0.

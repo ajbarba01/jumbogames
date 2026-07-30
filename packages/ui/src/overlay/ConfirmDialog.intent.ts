@@ -9,7 +9,7 @@ export const confirmDialogIntent: ComponentIntent = assertIntent({
   intent:
     "A titled modal that gates a consequential action behind an explicit confirm.",
   useWhen: [
-    "An action is destructive or hard to reverse (end a tournament, remove a team).",
+    "An action is destructive or hard to reverse (end a game, remove a team).",
     "A single stray click should not trigger the outcome.",
   ],
   dontUseWhen: [

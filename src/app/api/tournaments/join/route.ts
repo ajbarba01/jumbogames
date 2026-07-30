@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   });
   if (!tournament) {
     return NextResponse.json(
-      { error: "No tournament with that code" },
+      { error: "No game with that code" },
       { status: 404 },
     );
   }

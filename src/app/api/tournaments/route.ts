@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
   const parsed = createTournamentSchema.safeParse(await parseJsonBody(request));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid tournament" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid game" }, { status: 400 });
   }
 
   const code = await generateUniqueJoinCode(

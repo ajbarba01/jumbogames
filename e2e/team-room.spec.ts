@@ -473,7 +473,7 @@ test("a signed-in stranger spectates by link, then joins with the code", async (
   const wrongCode = code === "ZZZZZZ" ? "YYYYYY" : "ZZZZZZ";
   await submitCodeInCard(stranger, openCard, wrongCode);
   await expect(
-    stranger.getByText("That code doesn't match this game."),
+    stranger.getByText("That code doesn't match this game"),
   ).toBeVisible();
   await expect(
     stranger.getByRole("tab", { name: "Join a team" }),

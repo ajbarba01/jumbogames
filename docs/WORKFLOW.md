@@ -71,6 +71,9 @@ and gates still apply. The test is "does this need design to get right?", not "i
   Prefix both commands with `npx dotenv -e .env.test.local --` when building to look at something.
 - Never edit a migration after it has been applied — it changes the checksum and drifts the database.
   Create a new migration instead.
+- **Every migration that creates a table in `public` must also `ENABLE ROW LEVEL SECURITY` on it.**
+  Prisma never emits it, and without it the table is world-readable and world-writable through
+  Supabase's REST API ([DESIGN.md](DESIGN.md) decision 2).
 
 ## Escalation
 

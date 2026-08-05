@@ -189,7 +189,13 @@ arrive already solved; a theme is a token-scale swap by design.
    untouched; only `redact`'s output shape grew. Full rationale in
    `superpowers/specs/2026-07-25-slice4-trivia-reskin-design.md` (D2, local artifact).
 2. **Authorization is enforced in route handlers, not RLS.** Prisma connects as the database owner
-   and bypasses RLS, so RLS cannot be the enforcement layer.
+   and bypasses RLS, so RLS cannot be the enforcement layer. **RLS is still mandatory as a deny-all
+   floor on every table in `public` (corrected 2026-08-04).** Supabase grants `anon` full DML on
+   tables created in that schema and PostgREST serves them to anyone holding the anon key, which
+   ships in the browser bundle — so a table without RLS is world-readable and world-writable no
+   matter how well the route handlers are guarded. Prisma bypasses it and the browser only uses
+   Realtime broadcast/presence, so the correct configuration is RLS enabled with **zero policies**.
+   Every new table needs `ENABLE ROW LEVEL SECURITY` in its migration; Prisma will not emit it.
 3. **Owner via env allowlist + in-app admin promotion.** No manual DB pokes, no bootstrap
    chicken-and-egg.
 4. **Dedicated test Supabase project** (`jumbogames-test`) as the Playwright/CI target — real
